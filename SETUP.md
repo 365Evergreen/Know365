@@ -111,7 +111,7 @@ knowledge-centre/
 
 In your GitHub repository settings, add these secrets:
 
-- `AZURE_STATIC_WEB_APPS_API_TOKEN` - Get from Azure Static Web App deployment token
+- `AZURE_STATIC_WEB_APPS_API_TOKEN` - 40e361d8770f2bbbf04ab933175bf9ab9770e871e293cb26d7d756ecdf07979f03-02ed17cc-d20d-48be-803b-e9376168787e01e253006560271e
 - `VITE_CLIENT_ID` - Azure AD App client ID
 - `VITE_TENANT_ID` - Azure AD tenant ID
 - `VITE_REDIRECT_URI` - Production URL (e.g., `https://your-app.azurestaticapps.net`)
