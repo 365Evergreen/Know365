@@ -14,7 +14,7 @@ initializeIcons();
 
 const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [userName, setUserName] = useState<string>('User');
+  const [userName] = useState<string>('User');
 
   useEffect(() => {
     // Check for saved theme preference
