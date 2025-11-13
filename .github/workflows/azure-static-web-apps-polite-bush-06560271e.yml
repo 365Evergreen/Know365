@@ -19,6 +19,23 @@ jobs:
         with:
           submodules: true
           lfs: false
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies (npm)
+        run: npm ci --include=dev
+
+      - name: Build project (vite)
+        run: npx vite build
+        env:
+          VITE_CLIENT_ID: ${{ secrets.VITE_CLIENT_ID }}
+          VITE_TENANT_ID: ${{ secrets.VITE_TENANT_ID }}
+          VITE_REDIRECT_URI: ${{ secrets.VITE_REDIRECT_URI }}
+          VITE_DATAVERSE_API: ${{ secrets.VITE_DATAVERSE_API }}
+          VITE_GRAPH_SCOPES: ${{ secrets.VITE_GRAPH_SCOPES }}
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
