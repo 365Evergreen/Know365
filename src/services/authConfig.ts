@@ -7,8 +7,11 @@ const msalConfig: Configuration = {
     redirectUri: import.meta.env.VITE_REDIRECT_URI || window.location.origin,
   },
   cache: {
-    cacheLocation: 'sessionStorage',
-    storeAuthStateInCookie: false,
+    // Use localStorage so authenticated state persists across tabs/windows.
+    // This improves silent SSO behavior for users already signed into M365 in the browser.
+    cacheLocation: 'localStorage',
+    // storeAuthStateInCookie helps with certain browsers and scenarios (SWA, older browsers)
+    storeAuthStateInCookie: true,
   },
 };
 
