@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Stack, Text, PrimaryButton } from '@fluentui/react';
-import { listEntitySets, getEntitySetMetadata } from '../services/dataverseClient';
+import { listEntitySets, getEntityMetadata } from '../services/dataverseClient';
 
 const EntityMetadata: React.FC = () => {
   const [entitySets, setEntitySets] = useState<string[] | null>(null);
@@ -32,7 +32,7 @@ const EntityMetadata: React.FC = () => {
     setError(null);
     setMeta(null);
     try {
-      const m = await getEntitySetMetadata(selected);
+      const m = await getEntityMetadata(selected);
       setMeta(m);
     } catch (err: any) {
       console.error(err);

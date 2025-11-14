@@ -49,7 +49,6 @@ const ArticlesBySubject: React.FC = () => {
             {articles.map((a, i) => {
               const title = a.title || a.Title || a.name || 'Untitled';
               const excerpt = a.excerpt || a.preview || a.Excerpt || a.previewText || '';
-              const site = a.siteUrl || a.site || a.SiteUrl || '';
               const webUrl = a.webUrl || a.url || a.siteUrl || '';
               return (
                 <Stack key={i} tokens={{ childrenGap: 4 }}>

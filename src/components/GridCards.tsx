@@ -1,5 +1,6 @@
 import React from 'react';
 import { Stack, Text, Link, IStackStyles } from '@fluentui/react';
+import { useNavigate } from 'react-router-dom';
 
 interface CardItem {
   id: string;
@@ -17,7 +18,9 @@ const GridCards: React.FC<{ items?: CardItem[] }> = ({ items }) => {
     title: `Placeholder ${i + 1}`,
     description: 'This is placeholder text. Replace with Dataverse content later.',
     href: '#',
+    onClick: undefined,
   }));
+  const navigate = useNavigate();
 
   return (
     <Stack horizontal wrap tokens={{ childrenGap: 16 }} styles={stackStyles}>
@@ -31,9 +34,9 @@ const GridCards: React.FC<{ items?: CardItem[] }> = ({ items }) => {
           <Stack tokens={{ childrenGap: 8 }}>
             <Text id={`${c.id}-title`} variant="large" styles={{ root: { fontWeight: 600 } }}>{c.title}</Text>
             <Text variant="small" styles={{ root: { color: 'rgba(0,0,0,0.6)' } }}>{c.description}</Text>
-            <div style={{ marginTop: 8 }}>
+            <div style={{ marginTop: 8, display: 'flex', gap: 12, alignItems: 'center' }}>
               {c.onClick ? (
-                <button onClick={c.onClick} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ms-color-themePrimary)', cursor: 'pointer' }}>
+                <button type="button" onClick={c.onClick} aria-label={`View ${c.title}`} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ms-color-themePrimary)', cursor: 'pointer' }}>
                   View
                 </button>
               ) : (
@@ -41,6 +44,14 @@ const GridCards: React.FC<{ items?: CardItem[] }> = ({ items }) => {
                   View
                 </Link>
               )}
+
+              <button
+                onClick={() => navigate('/article-categories')}
+                style={{ background: 'transparent', border: '1px solid var(--ms-color-neutralTertiary)', padding: '6px 10px', borderRadius: 4, cursor: 'pointer' }}
+                aria-label="Open article categories"
+              >
+                Categories
+              </button>
             </div>
           </Stack>
         </div>
