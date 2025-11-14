@@ -9,6 +9,66 @@ interface KnowledgeSource {
 
 const DATAVERSE_API = import.meta.env.VITE_DATAVERSE_API;
 
+function buildDataverseApiRoot(): string {
+  if (!DATAVERSE_API) throw new Error('VITE_DATAVERSE_API is not set. Please set it to your Dataverse org URL (e.g. https://<org>.crm.dynamics.com or https://<org>.crmX.dynamics.com/api/data/v9.2).');
+
+  // strip trailing slash
+  let base = DATAVERSE_API.replace(/\/+$/, '');
+
+  // If the configured value already includes the api/data path, use it as-is
+  if (base.toLowerCase().includes('/api/data')) {
+    return base;
+  }
+
+  // Otherwise append the recommended API root
+  return `${base}/api/data/v9.2`;
+}
+
+async function fetchDataverseResource(resourcePath: string, options: RequestInit): Promise<any> {
+  const apiRoot = buildDataverseApiRoot();
+  const url = `${apiRoot}/${resourcePath}`;
+
+  const resp = await fetch(url, options);
+
+  if (resp.ok) {
+    // try parse JSON; if none, return raw text
+    const text = await resp.text();
+    try {
+      return JSON.parse(text || '{}');
+    } catch {
+      return text;
+    }
+  }
+
+  // if 404 try a lowercase resource fallback once (helps when resource set name differs in casing)
+  if (resp.status === 404) {
+    const lowerUrl = `${apiRoot}/${resourcePath.toLowerCase()}`;
+    try {
+      const resp2 = await fetch(lowerUrl, options);
+      if (resp2.ok) {
+        const text2 = await resp2.text();
+        try {
+          return JSON.parse(text2 || '{}');
+        } catch {
+          return text2;
+        }
+      }
+    } catch (e) {
+      // ignore and fall through to throw below
+    }
+  }
+
+  // include response body (if available) for diagnostics
+  let bodyText = '';
+  try {
+    bodyText = await resp.text();
+  } catch (e) {
+    bodyText = '<unable to read response body>';
+  }
+
+  throw new Error(`Dataverse request failed: ${resp.status} ${resp.statusText} \nURL: ${url}\nResponse body: ${bodyText}`);
+}
+
 async function getDataverseAccessToken(): Promise<string> {
   const accounts = msalInstance.getAllAccounts();
   if (accounts.length === 0) throw new Error('No accounts found. Please sign in.');
@@ -36,19 +96,14 @@ export const getKnowledgeSources = async (): Promise<KnowledgeSource[]> => {
   try {
     const accessToken = await getDataverseAccessToken();
 
-    const response = await fetch(`${DATAVERSE_API}/KnowledgeSources`, {
+    const data = await fetchDataverseResource('KnowledgeSources', {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch knowledge sources: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data.value || [];
+    return data?.value || [];
   } catch (error) {
     console.error('Error fetching knowledge sources:', error);
     return [];
@@ -58,7 +113,7 @@ export const getKnowledgeSources = async (): Promise<KnowledgeSource[]> => {
 export const createKnowledgeSource = async (source: KnowledgeSource): Promise<void> => {
   const accessToken = await getDataverseAccessToken();
 
-  await fetch(`${DATAVERSE_API}/KnowledgeSources`, {
+  await fetchDataverseResource('KnowledgeSources', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -80,19 +135,15 @@ export const getKnowledgeArticles = async (q?: string): Promise<any[]> => {
       filter = '?$top=50';
     }
 
-    const response = await fetch(`${DATAVERSE_API}/KnowledgeArticles${filter}`, {
+    const resourcePath = `KnowledgeArticles${filter}`;
+    const data = await fetchDataverseResource(resourcePath, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch knowledge articles: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data.value || [];
+    return data?.value || [];
   } catch (error) {
     console.error('Error fetching knowledge articles:', error);
     return [];
