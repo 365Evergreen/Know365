@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Stack, Text, PrimaryButton } from '@fluentui/react';
+import { Stack, Text, PrimaryButton, DefaultButton } from '@fluentui/react';
 import { listEntitySets, getEntityMetadata, getEntitySetMappings, clearEntitySetMappings } from '../services/dataverseClient';
-import { DefaultButton, PrimaryButton } from '@fluentui/react';
 
 const EntityMetadata: React.FC = () => {
   const [entitySets, setEntitySets] = useState<string[] | null>(null);
@@ -85,6 +84,7 @@ const EntityMetadata: React.FC = () => {
           ) : (
             <div><em>No cached mappings</em></div>
           )}
+        </div>
 
         {meta && (
           <section aria-labelledby="metadata-result">
