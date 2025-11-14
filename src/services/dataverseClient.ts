@@ -72,6 +72,32 @@ async function fetchDataverseResource(resourcePath: string, options: RequestInit
 // Metadata cache to avoid repeated $metadata parsing
 const metadataCache: Map<string, { keyName: string; displayName?: string; valueName?: string }> = new Map();
 
+// Entity set name mapping cache (requested -> resolved actual entity set)
+// Persisted in localStorage to survive page reloads.
+const ENTITY_SET_MAP_KEY = 'dataverse_entitySet_map_v1';
+const entitySetMap: Map<string, string> = new Map();
+
+// Initialize map from localStorage if available
+try {
+  const raw = typeof window !== 'undefined' ? window.localStorage.getItem(ENTITY_SET_MAP_KEY) : null;
+  if (raw) {
+    const entries: Array<[string, string]> = JSON.parse(raw);
+    for (const [k, v] of entries) entitySetMap.set(k, v);
+  }
+} catch (e) {
+  // ignore storage errors
+}
+
+function persistEntitySetMap() {
+  try {
+    if (typeof window === 'undefined') return;
+    const entries = Array.from(entitySetMap.entries());
+    window.localStorage.setItem(ENTITY_SET_MAP_KEY, JSON.stringify(entries));
+  } catch (e) {
+    // ignore storage errors
+  }
+}
+
 async function getEntitySetMetadata(entitySetName: string) {
   if (metadataCache.has(entitySetName)) return metadataCache.get(entitySetName)!;
 
@@ -234,14 +260,31 @@ export const getKnowledgeSources = async (): Promise<KnowledgeSource[]> => {
 // Generic helper to fetch records from any entity set by name
 export const getEntityRecords = async (entitySetName: string, top = 200): Promise<any[]> => {
   try {
+    // If we previously resolved a metadata match for this requested name, use it
+    const key = entitySetName.toLowerCase();
+    const mapped = entitySetMap.get(key);
+    const useEntitySet = mapped || entitySetName;
+
     const accessToken = await getDataverseAccessToken();
-    const resourcePath = `${entitySetName}?$top=${top}`;
+    const resourcePath = `${useEntitySet}?$top=${top}`;
     const data = await fetchDataverseResource(resourcePath, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
     });
+
+    // If we used a mapped name, keep the mapping (already present). If we didn't but the
+    // server returned OK, and the useEntitySet differs from requested, store the mapping.
+    if (!mapped && useEntitySet && useEntitySet.toLowerCase() !== key) {
+      try {
+        entitySetMap.set(key, useEntitySet);
+        persistEntitySetMap();
+      } catch (e) {
+        /* ignore */
+      }
+    }
+
     return data?.value || [];
   } catch (error) {
     console.error(`Error fetching records for ${entitySetName}:`, error);
@@ -284,6 +327,13 @@ export const getEntityRecords = async (entitySetName: string, top = 200): Promis
               'Content-Type': 'application/json',
             },
           });
+
+          // Persist the discovered mapping for future use
+          try {
+            entitySetMap.set(entitySetName.toLowerCase(), match);
+            persistEntitySetMap();
+          } catch (e) { /* ignore */ }
+
           return data2?.value || [];
         } catch (e2) {
           console.error(`Fallback fetch for entity set '${match}' failed:`, e2);
