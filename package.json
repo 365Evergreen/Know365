@@ -10,7 +10,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "@azure/msal-browser": "^3.30.0",
+    "@azure/msal-browser": "^4.26.0",
     "@azure/msal-react": "^3.0.21",
     "@fluentui/react": "^8.119.0",
     "@fluentui/react-icons": "^2.0.239",
