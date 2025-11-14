@@ -1,4 +1,4 @@
-import { getAccessToken } from './graphClient';
+import { msalInstance } from './authConfig';
 
 interface KnowledgeSource {
   SourceName: string;
@@ -9,10 +9,33 @@ interface KnowledgeSource {
 
 const DATAVERSE_API = import.meta.env.VITE_DATAVERSE_API;
 
+async function getDataverseAccessToken(): Promise<string> {
+  const accounts = msalInstance.getAllAccounts();
+  if (accounts.length === 0) throw new Error('No accounts found. Please sign in.');
+
+  // Dataverse expects a resource-specific scope like https://{org}.crmX.dynamics.com/user_impersonation
+  const origin = new URL(DATAVERSE_API).origin;
+  const scope = `${origin}/user_impersonation`;
+
+  try {
+    const resp = await msalInstance.acquireTokenSilent({ scopes: [scope], account: accounts[0] });
+    return resp.accessToken;
+  } catch (err) {
+    try {
+      const resp2 = await msalInstance.acquireTokenPopup({ scopes: [scope] });
+      return resp2.accessToken;
+    } catch (err2) {
+      // final fallback: redirect (will navigate away)
+      await msalInstance.acquireTokenRedirect({ scopes: [scope] });
+      return '';
+    }
+  }
+}
+
 export const getKnowledgeSources = async (): Promise<KnowledgeSource[]> => {
   try {
-    const accessToken = await getAccessToken();
-    
+    const accessToken = await getDataverseAccessToken();
+
     const response = await fetch(`${DATAVERSE_API}/KnowledgeSources`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -33,8 +56,8 @@ export const getKnowledgeSources = async (): Promise<KnowledgeSource[]> => {
 };
 
 export const createKnowledgeSource = async (source: KnowledgeSource): Promise<void> => {
-  const accessToken = await getAccessToken();
-  
+  const accessToken = await getDataverseAccessToken();
+
   await fetch(`${DATAVERSE_API}/KnowledgeSources`, {
     method: 'POST',
     headers: {
@@ -47,7 +70,7 @@ export const createKnowledgeSource = async (source: KnowledgeSource): Promise<vo
 
 export const getKnowledgeArticles = async (q?: string): Promise<any[]> => {
   try {
-    const accessToken = await getAccessToken();
+    const accessToken = await getDataverseAccessToken();
 
     let filter = '';
     if (q && q.trim()) {
