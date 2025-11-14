@@ -32,7 +32,10 @@ jobs:
         run: npm ci --include=dev
 
       - name: Ensure Vite plugins installed
-        run: npm install @vitejs/plugin-react --no-save
+        run: |
+          echo "Checking for @vitejs/plugin-react..."
+          npm ls @vitejs/plugin-react || npm install @vitejs/plugin-react --no-save
+          echo "Installed/verified @vitejs/plugin-react"
 
       - name: Build project (vite)
         run: npx vite build
