@@ -33,17 +33,20 @@ const ArticleCategories: React.FC = () => {
   }, []);
 
   const cards = (subjects || []).map((s: any) => {
-    // attempt to locate id and title fields using common Dataverse patterns
+    // prefer e365 schema names
     const id = s.e365_knowledgearticlesubjectid || s.id || (s['@odata.id'] ? (() => {
       const m = (s['@odata.id'] as string).match(/\(([0-9a-fA-F\-]{36})\)/);
       return m ? m[1] : '';
     })() : '');
-    const title = s.name || s.title || s.subject || s.displayname || s.e365_name || 'Untitled';
+    const title = s.e365_name || s.name || s.title || s.subject || s.displayname || 'Untitled';
+    const description = s.e365_knowledgearticlesubjectdescription || s.description || s.notes || '';
+
+    const safeId = id || (Math.random() + '');
     return {
-      id: id || (Math.random() + ''),
+      id: safeId,
       title,
-      description: s.description || s.notes || '',
-      onClick: () => navigate(`/articles/${encodeURIComponent(id)}`, { state: { title } }),
+      description,
+      onClick: () => navigate(`/articles/${encodeURIComponent(safeId)}`, { state: { title } }),
     };
   });
 

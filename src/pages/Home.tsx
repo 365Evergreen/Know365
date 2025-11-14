@@ -34,17 +34,21 @@ const Home: React.FC = () => {
   }, []);
 
   const cards = (subjects || []).map((s: any) => {
-    const id = s.e365_knowledgearticlesubjectid || s.id || (s['@odata.id'] ? (() => {
-      const m = (s['@odata.id'] as string).match(/\(([0-9a-fA-F\-]{36})\)/);
-      return m ? m[1] : '';
-    })() : '');
-    const title = s.name || s.title || s.subject || s.displayname || 'Untitled';
-    return {
-      id: id || (Math.random() + ''),
-      title,
-      description: s.description || s.notes || '',
-      onClick: () => navigate(`/articles/${encodeURIComponent(id)}`, { state: { title } }),
-    };
+      // Prefer the e365 schema fields discovered in your org
+      const id = s.e365_knowledgearticlesubjectid || s.id || (s['@odata.id'] ? (() => {
+        const m = (s['@odata.id'] as string).match(/\(([0-9a-fA-F\-]{36})\)/);
+        return m ? m[1] : '';
+      })() : '');
+      const title = s.e365_name || s.name || s.title || s.subject || s.displayname || 'Untitled';
+      const description = s.e365_knowledgearticlesubjectdescription || s.description || s.notes || '';
+
+      const safeId = id || (Math.random() + '');
+      return {
+        id: safeId,
+        title,
+        description,
+        onClick: () => navigate(`/articles/${encodeURIComponent(safeId)}`, { state: { title } }),
+      };
   });
 
   return (
