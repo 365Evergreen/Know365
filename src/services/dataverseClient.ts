@@ -231,6 +231,24 @@ export const getKnowledgeSources = async (): Promise<KnowledgeSource[]> => {
   }
 };
 
+// Generic helper to fetch records from any entity set by name
+export const getEntityRecords = async (entitySetName: string, top = 200): Promise<any[]> => {
+  try {
+    const accessToken = await getDataverseAccessToken();
+    const resourcePath = `${entitySetName}?$top=${top}`;
+    const data = await fetchDataverseResource(resourcePath, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return data?.value || [];
+  } catch (error) {
+    console.error(`Error fetching records for ${entitySetName}:`, error);
+    return [];
+  }
+};
+
 export const createKnowledgeSource = async (source: KnowledgeSource): Promise<void> => {
   const accessToken = await getDataverseAccessToken();
 
@@ -267,6 +285,43 @@ export const getKnowledgeArticles = async (q?: string): Promise<any[]> => {
     return data?.value || [];
   } catch (error) {
     console.error('Error fetching knowledge articles:', error);
+    return [];
+  }
+};
+
+// Attempt to fetch knowledge articles filtered by a subject id.
+export const getKnowledgeArticlesBySubject = async (subjectId: string, top = 50): Promise<any[]> => {
+  try {
+    const accessToken = await getDataverseAccessToken();
+
+    // Try several plausible lookup attribute names until one returns results
+    const candidates = [
+      `_e365_knowledgearticlesubjectid_value eq guid'${subjectId}'`,
+      `e365_knowledgearticlesubjectid eq guid'${subjectId}'`,
+      `_subjectid_value eq guid'${subjectId}'`,
+      `subjectid eq guid'${subjectId}'`,
+    ];
+
+    for (const filter of candidates) {
+      try {
+        const resourcePath = `KnowledgeArticles?$filter=${encodeURIComponent(filter)}&$top=${top}`;
+        const data = await fetchDataverseResource(resourcePath, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        const list = data?.value || [];
+        if (Array.isArray(list) && list.length > 0) return list;
+      } catch (e) {
+        // try next candidate
+      }
+    }
+
+    // fallback: return empty
+    return [];
+  } catch (error) {
+    console.error('Error fetching articles by subject:', error);
     return [];
   }
 };

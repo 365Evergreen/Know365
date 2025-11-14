@@ -9,12 +9,13 @@ import './styles/global.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import AuthGate from './components/AuthGate';
 
-// Lazy-loaded pages
 const Home = lazy(() => import('./pages/Home'));
 const Knowledge = lazy(() => import('./pages/Knowledge'));
 const About = lazy(() => import('./pages/About'));
 const Settings = lazy(() => import('./pages/Settings'));
 const AdminConfig = lazy(() => import('./pages/AdminConfig'));
+const ArticleCategories = lazy(() => import('./pages/ArticleCategories'));
+const ArticlesBySubject = lazy(() => import('./pages/ArticlesBySubject'));
 
 // Initialize Fluent UI icons
 initializeIcons();
@@ -84,6 +85,8 @@ const App: React.FC = () => {
                   <Route path="/" element={<Home />} />
                   <Route path="/knowledge" element={<Knowledge />} />
                   <Route path="/about" element={<About />} />
+                  <Route path="/article-categories" element={<ArticleCategories />} />
+                  <Route path="/articles/:subjectId" element={<ArticlesBySubject />} />
                   <Route path="/admin" element={<AdminConfig />} />
                   <Route path="/settings" element={<Settings />} />
                 </Routes>

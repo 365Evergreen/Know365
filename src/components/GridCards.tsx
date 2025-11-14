@@ -6,6 +6,7 @@ interface CardItem {
   title: string;
   description?: string;
   href?: string;
+  onClick?: () => void;
 }
 
 const stackStyles: IStackStyles = { root: { width: '100%' } };
@@ -31,9 +32,15 @@ const GridCards: React.FC<{ items?: CardItem[] }> = ({ items }) => {
             <Text id={`${c.id}-title`} variant="large" styles={{ root: { fontWeight: 600 } }}>{c.title}</Text>
             <Text variant="small" styles={{ root: { color: 'rgba(0,0,0,0.6)' } }}>{c.description}</Text>
             <div style={{ marginTop: 8 }}>
-              <Link href={c.href} underline>
-                View
-              </Link>
+              {c.onClick ? (
+                <button onClick={c.onClick} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ms-color-themePrimary)', cursor: 'pointer' }}>
+                  View
+                </button>
+              ) : (
+                <Link href={c.href} underline>
+                  View
+                </Link>
+              )}
             </div>
           </Stack>
         </div>
