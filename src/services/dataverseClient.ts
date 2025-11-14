@@ -44,3 +44,34 @@ export const createKnowledgeSource = async (source: KnowledgeSource): Promise<vo
     body: JSON.stringify(source),
   });
 };
+
+export const getKnowledgeArticles = async (q?: string): Promise<any[]> => {
+  try {
+    const accessToken = await getAccessToken();
+
+    let filter = '';
+    if (q && q.trim()) {
+      const safe = q.replace(/'/g, "''");
+      filter = `?$filter=contains(title,'${safe}') or contains(tagsText,'${safe}')&$top=50`;
+    } else {
+      filter = '?$top=50';
+    }
+
+    const response = await fetch(`${DATAVERSE_API}/KnowledgeArticles${filter}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch knowledge articles: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.value || [];
+  } catch (error) {
+    console.error('Error fetching knowledge articles:', error);
+    return [];
+  }
+};
