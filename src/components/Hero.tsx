@@ -31,7 +31,7 @@ const Hero: React.FC = () => {
       >
         Hello, {firstName}
       </Text>
-      <Text variant="large" block styles={{ root: { maxWidth: 760, margin: '0 auto 20px' } }}>
+      <Text variant="large" block styles={{ root: { maxWidth: 760, margin: '0 0 20px 0', textAlign: 'left' } }}>
         Discover resources, guides, and best practices from across your Microsoft 365 environment. Search SharePoint,
         OneDrive, and Teams content all in one place.
       </Text>
