@@ -50,8 +50,20 @@ const columns: IColumn[] = [
   },
 ];
 
-const ContentTabs: React.FC = () => {
+interface ContentTabsProps {
+  query?: string;
+}
+
+const ContentTabs: React.FC<ContentTabsProps> = ({ query = '' }) => {
   const [selectedKey, setSelectedKey] = useState<string>('recent');
+
+  const filterDocuments = (items: Document[]) => {
+    const q = query.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((d) =>
+      d.title.toLowerCase().includes(q) || d.category.toLowerCase().includes(q) || d.author.toLowerCase().includes(q)
+    );
+  };
 
   return (
     <Stack styles={{ root: { padding: '2rem', minHeight: '400px' } }}>
@@ -65,7 +77,7 @@ const ContentTabs: React.FC = () => {
       >
         <PivotItem headerText="Recent" itemKey="recent">
           <DetailsList
-            items={mockDocuments}
+            items={filterDocuments(mockDocuments)}
             columns={columns}
             selectionMode={SelectionMode.none}
             isHeaderVisible={true}
@@ -73,7 +85,7 @@ const ContentTabs: React.FC = () => {
         </PivotItem>
         <PivotItem headerText="Popular" itemKey="popular">
           <DetailsList
-            items={mockDocuments.slice(0, 2)}
+            items={filterDocuments(mockDocuments.slice(0, 2))}
             columns={columns}
             selectionMode={SelectionMode.none}
             isHeaderVisible={true}

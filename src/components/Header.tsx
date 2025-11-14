@@ -1,5 +1,7 @@
 import React from 'react';
-import { CommandBar, ICommandBarItemProps, SearchBox, Persona, PersonaSize } from '@fluentui/react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { CommandBar, ICommandBarItemProps, SearchBox, Persona, PersonaSize, Icon, useTheme, DefaultButton } from '@fluentui/react';
+import useAuth from '../hooks/useAuth';
 
 interface HeaderProps {
   onToggleTheme: () => void;
@@ -8,37 +10,94 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = 'User' }) => {
+  const theme = useTheme();
+
   const items: ICommandBarItemProps[] = [
     {
       key: 'home',
       text: 'Home',
       iconProps: { iconName: 'Home' },
-      href: '#',
+      onRender: () => (
+        <NavLink
+          to="/"
+          style={({ isActive }) => ({
+            textDecoration: 'none',
+            color: isActive ? theme.palette.themePrimary : undefined,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '4px 8px',
+            borderRadius: 4,
+          })}
+        >
+          <Icon iconName="Home" styles={{ root: { color: 'inherit' } }} />
+          <span>Home</span>
+        </NavLink>
+      ),
     },
     {
       key: 'docs',
       text: 'Documents',
       iconProps: { iconName: 'Documentation' },
-      href: '#',
+      onRender: () => (
+        <NavLink
+          to="/knowledge"
+          style={({ isActive }) => ({
+            textDecoration: 'none',
+            color: isActive ? theme.palette.themePrimary : undefined,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '4px 8px',
+            borderRadius: 4,
+          })}
+        >
+          <Icon iconName="Documentation" styles={{ root: { color: 'inherit' } }} />
+          <span>Documents</span>
+        </NavLink>
+      ),
     },
     {
       key: 'search',
       text: 'Search',
       iconProps: { iconName: 'Search' },
-      href: '#',
+      onRender: () => (
+        <NavLink
+          to="/knowledge"
+          style={({ isActive }) => ({
+            textDecoration: 'none',
+            color: isActive ? theme.palette.themePrimary : undefined,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '4px 8px',
+            borderRadius: 4,
+          })}
+        >
+          <Icon iconName="Search" styles={{ root: { color: 'inherit' } }} />
+          <span>Search</span>
+        </NavLink>
+      ),
     },
   ];
 
   const farItems: ICommandBarItemProps[] = [
     {
       key: 'searchBox',
-      onRender: () => (
-        <SearchBox
-          placeholder="Search knowledge..."
-          ariaLabel="Search knowledge articles"
-          styles={{ root: { width: 200, marginRight: 10 } }}
-        />
-      ),
+      onRender: () => {
+        const navigate = useNavigate();
+        return (
+          <SearchBox
+            placeholder="Search knowledge..."
+            ariaLabel="Search knowledge articles"
+            styles={{ root: { width: 200, marginRight: 10 } }}
+            onSearch={(newValue?: string) => {
+              const q = newValue ?? '';
+              navigate(`/knowledge?q=${encodeURIComponent(q)}`);
+            }}
+          />
+        );
+      },
     },
     {
       key: 'themeToggle',
@@ -48,19 +107,38 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = '
       ariaLabel: 'Toggle theme',
     },
     {
-      key: 'profile',
-      onRender: () => (
-        <Persona
-          text={userName}
-          size={PersonaSize.size32}
-          styles={{ root: { marginLeft: 10 } }}
-        />
-      ),
+      key: 'auth',
+      onRender: () => {
+        const auth = useAuth();
+        const signedIn = auth.isAuthenticated();
+
+        return signedIn ? (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <Persona text={userName} size={PersonaSize.size32} styles={{ root: { marginLeft: 10 } }} />
+            <DefaultButton onClick={() => auth.logout()}>Sign out</DefaultButton>
+          </div>
+        ) : (
+          <DefaultButton onClick={() => auth.login()}>Sign in</DefaultButton>
+        );
+      },
     },
   ];
 
   return (
-    <header role="banner" aria-label="Main navigation">
+    <header
+      role="banner"
+      aria-label="Main navigation"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1000,
+        paddingTop: 10,
+        background: theme.semanticColors.bodyBackground || theme.palette.neutralLighter,
+        boxShadow: '0 1px 2px rgba(0,0,0,0.08)'
+      }}
+    >
       <CommandBar
         items={items}
         farItems={farItems}

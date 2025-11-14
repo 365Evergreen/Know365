@@ -1,13 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy, useLayoutEffect } from 'react';
 import { ThemeProvider, Stack, initializeIcons } from '@fluentui/react';
 import { MsalProvider } from '@azure/msal-react';
 import { lightTheme, darkTheme } from './theme';
 import { msalInstance } from './services/authConfig';
 import Header from './components/Header';
-import Hero from './components/Hero';
-import ContentTabs from './components/ContentTabs';
 import Footer from './components/Footer';
 import './styles/global.css';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import AuthGate from './components/AuthGate';
+
+// Lazy-loaded pages
+const Home = lazy(() => import('./pages/Home'));
+const Knowledge = lazy(() => import('./pages/Knowledge'));
+const About = lazy(() => import('./pages/About'));
+const Settings = lazy(() => import('./pages/Settings'));
 
 // Initialize Fluent UI icons
 initializeIcons();
@@ -15,6 +21,7 @@ initializeIcons();
 const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [userName] = useState<string>('User');
+  const [headerHeight, setHeaderHeight] = useState<number>(0);
 
   useEffect(() => {
     // Check for saved theme preference
@@ -30,15 +37,59 @@ const App: React.FC = () => {
     localStorage.setItem('theme', newMode ? 'dark' : 'light');
   };
 
+  useLayoutEffect(() => {
+    const updateHeaderHeight = () => {
+      const el = document.querySelector('header[role="banner"]') as HTMLElement | null;
+      if (!el) {
+        setHeaderHeight(0);
+        return;
+      }
+
+      // Prefer a CSS variable if defined on the header (allows fixed-height header via CSS)
+      const computed = getComputedStyle(el);
+      const cssVar = computed.getPropertyValue('--header-height')?.trim();
+      if (cssVar) {
+        // cssVar may include 'px' — parse int
+        const parsed = parseInt(cssVar.replace('px', '').trim(), 10);
+        if (!Number.isNaN(parsed) && parsed > 0) {
+          setHeaderHeight(parsed);
+          return;
+        }
+      }
+
+      // Fallback to measured offsetHeight (layout effect avoids flicker)
+      setHeaderHeight(el.offsetHeight || 0);
+    };
+
+    // measure on mount synchronously before paint
+    updateHeaderHeight();
+    // update on resize
+    window.addEventListener('resize', updateHeaderHeight);
+    return () => window.removeEventListener('resize', updateHeaderHeight);
+  }, []);
+
   return (
     <MsalProvider instance={msalInstance}>
       <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
-        <Stack verticalFill styles={{ root: { minHeight: '100vh', display: 'flex', flexDirection: 'column' } }}>
-          <Header onToggleTheme={handleToggleTheme} isDarkMode={isDarkMode} userName={userName} />
-          <Hero />
-          <ContentTabs />
-          <Footer />
-        </Stack>
+        <BrowserRouter>
+          <Stack
+            verticalFill
+            styles={{ root: { minHeight: '100vh', display: 'flex', flexDirection: 'column', paddingTop: headerHeight } }}
+          >
+            <Header onToggleTheme={handleToggleTheme} isDarkMode={isDarkMode} userName={userName} />
+            <Suspense fallback={<div style={{ padding: 24 }}>Loading page…</div>}>
+              <AuthGate>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/knowledge" element={<Knowledge />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/settings" element={<Settings />} />
+                </Routes>
+              </AuthGate>
+            </Suspense>
+            <Footer />
+          </Stack>
+        </BrowserRouter>
       </ThemeProvider>
     </MsalProvider>
   );

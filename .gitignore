@@ -29,3 +29,8 @@ dist-ssr
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Local artifacts created during CI debugging
+deployed_index.html
+runlog*.txt
+pnpm-lock.yaml
