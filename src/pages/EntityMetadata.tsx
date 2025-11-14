@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Stack, Text, PrimaryButton } from '@fluentui/react';
-import { listEntitySets, getEntityMetadata } from '../services/dataverseClient';
+import { listEntitySets, getEntityMetadata, getEntitySetMappings, clearEntitySetMappings } from '../services/dataverseClient';
+import { DefaultButton, PrimaryButton } from '@fluentui/react';
 
 const EntityMetadata: React.FC = () => {
   const [entitySets, setEntitySets] = useState<string[] | null>(null);
   const [selected, setSelected] = useState<string>('');
   const [meta, setMeta] = useState<any | null>(null);
+  const [mappings, setMappings] = useState<Array<[string, string]>>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,6 +26,15 @@ const EntityMetadata: React.FC = () => {
     };
     load();
     return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    try {
+      const map = getEntitySetMappings();
+      setMappings(map || []);
+    } catch (e) {
+      // ignore
+    }
   }, []);
 
   const loadMetadata = async () => {
@@ -59,6 +70,21 @@ const EntityMetadata: React.FC = () => {
         </div>
 
         {loading && <div>Loading metadata…</div>}
+
+        <div style={{ marginTop: 12 }}>
+          <h3>Cached mappings</h3>
+          {mappings && mappings.length > 0 ? (
+            <div>
+              <ul>
+                {mappings.map(([req, actual]) => (
+                  <li key={req}><strong>{req}</strong> → {actual} <DefaultButton text="Clear" onClick={() => { clearEntitySetMappings(req); setMappings(getEntitySetMappings()); }} /></li>
+                ))}
+              </ul>
+              <PrimaryButton text="Clear all mappings" onClick={() => { clearEntitySetMappings(); setMappings(getEntitySetMappings()); }} />
+            </div>
+          ) : (
+            <div><em>No cached mappings</em></div>
+          )}
 
         {meta && (
           <section aria-labelledby="metadata-result">

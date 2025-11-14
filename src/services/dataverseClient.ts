@@ -98,6 +98,20 @@ function persistEntitySetMap() {
   }
 }
 
+// Expose helpers to read/clear the persisted mapping for UI/debug purposes
+export const getEntitySetMappings = (): Array<[string, string]> => {
+  return Array.from(entitySetMap.entries());
+};
+
+export const clearEntitySetMappings = (key?: string) => {
+  if (key) {
+    entitySetMap.delete(key.toLowerCase());
+  } else {
+    entitySetMap.clear();
+  }
+  persistEntitySetMap();
+};
+
 async function getEntitySetMetadata(entitySetName: string) {
   if (metadataCache.has(entitySetName)) return metadataCache.get(entitySetName)!;
 

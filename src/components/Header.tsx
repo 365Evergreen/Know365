@@ -123,6 +123,28 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = '
         </NavLink>
       ),
     },
+    {
+      key: 'metadata',
+      text: 'Metadata',
+      iconProps: { iconName: 'Database' },
+      onRender: () => (
+        <NavLink
+          to="/metadata"
+          style={({ isActive }) => ({
+            textDecoration: 'none',
+            color: isActive ? theme.palette.themePrimary : undefined,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '4px 8px',
+            borderRadius: 4,
+          })}
+        >
+          <Icon iconName="Database" styles={{ root: { color: 'inherit' } }} />
+          <span>Metadata</span>
+        </NavLink>
+      ),
+    },
   ];
 
   const farItems: ICommandBarItemProps[] = [
