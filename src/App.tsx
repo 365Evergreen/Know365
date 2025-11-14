@@ -14,6 +14,7 @@ const Knowledge = lazy(() => import('./pages/Knowledge'));
 const About = lazy(() => import('./pages/About'));
 const Settings = lazy(() => import('./pages/Settings'));
 const AdminConfig = lazy(() => import('./pages/AdminConfig'));
+const EntityMetadata = lazy(() => import('./pages/EntityMetadata'));
 const ArticleCategories = lazy(() => import('./pages/ArticleCategories'));
 const ArticlesBySubject = lazy(() => import('./pages/ArticlesBySubject'));
 
@@ -87,6 +88,7 @@ const App: React.FC = () => {
                   <Route path="/about" element={<About />} />
                   <Route path="/article-categories" element={<ArticleCategories />} />
                   <Route path="/articles/:subjectId" element={<ArticlesBySubject />} />
+                  <Route path="/metadata" element={<EntityMetadata />} />
                   <Route path="/admin" element={<AdminConfig />} />
                   <Route path="/settings" element={<Settings />} />
                 </Routes>
