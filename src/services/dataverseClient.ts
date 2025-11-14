@@ -170,6 +170,23 @@ async function getEntitySetMetadata(entitySetName: string) {
   return meta;
 }
 
+// Public helpers for admin UI
+export const listEntitySets = async (): Promise<string[]> => {
+  const apiRoot = buildDataverseApiRoot();
+  const url = `${apiRoot}/$metadata`;
+  const resp = await fetch(url, { headers: { Accept: 'application/xml' } });
+  if (!resp.ok) throw new Error(`Failed to fetch $metadata: ${resp.status} ${resp.statusText}`);
+  const xml = await resp.text();
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xml, 'application/xml');
+  const entitySets = Array.from(doc.getElementsByTagName('EntitySet')).map((e) => e.getAttribute('Name') || '').filter(Boolean);
+  return entitySets;
+};
+
+export const getEntityMetadata = async (entitySetName: string) => {
+  return await getEntitySetMetadata(entitySetName);
+};
+
 async function getDataverseAccessToken(): Promise<string> {
   const accounts = msalInstance.getAllAccounts();
   if (accounts.length === 0) throw new Error('No accounts found. Please sign in.');

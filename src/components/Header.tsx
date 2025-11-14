@@ -101,6 +101,28 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = '
         </NavLink>
       ),
     },
+    {
+      key: 'admin',
+      text: 'Admin',
+      iconProps: { iconName: 'Settings' },
+      onRender: () => (
+        <NavLink
+          to="/admin"
+          style={({ isActive }) => ({
+            textDecoration: 'none',
+            color: isActive ? theme.palette.themePrimary : undefined,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '4px 8px',
+            borderRadius: 4,
+          })}
+        >
+          <Icon iconName="Settings" styles={{ root: { color: 'inherit' } }} />
+          <span>Admin</span>
+        </NavLink>
+      ),
+    },
   ];
 
   const farItems: ICommandBarItemProps[] = [
@@ -201,6 +223,9 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = '
           </NavLink>
           <NavLink to="/knowledge" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none' }}>
             Documents
+          </NavLink>
+          <NavLink to="/admin" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none' }}>
+            Admin
           </NavLink>
           <div>
             {useAuth().isAuthenticated() ? (

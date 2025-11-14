@@ -1,6 +1,26 @@
 import React, { useEffect, useState } from 'react';
-import { getAppConfigItems, createAppConfigItem, updateAppConfigItem, deleteAppConfigItem } from '../services/dataverseClient';
-import { TextField, PrimaryButton, DefaultButton, Stack, DetailsList, IColumn, Dialog, DialogType, DialogFooter } from '@fluentui/react';
+import {
+  getAppConfigItems,
+  createAppConfigItem,
+  updateAppConfigItem,
+  deleteAppConfigItem,
+  listEntitySets,
+  getEntityMetadata,
+} from '../services/dataverseClient';
+import {
+  TextField,
+  PrimaryButton,
+  DefaultButton,
+  Stack,
+  DetailsList,
+  IColumn,
+  Dialog,
+  DialogType,
+  DialogFooter,
+  Dropdown,
+  IDropdownOption,
+  Spinner,
+} from '@fluentui/react';
 
 const AdminConfig: React.FC = () => {
   const [items, setItems] = useState<any[]>([]);
@@ -9,6 +29,11 @@ const AdminConfig: React.FC = () => {
   const [value, setValue] = useState('');
   const [editing, setEditing] = useState<any | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<any | null>(null);
+  // metadata inspector state
+  const [entitySets, setEntitySets] = useState<string[]>([]);
+  const [loadingMetadata, setLoadingMetadata] = useState(false);
+  const [selectedEntitySet, setSelectedEntitySet] = useState<string | undefined>(undefined);
+  const [entityMeta, setEntityMeta] = useState<{ keyName: string; displayName?: string; valueName?: string } | null>(null);
 
   const columns: IColumn[] = [
     { key: 'col1', name: 'Key', fieldName: 'key', minWidth: 100, maxWidth: 300 },
@@ -30,6 +55,30 @@ const AdminConfig: React.FC = () => {
   useEffect(() => {
     loadItems();
   }, []);
+
+  const loadEntitySets = async () => {
+    setLoadingMetadata(true);
+    try {
+      const sets = await listEntitySets();
+      setEntitySets(sets);
+    } catch (e) {
+      console.error('Failed to load $metadata entity sets', e);
+    } finally {
+      setLoadingMetadata(false);
+    }
+  };
+
+  const inspectEntitySet = async (name?: string) => {
+    if (!name) return;
+    setSelectedEntitySet(name);
+    setEntityMeta(null);
+    try {
+      const meta = await getEntityMetadata(name);
+      setEntityMeta(meta as any);
+    } catch (e) {
+      console.error('Failed to inspect entity set', e);
+    }
+  };
 
   const loadItems = async () => {
     setLoading(true);
@@ -128,6 +177,47 @@ const AdminConfig: React.FC = () => {
       <div style={{ marginTop: 12 }}>
         <h3>Existing configuration</h3>
         <DetailsList items={items} columns={columns} selectionMode={0} isHeaderVisible={true} />
+      </div>
+
+      <div style={{ marginTop: 24 }}>
+        <h3>$metadata inspector</h3>
+        <Stack horizontal tokens={{ childrenGap: 8 }} verticalAlign="center">
+          <PrimaryButton onClick={() => loadEntitySets()} text="Load entity sets" />
+          {loadingMetadata && <Spinner label="Loading metadata..." />}
+        </Stack>
+
+        <div style={{ marginTop: 12 }}>
+          <Dropdown
+            placeholder="Select an entity set"
+            options={entitySets.map((s) => ({ key: s, text: s })) as IDropdownOption[]}
+            selectedKey={selectedEntitySet}
+            onChange={(_, option) => inspectEntitySet(option?.key as string)}
+            styles={{ root: { minWidth: 360 } }}
+          />
+        </div>
+
+        {entityMeta && (
+          <div style={{ marginTop: 12 }}>
+            <div><strong>Primary key:</strong> {entityMeta.keyName || '<none detected>'}</div>
+            <div><strong>Display property:</strong> {entityMeta.displayName || '<none detected>'}</div>
+            <div><strong>Value property:</strong> {entityMeta.valueName || '<none detected>'}</div>
+            <Stack horizontal tokens={{ childrenGap: 8 }} styles={{ root: { marginTop: 8 } }}>
+              <PrimaryButton onClick={async () => {
+                // save mapping into app config using a predictable key
+                if (!selectedEntitySet || !entityMeta) return;
+                const name = `mapping:${selectedEntitySet}`;
+                const value = JSON.stringify(entityMeta);
+                try {
+                  await createAppConfigItem({ name, value });
+                  await loadItems();
+                } catch (e) {
+                  console.error('Failed to save mapping', e);
+                }
+              }}>Save mapping</PrimaryButton>
+              <DefaultButton onClick={() => { setSelectedEntitySet(undefined); setEntityMeta(null); }}>Clear</DefaultButton>
+            </Stack>
+          </div>
+        )}
       </div>
 
       <Dialog hidden={!confirmDelete} onDismiss={() => setConfirmDelete(null)} dialogContentProps={{ type: DialogType.normal, title: 'Confirm delete', subText: 'Delete this configuration item?' }}>
