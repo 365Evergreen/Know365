@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Hero from '../components/Hero';
 import { Stack, Spinner, SpinnerSize, Text } from '@fluentui/react';
 import GridCards from '../components/GridCards';
+import RecentDocuments from '../components/RecentDocuments';
 import { getEntityRecords } from '../services/dataverseClient';
 import { useNavigate } from 'react-router-dom';
 
@@ -68,6 +69,10 @@ const Home: React.FC = () => {
           ) : (
             <GridCards items={cards} />
           )}
+        </section>
+        <section aria-labelledby="recent-heading">
+          <h3 id="recent-heading">Recent documents</h3>
+          <RecentDocuments />
         </section>
       </Stack>
     </main>
