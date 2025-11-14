@@ -12,17 +12,18 @@ const Hero: React.FC = () => {
 
   return (
     <Stack
-      horizontalAlign="center"
+      horizontalAlign="stretch"
       verticalAlign="center"
       styles={{
         root: {
           padding: '3rem 2rem',
-          textAlign: 'center',
+          textAlign: 'left',
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           color: 'white',
         },
       }}
     >
+      <div style={{ maxWidth: 1100, marginLeft: 0 }}>
       <Text
         variant="xxLarge"
         block
@@ -44,6 +45,7 @@ const Hero: React.FC = () => {
           }}
           styles={{ root: { width: '100%' } }}
         />
+      </div>
       </div>
     </Stack>
   );

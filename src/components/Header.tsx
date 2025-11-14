@@ -1,6 +1,19 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { CommandBar, ICommandBarItemProps, SearchBox, Persona, PersonaSize, Icon, useTheme, DefaultButton } from '@fluentui/react';
+import {
+  CommandBar,
+  ICommandBarItemProps,
+  SearchBox,
+  Persona,
+  PersonaSize,
+  Icon,
+  useTheme,
+  DefaultButton,
+  IconButton,
+  Panel,
+  PanelType,
+  Stack,
+} from '@fluentui/react';
 import useAuth from '../hooks/useAuth';
 
 interface HeaderProps {
@@ -11,6 +24,15 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = 'User' }) => {
   const theme = useTheme();
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   const items: ICommandBarItemProps[] = [
     {
@@ -124,6 +146,8 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = '
     },
   ];
 
+  const navigate = useNavigate();
+
   return (
     <header
       role="banner"
@@ -139,11 +163,57 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = '
         boxShadow: '0 1px 2px rgba(0,0,0,0.08)'
       }}
     >
-      <CommandBar
-        items={items}
-        farItems={farItems}
-        ariaLabel="Main navigation commands"
-      />
+      {!isMobile && (
+        <CommandBar
+          items={items}
+          farItems={farItems}
+          ariaLabel="Main navigation commands"
+        />
+      )}
+
+      {isMobile && (
+        <Stack horizontal horizontalAlign="space-between" verticalAlign="center" styles={{ root: { padding: '6px 12px' } }}>
+          <IconButton iconProps={{ iconName: 'GlobalNavButton' }} ariaLabel="Open menu" onClick={() => setMenuOpen(true)} />
+          <div style={{ fontWeight: 600 }}>{/* simple title */}Knowledge Centre</div>
+          <div>
+            <Icon iconName={isDarkMode ? 'Sunny' : 'ClearNight'} onClick={onToggleTheme} style={{ cursor: 'pointer' }} />
+          </div>
+        </Stack>
+      )}
+
+      <Panel
+        isOpen={menuOpen}
+        onDismiss={() => setMenuOpen(false)}
+        type={PanelType.smallFixedNear}
+        headerText="Menu"
+      >
+        <Stack tokens={{ childrenGap: 10 }}>
+          <SearchBox
+            placeholder="Search knowledge..."
+            onSearch={(q?: string) => {
+              const query = q ?? '';
+              setMenuOpen(false);
+              navigate(`/knowledge?q=${encodeURIComponent(query)}`);
+            }}
+          />
+          <NavLink to="/" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none' }}>
+            Home
+          </NavLink>
+          <NavLink to="/knowledge" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none' }}>
+            Documents
+          </NavLink>
+          <div>
+            {useAuth().isAuthenticated() ? (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <Persona text={userName} size={PersonaSize.size32} />
+                <DefaultButton onClick={() => { useAuth().logout(); setMenuOpen(false); }}>Sign out</DefaultButton>
+              </div>
+            ) : (
+              <DefaultButton onClick={() => { useAuth().login(); setMenuOpen(false); }}>Sign in</DefaultButton>
+            )}
+          </div>
+        </Stack>
+      </Panel>
     </header>
   );
 };
