@@ -245,6 +245,56 @@ export const getEntityRecords = async (entitySetName: string, top = 200): Promis
     return data?.value || [];
   } catch (error) {
     console.error(`Error fetching records for ${entitySetName}:`, error);
+
+    // If the resource wasn't found (404), try a metadata-driven fallback
+    // by listing available EntitySets and finding a close match.
+    try {
+      const sets = await listEntitySets();
+      const target = entitySetName.toLowerCase();
+
+      // Candidate matching strategies in order of preference
+      const candidates = sets.filter((s) => s && typeof s === 'string').map((s) => s as string);
+
+      // 1) exact match (case-insensitive)
+      let match = candidates.find((s) => s.toLowerCase() === target);
+      // 2) plural/singular normalization (simple heuristic)
+      if (!match) {
+        const alt = target.endsWith('s') ? target.slice(0, -1) : `${target}s`;
+        match = candidates.find((s) => s.toLowerCase() === alt);
+      }
+      // 3) contains tokens (e.g., 'knowledgearticle' and 'subject')
+      if (!match) {
+        const tokens = target.split(/[^a-z0-9]+/).filter(Boolean);
+        match = candidates.find((s) => tokens.every((t) => s.toLowerCase().includes(t)));
+      }
+      // 4) contains any token
+      if (!match) {
+        const tokens = target.split(/[^a-z0-9]+/).filter(Boolean);
+        match = candidates.find((s) => tokens.some((t) => s.toLowerCase().includes(t)));
+      }
+
+      if (match) {
+        console.info(`Dataverse: falling back to entity set '${match}' for requested '${entitySetName}'`);
+        try {
+          const accessToken2 = await getDataverseAccessToken();
+          const resourcePath2 = `${match}?$top=${top}`;
+          const data2 = await fetchDataverseResource(resourcePath2, {
+            headers: {
+              Authorization: `Bearer ${accessToken2}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          return data2?.value || [];
+        } catch (e2) {
+          console.error(`Fallback fetch for entity set '${match}' failed:`, e2);
+        }
+      } else {
+        console.warn(`No close match found in $metadata for requested entity set '${entitySetName}'.`);
+      }
+    } catch (metaErr) {
+      console.error('Error while attempting metadata fallback for entity sets:', metaErr);
+    }
+
     return [];
   }
 };
