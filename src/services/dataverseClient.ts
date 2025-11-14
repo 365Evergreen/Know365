@@ -77,7 +77,9 @@ async function getEntitySetMetadata(entitySetName: string) {
 
   const apiRoot = buildDataverseApiRoot();
   const url = `${apiRoot}/$metadata`;
-  const resp = await fetch(url, { headers: { Accept: 'application/xml' } });
+  // fetch $metadata with an Authorization header using a Dataverse-scoped token
+  const accessToken = await getDataverseAccessToken();
+  const resp = await fetch(url, { headers: { Accept: 'application/xml', Authorization: `Bearer ${accessToken}` } });
   if (!resp.ok) throw new Error(`Failed to fetch $metadata: ${resp.status} ${resp.statusText}`);
   const xml = await resp.text();
 
@@ -174,7 +176,8 @@ async function getEntitySetMetadata(entitySetName: string) {
 export const listEntitySets = async (): Promise<string[]> => {
   const apiRoot = buildDataverseApiRoot();
   const url = `${apiRoot}/$metadata`;
-  const resp = await fetch(url, { headers: { Accept: 'application/xml' } });
+  const accessToken = await getDataverseAccessToken();
+  const resp = await fetch(url, { headers: { Accept: 'application/xml', Authorization: `Bearer ${accessToken}` } });
   if (!resp.ok) throw new Error(`Failed to fetch $metadata: ${resp.status} ${resp.statusText}`);
   const xml = await resp.text();
   const parser = new DOMParser();
