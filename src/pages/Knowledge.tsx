@@ -52,10 +52,19 @@ const Knowledge: React.FC = () => {
     const loadArticles = async () => {
       setLoadingArticles(true);
       setArticlesError(null);
-      try {
+        try {
         const items = await getKnowledgeArticles(q ?? undefined);
         if (!mounted) return;
-        setArticles(items || []);
+        // dedupe articles by id or title to avoid duplicate renderings
+        const seen = new Set<string>();
+        const deduped = (items || []).filter((a: any) => {
+          const key = (a.id || a.KnowledgeArticleId || a.articleid || a.title || '').toString();
+          if (!key) return false;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        setArticles(deduped || []);
       } catch (err: any) {
         console.error(err);
         if (mounted) setArticlesError(err.message || String(err));

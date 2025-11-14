@@ -34,6 +34,8 @@ const AdminConfig: React.FC = () => {
   const [loadingMetadata, setLoadingMetadata] = useState(false);
   const [selectedEntitySet, setSelectedEntitySet] = useState<string | undefined>(undefined);
   const [entityMeta, setEntityMeta] = useState<{ keyName: string; displayName?: string; valueName?: string } | null>(null);
+  const [mappings, setMappings] = useState<any[]>([]);
+  const [mappingEditing, setMappingEditing] = useState<any | null>(null);
 
   const columns: IColumn[] = [
     { key: 'col1', name: 'Key', fieldName: 'key', minWidth: 100, maxWidth: 300 },
@@ -87,6 +89,9 @@ const AdminConfig: React.FC = () => {
       // If the service already returned normalized items (id/key/value/raw), use them directly
       if (Array.isArray(data) && data.length > 0 && data[0].id !== undefined && data[0].key !== undefined) {
         setItems(data as any[]);
+        // extract mappings
+        const maps = (data as any[]).filter((d) => (d.key || '').toString().startsWith('mapping:'));
+        setMappings(maps);
       } else {
         // normalize items to have 'key' and 'value' fields for display
         const normalized = (data || []).map((d: any) => ({
@@ -96,11 +101,57 @@ const AdminConfig: React.FC = () => {
           raw: d,
         }));
         setItems(normalized);
+        const maps = normalized.filter((d: any) => (d.key || '').toString().startsWith('mapping:'));
+        setMappings(maps);
       }
     } catch (e) {
       console.error('Failed to load config items', e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const beginEditMapping = (m: any) => {
+    setMappingEditing(m);
+    // populate form with parsed mapping JSON if available
+    try {
+      const parsed = JSON.parse(m.value || m.raw?.value || '{}');
+      setKey(`mapping:${m.key?.replace(/^mapping:/i, '')}`);
+      setValue(JSON.stringify(parsed));
+    } catch {
+      setKey(m.key || '');
+      setValue(m.value || '');
+    }
+  };
+
+  const handleUpdateMapping = async () => {
+    if (!mappingEditing) return;
+    const id = mappingEditing.id || (mappingEditing.raw && (mappingEditing.raw['$id'] || mappingEditing.raw['id'] || mappingEditing.raw['appconfigid'] || mappingEditing.raw['configid']));
+    if (!id) {
+      console.error('Unable to determine mapping id for update');
+      return;
+    }
+    try {
+      await updateAppConfigItem(id, { name: key, value: value });
+      await loadItems();
+      setMappingEditing(null);
+      clearForm();
+    } catch (e) {
+      console.error('Failed to update mapping', e);
+    }
+  };
+
+  const handleDeleteMapping = async (m: any) => {
+    const id = m.id || (m.raw && (m.raw['$id'] || m.raw['id'] || m.raw['appconfigid'] || m.raw['configid']));
+    if (!id) {
+      console.error('Unable to determine mapping id for delete');
+      return;
+    }
+    try {
+      await deleteAppConfigItem(id);
+      await loadItems();
+    } catch (e) {
+      console.error('Failed to delete mapping', e);
     }
   };
 
@@ -177,6 +228,41 @@ const AdminConfig: React.FC = () => {
       <div style={{ marginTop: 12 }}>
         <h3>Existing configuration</h3>
         <DetailsList items={items} columns={columns} selectionMode={0} isHeaderVisible={true} />
+      </div>
+
+      <div style={{ marginTop: 24 }}>
+        <h3>Mappings</h3>
+        <DetailsList
+          items={mappings}
+          columns={[
+            { key: 'm1', name: 'EntitySet', fieldName: 'key', minWidth: 200 },
+            { key: 'm2', name: 'Mapping JSON', fieldName: 'value', minWidth: 300 },
+            {
+              key: 'm3',
+              name: 'Actions',
+              minWidth: 160,
+              onRender: (item: any) => (
+                <Stack horizontal tokens={{ childrenGap: 8 }}>
+                  <DefaultButton onClick={() => beginEditMapping(item)}>Edit</DefaultButton>
+                  <DefaultButton onClick={() => handleDeleteMapping(item)}>Delete</DefaultButton>
+                </Stack>
+              ),
+            },
+          ]}
+          selectionMode={0}
+        />
+
+        {mappingEditing && (
+          <div style={{ marginTop: 12 }}>
+            <h4>Editing mapping</h4>
+            <Stack horizontal tokens={{ childrenGap: 8 }}>
+              <TextField label="Name" value={key} onChange={(_, v) => setKey(v || '')} />
+              <TextField label="Value (JSON)" value={value} onChange={(_, v) => setValue(v || '')} />
+              <PrimaryButton onClick={handleUpdateMapping}>Save mapping</PrimaryButton>
+              <DefaultButton onClick={() => { setMappingEditing(null); clearForm(); }}>Cancel</DefaultButton>
+            </Stack>
+          </div>
+        )}
       </div>
 
       <div style={{ marginTop: 24 }}>

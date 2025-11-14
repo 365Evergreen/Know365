@@ -10,7 +10,13 @@ export default function useAuth() {
 
   const login = async () => {
     // prefer redirect for production robustness
-    await msalInstance.loginRedirect();
+    // store a flag that an interactive login is being attempted so AuthGate can avoid loops
+    try {
+      await msalInstance.loginRedirect();
+    } catch (e) {
+      // loginRedirect rarely throws because it navigates away; swallow errors
+      console.debug('loginRedirect error', e);
+    }
   };
 
   const logout = async () => {
@@ -25,7 +31,9 @@ export default function useAuth() {
       }
       // no active account — try ssoSilent
       try {
-        const sso = await msalInstance.ssoSilent({ scopes });
+        // try ssoSilent; include a stored login hint if available to improve success rate
+        const loginHint = localStorage.getItem('msal:lastLoginHint') || undefined;
+        const sso = await msalInstance.ssoSilent({ scopes, loginHint });
         if (sso && sso.account) {
           msalInstance.setActiveAccount(sso.account);
           return await msalInstance.acquireTokenSilent({ scopes, account: sso.account });

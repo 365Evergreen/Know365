@@ -14,6 +14,11 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           const handleResult = await msalInstance.handleRedirectPromise();
           if (handleResult && handleResult.account) {
             msalInstance.setActiveAccount(handleResult.account);
+            // store a login hint (email / username) for future silent SSO attempts
+            try {
+              const hint = handleResult.account.username || handleResult.account?.name;
+              if (hint) localStorage.setItem('msal:lastLoginHint', hint);
+            } catch {}
           }
         } catch (e) {
           console.debug('handleRedirectPromise error', e);
@@ -37,9 +42,15 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         } else {
           // No cached account — attempt single sign-on silently
           try {
-            const sso = await msalInstance.ssoSilent({ scopes: loginRequest.scopes });
+            // try ssoSilent with a stored login hint to increase success in multi-account browsers
+            const loginHint = localStorage.getItem('msal:lastLoginHint') || undefined;
+            const sso = await msalInstance.ssoSilent({ scopes: loginRequest.scopes, loginHint });
             if (sso && sso.account) {
               msalInstance.setActiveAccount(sso.account);
+              try {
+                const hint = sso.account.username || sso.account?.name;
+                if (hint) localStorage.setItem('msal:lastLoginHint', hint);
+              } catch {}
             }
           } catch (ssoErr) {
             console.debug('silent SSO not available', ssoErr);
