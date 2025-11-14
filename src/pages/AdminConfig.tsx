@@ -4,7 +4,7 @@ import { TextField, PrimaryButton, DefaultButton, Stack, DetailsList, IColumn, D
 
 const AdminConfig: React.FC = () => {
   const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
   const [key, setKey] = useState('');
   const [value, setValue] = useState('');
   const [editing, setEditing] = useState<any | null>(null);
@@ -35,14 +35,19 @@ const AdminConfig: React.FC = () => {
     setLoading(true);
     try {
       const data = await getAppConfigItems();
-      // normalize items to have 'key' and 'value' fields for display
-      const normalized = data.map((d: any) => ({
-        id: d['@odata.id'] ? d['@odata.id'] : d['id'] || d['configid'] || d['appconfigid'] || d['@odata.etag'] || JSON.stringify(d),
-        key: d.name || d.key || d.configkey || d['ms_name'] || d['app_name'] || '',
-        value: d.value || d.configvalue || d['ms_value'] || d.description || JSON.stringify(d),
-        raw: d,
-      }));
-      setItems(normalized);
+      // If the service already returned normalized items (id/key/value/raw), use them directly
+      if (Array.isArray(data) && data.length > 0 && data[0].id !== undefined && data[0].key !== undefined) {
+        setItems(data as any[]);
+      } else {
+        // normalize items to have 'key' and 'value' fields for display
+        const normalized = (data || []).map((d: any) => ({
+          id: d['@odata.id'] ? d['@odata.id'] : d['id'] || d['configid'] || d['appconfigid'] || d['@odata.etag'] || JSON.stringify(d),
+          key: d.name || d.key || d.configkey || d['ms_name'] || d['app_name'] || '',
+          value: d.value || d.configvalue || d['ms_value'] || d.description || JSON.stringify(d),
+          raw: d,
+        }));
+        setItems(normalized);
+      }
     } catch (e) {
       console.error('Failed to load config items', e);
     } finally {
@@ -75,9 +80,7 @@ const AdminConfig: React.FC = () => {
   const handleUpdate = async () => {
     if (!editing) return;
     try {
-      // If we can derive an id property from editing.raw, try to use it. Otherwise Dataverse needs GUID.
-      const raw = editing.raw || {};
-      const id = raw['$id'] || raw['id'] || raw['appconfigid'] || raw['configid'];
+      const id = editing.id || (editing.raw && (editing.raw['$id'] || editing.raw['id'] || editing.raw['appconfigid'] || editing.raw['configid']));
       if (!id) {
         console.error('Unable to determine record id for update; ensure the config table exposes a primary key GUID');
         return;
@@ -93,8 +96,7 @@ const AdminConfig: React.FC = () => {
   const handleDelete = async () => {
     if (!confirmDelete) return;
     try {
-      const raw = confirmDelete.raw || {};
-      const id = raw['$id'] || raw['id'] || raw['appconfigid'] || raw['configid'];
+      const id = confirmDelete.id || (confirmDelete.raw && (confirmDelete.raw['$id'] || confirmDelete.raw['id'] || confirmDelete.raw['appconfigid'] || confirmDelete.raw['configid']));
       if (!id) {
         console.error('Unable to determine record id for delete; ensure the config table exposes a primary key GUID');
         setConfirmDelete(null);

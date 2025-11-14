@@ -69,6 +69,107 @@ async function fetchDataverseResource(resourcePath: string, options: RequestInit
   throw new Error(`Dataverse request failed: ${resp.status} ${resp.statusText} \nURL: ${url}\nResponse body: ${bodyText}`);
 }
 
+// Metadata cache to avoid repeated $metadata parsing
+const metadataCache: Map<string, { keyName: string; displayName?: string; valueName?: string }> = new Map();
+
+async function getEntitySetMetadata(entitySetName: string) {
+  if (metadataCache.has(entitySetName)) return metadataCache.get(entitySetName)!;
+
+  const apiRoot = buildDataverseApiRoot();
+  const url = `${apiRoot}/$metadata`;
+  const resp = await fetch(url, { headers: { Accept: 'application/xml' } });
+  if (!resp.ok) throw new Error(`Failed to fetch $metadata: ${resp.status} ${resp.statusText}`);
+  const xml = await resp.text();
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xml, 'application/xml');
+
+  const entitySets = Array.from(doc.getElementsByTagName('EntitySet'));
+  // Try to find exact match first (EntitySet Name attribute)
+  let matched: Element | undefined = entitySets.find((e) => e.getAttribute('Name') === entitySetName);
+  if (!matched) {
+    // case-insensitive match
+    matched = entitySets.find((e) => (e.getAttribute('Name') || '').toLowerCase() === entitySetName.toLowerCase());
+  }
+
+  if (!matched) {
+    // fallback: try endsWith
+    matched = entitySets.find((e) => (e.getAttribute('Name') || '').toLowerCase().endsWith(entitySetName.toLowerCase()));
+  }
+
+  if (!matched) {
+    throw new Error(`EntitySet '${entitySetName}' not found in $metadata`);
+  }
+
+  // EntityType attribute is like 'Microsoft.Dynamics.CRM.appconfig'
+  const entityTypeFull = matched.getAttribute('EntityType') || '';
+  const entityTypeLocal = entityTypeFull.split('.').pop() || entityTypeFull;
+
+  // find the EntityType element
+  const entityTypes = Array.from(doc.getElementsByTagName('EntityType'));
+  const entityTypeEl = entityTypes.find((et) => et.getAttribute('Name') === entityTypeLocal);
+
+  let keyName = '';
+  if (entityTypeEl) {
+    const keyEl = entityTypeEl.getElementsByTagName('Key')[0];
+    if (keyEl) {
+      const propRef = keyEl.getElementsByTagName('PropertyRef')[0];
+      if (propRef) keyName = propRef.getAttribute('Name') || '';
+    }
+  }
+
+  // fallback key heuristics
+  if (!keyName) {
+    // common primary name patterns
+    const candidates = ['id', `${entityTypeLocal}id`, `${entityTypeLocal}Id`, 'appconfigid', 'configid'];
+    for (const c of candidates) {
+      if (entityTypeEl && Array.from(entityTypeEl.getElementsByTagName('Property')).some((p) => p.getAttribute('Name') === c)) {
+        keyName = c;
+        break;
+      }
+    }
+  }
+
+  // find a reasonable display and value property
+  let displayName: string | undefined;
+  let valueName: string | undefined;
+  const displayCandidates = ['name', 'title', `${entityTypeLocal}name`, 'configkey', 'key'];
+  const valueCandidates = ['value', 'description', 'configvalue', 'ms_value'];
+
+  if (entityTypeEl) {
+    const propertyNames = Array.from(entityTypeEl.getElementsByTagName('Property')).map((p) => p.getAttribute('Name') || '');
+    for (const c of displayCandidates) {
+      if (propertyNames.includes(c)) {
+        displayName = c;
+        break;
+      }
+    }
+    for (const c of valueCandidates) {
+      if (propertyNames.includes(c)) {
+        valueName = c;
+        break;
+      }
+    }
+
+    // if not found, pick first string property that's not the key
+    if (!displayName) {
+      const propEls = Array.from(entityTypeEl.getElementsByTagName('Property'));
+      for (const p of propEls) {
+        const type = p.getAttribute('Type') || '';
+        const name = p.getAttribute('Name') || '';
+        if (type.toLowerCase().includes('string') && name !== keyName) {
+          displayName = name;
+          break;
+        }
+      }
+    }
+  }
+
+  const meta = { keyName, displayName, valueName };
+  metadataCache.set(entitySetName, meta);
+  return meta;
+}
+
 async function getDataverseAccessToken(): Promise<string> {
   const accounts = msalInstance.getAllAccounts();
   if (accounts.length === 0) throw new Error('No accounts found. Please sign in.');
@@ -156,6 +257,15 @@ const APP_CONFIG_ENTITY_SET = import.meta.env.VITE_APP_CONFIG_ENTITY_SET || 'app
 export const getAppConfigItems = async (): Promise<any[]> => {
   try {
     const accessToken = await getDataverseAccessToken();
+
+    // discover metadata to determine key and display/value attributes
+    let meta: { keyName: string; displayName?: string; valueName?: string } | null = null;
+    try {
+      meta = await getEntitySetMetadata(APP_CONFIG_ENTITY_SET);
+    } catch (e) {
+      console.warn('Could not load metadata for app config entity set, falling back to heuristics', e);
+    }
+
     const data = await fetchDataverseResource(`${APP_CONFIG_ENTITY_SET}?$top=200`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -163,7 +273,23 @@ export const getAppConfigItems = async (): Promise<any[]> => {
       },
     });
 
-    return data?.value || [];
+    const list = data?.value || [];
+
+    // normalize items using metadata when available
+    return list.map((r: any) => {
+      let id = '';
+      if (meta && meta.keyName && r[meta.keyName]) id = r[meta.keyName];
+      if (!id && r['@odata.id']) {
+        const m = r['@odata.id'].match(/\(([0-9a-fA-F\-]{36})\)/);
+        if (m) id = m[1];
+      }
+      if (!id && r['id']) id = r['id'];
+
+      const key = (meta && meta.displayName && r[meta.displayName]) || r.name || r.configkey || r.key || '';
+      const value = (meta && meta.valueName && r[meta.valueName]) || r.value || r.configvalue || r.description || '';
+
+      return { id, key, value, raw: r };
+    });
   } catch (e) {
     console.error('Error fetching app config items:', e);
     return [];
@@ -186,7 +312,8 @@ export const updateAppConfigItem = async (id: string, item: Record<string, any>)
   const accessToken = await getDataverseAccessToken();
   // Dataverse PATCH on entity set requires URL: <entitySet>(id)
   const apiRoot = buildDataverseApiRoot();
-  const url = `${apiRoot}/${APP_CONFIG_ENTITY_SET}(${id})`;
+  const cleanId = id.replace(/[{}]/g, '');
+  const url = `${apiRoot}/${APP_CONFIG_ENTITY_SET}(${cleanId})`;
 
   const resp = await fetch(url, {
     method: 'PATCH',
@@ -209,7 +336,8 @@ export const updateAppConfigItem = async (id: string, item: Record<string, any>)
 export const deleteAppConfigItem = async (id: string): Promise<void> => {
   const accessToken = await getDataverseAccessToken();
   const apiRoot = buildDataverseApiRoot();
-  const url = `${apiRoot}/${APP_CONFIG_ENTITY_SET}(${id})`;
+  const cleanId = id.replace(/[{}]/g, '');
+  const url = `${apiRoot}/${APP_CONFIG_ENTITY_SET}(${cleanId})`;
 
   const resp = await fetch(url, {
     method: 'DELETE',
