@@ -14,6 +14,7 @@ const Home = lazy(() => import('./pages/Home'));
 const Knowledge = lazy(() => import('./pages/Knowledge'));
 const About = lazy(() => import('./pages/About'));
 const Settings = lazy(() => import('./pages/Settings'));
+const AdminConfig = lazy(() => import('./pages/AdminConfig'));
 
 // Initialize Fluent UI icons
 initializeIcons();
@@ -83,6 +84,7 @@ const App: React.FC = () => {
                   <Route path="/" element={<Home />} />
                   <Route path="/knowledge" element={<Knowledge />} />
                   <Route path="/about" element={<About />} />
+                  <Route path="/admin" element={<AdminConfig />} />
                   <Route path="/settings" element={<Settings />} />
                 </Routes>
               </AuthGate>

@@ -149,3 +149,77 @@ export const getKnowledgeArticles = async (q?: string): Promise<any[]> => {
     return [];
   }
 };
+
+// App configuration entity set (name of the Dataverse table's entity set)
+const APP_CONFIG_ENTITY_SET = import.meta.env.VITE_APP_CONFIG_ENTITY_SET || 'appconfigs';
+
+export const getAppConfigItems = async (): Promise<any[]> => {
+  try {
+    const accessToken = await getDataverseAccessToken();
+    const data = await fetchDataverseResource(`${APP_CONFIG_ENTITY_SET}?$top=200`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    return data?.value || [];
+  } catch (e) {
+    console.error('Error fetching app config items:', e);
+    return [];
+  }
+};
+
+export const createAppConfigItem = async (item: Record<string, any>): Promise<any> => {
+  const accessToken = await getDataverseAccessToken();
+  return await fetchDataverseResource(APP_CONFIG_ENTITY_SET, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(item),
+  });
+};
+
+export const updateAppConfigItem = async (id: string, item: Record<string, any>): Promise<any> => {
+  const accessToken = await getDataverseAccessToken();
+  // Dataverse PATCH on entity set requires URL: <entitySet>(id)
+  const apiRoot = buildDataverseApiRoot();
+  const url = `${apiRoot}/${APP_CONFIG_ENTITY_SET}(${id})`;
+
+  const resp = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+    },
+    body: JSON.stringify(item),
+  });
+
+  if (!resp.ok) {
+    const body = await resp.text().catch(() => '<no body>');
+    throw new Error(`Failed to update config item: ${resp.status} ${resp.statusText}\n${body}`);
+  }
+
+  return await resp.json().catch(() => ({}));
+};
+
+export const deleteAppConfigItem = async (id: string): Promise<void> => {
+  const accessToken = await getDataverseAccessToken();
+  const apiRoot = buildDataverseApiRoot();
+  const url = `${apiRoot}/${APP_CONFIG_ENTITY_SET}(${id})`;
+
+  const resp = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!resp.ok && resp.status !== 204) {
+    const body = await resp.text().catch(() => '<no body>');
+    throw new Error(`Failed to delete config item: ${resp.status} ${resp.statusText}\n${body}`);
+  }
+};
