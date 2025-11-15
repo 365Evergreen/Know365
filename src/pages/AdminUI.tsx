@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Pivot, PivotItem, Stack, PrimaryButton, DefaultButton, Text, DocumentCard, DocumentCardTitle, DocumentCardActions, Dialog, DialogType, DialogFooter, Panel } from '@fluentui/react';
+import { Pivot, PivotItem, Stack, PrimaryButton, DefaultButton, Text, DocumentCard, DocumentCardTitle, Dialog, DialogType, DialogFooter, Panel } from '@fluentui/react';
 import ComponentLibrary from '../components/ComponentLibrary';
 import PageCanvas, { PageComponent } from '../components/PageCanvas';
 import { getAppConfigItems, createAppConfigItem, updateAppConfigItem, deleteAppConfigItem } from '../services/dataverseClient';
