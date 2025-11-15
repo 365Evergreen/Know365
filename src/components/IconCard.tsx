@@ -3,7 +3,6 @@ import { Stack, Checkbox } from '@fluentui/react';
 
 interface IconCardProps {
   id: string;
-  name?: string;
   e365_icontitle?: string;
   url?: string;
   svgContent?: string; // optional raw SVG string to inline without fetching

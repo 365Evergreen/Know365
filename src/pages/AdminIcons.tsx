@@ -53,9 +53,9 @@ const AdminIcons: React.FC = () => {
       const normalized = (data || []).map((r: any) => {
         let id = r['@odata.id'] || r['id'] || r['e365_knowledgecentresiteassetsid'] || r['e365_knowledgecentreassetid'] || '';
         if (!id && r['@odata.etag']) id = r['@odata.etag'];
-        const name = r.name || r.title || r.e365_name || r['ms_name'] || '';
+        const e365_icontitle = r.e365_icontitle || r.e365_icontitle?.toString?.() || r.name || r.title || r.e365_name || r['ms_name'] || '';
         const url = findBestUrl(r) || r['fileurl'] || r['url'];
-        return { raw: r, id, name, url };
+        return { raw: r, id, e365_icontitle, url };
       });
       setItems(normalized);
     } catch (e) {
@@ -68,7 +68,7 @@ const AdminIcons: React.FC = () => {
   const filtered = useMemo(() => {
     if (!query) return items;
     const q = query.toLowerCase();
-    return items.filter((it) => (it.name || '').toLowerCase().includes(q) || (it.url || '').toLowerCase().includes(q));
+    return items.filter((it) => (it.e365_icontitle || '').toLowerCase().includes(q) || (it.url || '').toLowerCase().includes(q));
   }, [items, query]);
 
   const toggleSelect = (id: string) => {
@@ -77,7 +77,7 @@ const AdminIcons: React.FC = () => {
       if (copy[id]) delete copy[id];
       else {
         const it = items.find((x) => x.id === id) || items.find((x) => x.raw && (x.raw['@odata.id'] === id || x.raw.id === id));
-        if (it) copy[id] = { id: it.id, name: it.name, url: it.url };
+        if (it) copy[id] = { id: it.id, e365_icontitle: it.e365_icontitle, url: it.url };
       }
       return copy;
     });
@@ -86,7 +86,7 @@ const AdminIcons: React.FC = () => {
   const handleSelectAll = () => {
     const all: Record<string, any> = {};
     for (const it of filtered) {
-      if (it.id) all[it.id] = { id: it.id, name: it.name, url: it.url };
+      if (it.id) all[it.id] = { id: it.id, e365_icontitle: it.e365_icontitle, url: it.url };
     }
     setSelected(all);
   };
@@ -135,7 +135,14 @@ const AdminIcons: React.FC = () => {
 
       <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
         {filtered.map((it) => (
-          <IconCard key={it.id || it.url || Math.random()} id={it.id || it.url} name={it.name || it.raw?.name || ''} url={it.url} selected={!!selected[it.id || it.url]} onToggle={toggleSelect} />
+          <IconCard
+            key={it.id || it.url || Math.random()}
+            id={it.id || it.url}
+            e365_icontitle={it.e365_icontitle || it.raw?.e365_icontitle || it.raw?.name || ''}
+            url={it.url}
+            selected={!!selected[it.id || it.url]}
+            onToggle={toggleSelect}
+          />
         ))}
       </div>
 
