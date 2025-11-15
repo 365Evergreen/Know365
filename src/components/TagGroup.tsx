@@ -16,8 +16,8 @@ export const TagGroup: React.FC<Props> = ({ tags, onRemove, onClick }) => {
   return (
     <Stack horizontal wrap tokens={{ childrenGap: 8 }}>
       {tags.map(t => (
-        <div key={t.id} style={{ display: 'flex', alignItems: 'center', background: '#f3f2f1', padding: '6px 8px', borderRadius: 16 }}>
-          <DefaultButton onClick={() => onClick?.(t.id)} styles={{ root: { minWidth: 0, padding: '0 8px', height: 28 } }}>{t.label}</DefaultButton>
+        <div key={t.id} role="listitem" style={{ display: 'flex', alignItems: 'center', background: '#f3f2f1', padding: '6px 8px', borderRadius: 16 }}>
+          <DefaultButton onClick={() => onClick?.(t.id)} styles={{ root: { minWidth: 0, padding: '0 8px', height: 28 } }} aria-label={`Tag ${t.label}`}>{t.label}</DefaultButton>
           {onRemove && <IconButton iconProps={{ iconName: 'Cancel' }} ariaLabel={`Remove ${t.label}`} onClick={() => onRemove(t.id)} />}
         </div>
       ))}
