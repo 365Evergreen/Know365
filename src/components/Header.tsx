@@ -236,6 +236,28 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = '
         </NavLink>
       ),
     },
+    {
+      key: 'media',
+      text: 'Media',
+      iconProps: { iconName: 'Video' },
+      onRender: () => (
+        <NavLink
+          to="/media-demo"
+          style={({ isActive }) => ({
+            textDecoration: 'none',
+            color: isActive ? theme.palette.themePrimary : undefined,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '4px 8px',
+            borderRadius: 4,
+          })}
+        >
+          <span style={{ marginRight: 6 }}>📺</span>
+          <span>Media</span>
+        </NavLink>
+      ),
+    },
   ];
 
   React.useEffect(() => {
@@ -318,6 +340,9 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = '
           </NavLink>
           <NavLink to="/knowledge" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none' }}>
             Documents
+          </NavLink>
+          <NavLink to="/media-demo" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none' }}>
+            Media
           </NavLink>
           <NavLink to="/admin" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none' }}>
             Admin
