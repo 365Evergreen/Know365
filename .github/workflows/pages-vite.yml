@@ -26,6 +26,7 @@ jobs:
         run: |
           corepack enable
           corepack prepare pnpm@latest --activate
+          pnpm -v
           pnpm install --frozen-lockfile
 
       - name: Build (pnpm)
