@@ -8,16 +8,16 @@ import {
 } from '@fluentui/react';
 import { SunIcon, MoonIcon } from '../icons/SvgIcons';
 import MegaMenu, { MegaMenuItem } from './MegaMenu';
-import useAuth from '../hooks/useAuth';
-import { getEntityRecords } from '../services/dataverseClient';
+// Header receives runtime logo via props; no direct Dataverse lookup here
 
 interface HeaderProps {
   onToggleTheme: () => void;
   isDarkMode: boolean;
   userName?: string;
+  logoUrl?: string | null;
 }
 
-const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode }) => {
+const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, logoUrl }) => {
   const theme = useTheme();
   const headerRef = React.useRef<HTMLElement | null>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
@@ -31,42 +31,8 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode }) => {
   }, []);
 
   // theme toggle rendered directly in the header
-
-  const auth = useAuth();
-
-  // Default public blob URL (public container). Will be used as a fallback.
   const defaultLogoUrl = 'https://blobknow365.blob.core.windows.net/assets/know365-logo.svg';
-  const [logoUrl, setLogoUrl] = useState<string>(defaultLogoUrl);
-
-  useEffect(() => {
-    let mounted = true;
-    const tryLoadFromDataverse = async () => {
-      // Only attempt if user is signed in (Dataverse requires auth for reads)
-      if (!auth || !auth.isAuthenticated || !auth.isAuthenticated()) return;
-      
-      try {
-        const items = await getEntityRecords('e365_knowledgecentreconfigurations', 10);
-        if (!mounted) return;
-        if (Array.isArray(items) && items.length > 0) {
-          // Find a likely URL field on the first record
-          const r = items[0];
-          const candidates = ['e365_asseturl', 'asseturl', 'new_asseturl', 'e365_value', 'value', 'configvalue', 'description', 'e365_thumbnailurl'];
-          for (const k of candidates) {
-            if (r[k] && typeof r[k] === 'string' && r[k].length > 5) {
-              setLogoUrl(r[k]);
-              break;
-            }
-          }
-        }
-      } catch (e) {
-        // ignore and keep default
-      } finally {
-      }
-    };
-
-    tryLoadFromDataverse();
-    return () => { mounted = false; };
-  }, [auth]);
+  const currentLogo = logoUrl || defaultLogoUrl;
 
   // Primary items for the CommandBar; include brand/logo as the first item
   const menuData: MegaMenuItem[] = [
@@ -151,7 +117,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode }) => {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingLeft: 16, paddingRight: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <a href="/" aria-label="Home" style={{ display: 'inline-flex', alignItems: 'center' }}>
-              <img src={logoUrl} alt="Know365" className="header-logo" style={{ height: 48 }} />
+              <img src={currentLogo as string} alt="Know365" className="header-logo" style={{ height: 48 }} />
             </a>
             <MegaMenu items={menuData} />
           </div>
