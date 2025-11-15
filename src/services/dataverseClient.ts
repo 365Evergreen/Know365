@@ -634,58 +634,68 @@ export const getAppConfigItems = async (): Promise<any[]> => {
   }
 };
 
-export const createAppConfigItem = async (item: Record<string, any>): Promise<any> => {
-  const accessToken = await getDataverseAccessToken();
-  return await fetchDataverseResource(APP_CONFIG_ENTITY_SET, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(item),
-  });
+// Helper to build an entity path for CRUD operations. Accepts either a raw GUID
+// (will be wrapped in parentheses) or a pre-built OData id/path which will be used as-is.
+function buildEntityPath(entitySet: string, id: string) {
+  if (!id) return entitySet;
+  // if id already looks like an OData path (contains '(' or '/'), return as-is
+  if (id.includes('(') || id.includes('/')) return `${entitySet}${id.startsWith('/') ? '' : '/'}${id}`;
+  // sanitize GUID-like values
+  const guidMatch = id.match(/[0-9a-fA-F\-]{36}/);
+  if (guidMatch) return `${entitySet}(${guidMatch[0]})`;
+  // fallback: append as-is
+  return `${entitySet}(${id})`;
+}
+
+export const createAppConfigItem = async (payload: any): Promise<any> => {
+  try {
+    const accessToken = await getDataverseAccessToken();
+    const data = await fetchDataverseResource(`${APP_CONFIG_ENTITY_SET}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    return data;
+  } catch (e) {
+    console.error('Error creating app config item:', e);
+    throw e;
+  }
 };
 
-export const updateAppConfigItem = async (id: string, item: Record<string, any>): Promise<any> => {
-  const accessToken = await getDataverseAccessToken();
-  // Dataverse PATCH on entity set requires URL: <entitySet>(id)
-  const apiRoot = buildDataverseApiRoot();
-  const cleanId = id.replace(/[{}]/g, '');
-  const url = `${apiRoot}/${APP_CONFIG_ENTITY_SET}(${cleanId})`;
-
-  const resp = await fetch(url, {
-    method: 'PATCH',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
-    },
-    body: JSON.stringify(item),
-  });
-
-  if (!resp.ok) {
-    const body = await resp.text().catch(() => '<no body>');
-    throw new Error(`Failed to update config item: ${resp.status} ${resp.statusText}\n${body}`);
+export const updateAppConfigItem = async (id: string, payload: any): Promise<void> => {
+  try {
+    const accessToken = await getDataverseAccessToken();
+    const path = buildEntityPath(APP_CONFIG_ENTITY_SET, id);
+    await fetchDataverseResource(path, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (e) {
+    console.error('Error updating app config item:', e);
+    throw e;
   }
-
-  return await resp.json().catch(() => ({}));
 };
 
 export const deleteAppConfigItem = async (id: string): Promise<void> => {
-  const accessToken = await getDataverseAccessToken();
-  const apiRoot = buildDataverseApiRoot();
-  const cleanId = id.replace(/[{}]/g, '');
-  const url = `${apiRoot}/${APP_CONFIG_ENTITY_SET}(${cleanId})`;
-
-  const resp = await fetch(url, {
-    method: 'DELETE',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-
-  if (!resp.ok && resp.status !== 204) {
-    const body = await resp.text().catch(() => '<no body>');
-    throw new Error(`Failed to delete config item: ${resp.status} ${resp.statusText}\n${body}`);
+  try {
+    const accessToken = await getDataverseAccessToken();
+    const path = buildEntityPath(APP_CONFIG_ENTITY_SET, id);
+    await fetchDataverseResource(path, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+  } catch (e) {
+    console.error('Error deleting app config item:', e);
+    throw e;
   }
 };
