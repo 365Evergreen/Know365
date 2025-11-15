@@ -15,6 +15,7 @@ import {
   Stack,
 } from '@fluentui/react';
 import useAuth from '../hooks/useAuth';
+import { getEntityRecords } from '../services/dataverseClient';
 
 interface HeaderProps {
   onToggleTheme: () => void;
@@ -191,6 +192,41 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = '
   ];
 
   const navigate = useNavigate();
+  const auth = useAuth();
+
+  // Default public blob URL (public container). Will be used as a fallback.
+  const defaultLogoUrl = 'https://blobknow365.blob.core.windows.net/assets/logo.svg';
+  const [logoUrl, setLogoUrl] = useState<string>(defaultLogoUrl);
+
+  useEffect(() => {
+    let mounted = true;
+    const tryLoadFromDataverse = async () => {
+      // Only attempt if user is signed in (Dataverse requires auth for reads)
+      if (!auth || !auth.isAuthenticated || !auth.isAuthenticated()) return;
+      
+      try {
+        const items = await getEntityRecords('e365_knowledgecentreconfigurations', 10);
+        if (!mounted) return;
+        if (Array.isArray(items) && items.length > 0) {
+          // Find a likely URL field on the first record
+          const r = items[0];
+          const candidates = ['e365_asseturl', 'asseturl', 'new_asseturl', 'e365_value', 'value', 'configvalue', 'description', 'e365_thumbnailurl'];
+          for (const k of candidates) {
+            if (r[k] && typeof r[k] === 'string' && r[k].length > 5) {
+              setLogoUrl(r[k]);
+              break;
+            }
+          }
+        }
+      } catch (e) {
+        // ignore and keep default
+      } finally {
+      }
+    };
+
+    tryLoadFromDataverse();
+    return () => { mounted = false; };
+  }, [auth]);
 
   return (
     <header
@@ -261,6 +297,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = '
           </div>
         </Stack>
       </Panel>
+      <img src={logoUrl} alt="Know365" style={{ height: 32 }} />
     </header>
   );
 };
