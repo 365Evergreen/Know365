@@ -53,6 +53,17 @@ jobs:
           echo "-- ls -la dist --"
           ls -la dist || echo "dist not found"
 
+      - name: Copy Static Web Apps config into artifact
+        if: always()
+        run: |
+          if [ -f staticwebapp.config.json ]; then
+            echo "Copying staticwebapp.config.json into dist/"
+            cp staticwebapp.config.json dist/staticwebapp.config.json
+            ls -la dist/staticwebapp.config.json || true
+          else
+            echo "No staticwebapp.config.json found in repo root"
+          fi
+
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
