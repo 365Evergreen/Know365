@@ -36,6 +36,7 @@ import {
 import { getCarouselConfig, saveCarouselConfig, createCarouselConfig } from '../services/dataverseClient';
 import ConfigurableCarousel from '../components/ConfigurableCarousel';
 import FormBuilder from '../components/FormBuilder';
+import collectAdminSettings, { AdminSettingFinding } from '../utils/collectAdminSettings';
 
 const AdminConfig: React.FC = () => {
   const [items, setItems] = useState<any[]>([]);
@@ -61,6 +62,8 @@ const AdminConfig: React.FC = () => {
   const messageTimer = useRef<number | null>(null);
   const [savingCarousel, setSavingCarousel] = useState(false);
   const [carouselRecordId, setCarouselRecordId] = useState<string | null>(null);
+  const [adminFindings, setAdminFindings] = useState<AdminSettingFinding[]>([]);
+  const [scanningAdminKeys, setScanningAdminKeys] = useState(false);
   const navigate = useNavigate();
   const theme = getTheme();
 
@@ -79,6 +82,13 @@ const AdminConfig: React.FC = () => {
         </Stack>
       ),
     },
+  ];
+
+  const settingColumns: IColumn[] = [
+    { key: 's1', name: 'Token', fieldName: 'token', minWidth: 160 },
+    { key: 's2', name: 'File', fieldName: 'file', minWidth: 220 },
+    { key: 's3', name: 'Line', fieldName: 'line', minWidth: 60 },
+    { key: 's4', name: 'Snippet', fieldName: 'snippet', minWidth: 300 },
   ];
 
   // pages state (for Pages tab) - derive from app config items that start with "page:" or create demo pages
@@ -455,6 +465,33 @@ const AdminConfig: React.FC = () => {
               )}
 
               <div style={{ marginTop: 12 }}>
+                  <h4>Detected admin-configurable settings</h4>
+                  <div style={{ marginBottom: 8 }}>
+                    <PrimaryButton
+                      onClick={async () => {
+                        setScanningAdminKeys(true);
+                        try {
+                          const r = await collectAdminSettings();
+                          setAdminFindings(r);
+                          showMessage(`Found ${r.length} potential keys`, MessageBarType.info, 3000);
+                        } catch (e) {
+                          console.error('Scan failed', e);
+                          showMessage('Failed to scan source files', MessageBarType.error);
+                        } finally {
+                          setScanningAdminKeys(false);
+                        }
+                      }}
+                    >
+                      Scan code for admin keys
+                    </PrimaryButton>
+                    {scanningAdminKeys && <Spinner label="Scanning..." styles={{ root: { marginLeft: 8 } }} />}
+                  </div>
+                  {adminFindings && adminFindings.length > 0 && (
+                    <div style={{ marginTop: 8 }}>
+                      <DetailsList items={adminFindings} columns={settingColumns} selectionMode={0} />
+                    </div>
+                  )}
+
                 <h4>$metadata inspector</h4>
                 <div style={{ marginBottom: 12 }}>
                   <DefaultButton onClick={() => navigate('/admin/icons')} text="Open Icon Manager" />
