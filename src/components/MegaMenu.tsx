@@ -44,7 +44,7 @@ const MegaMenu: React.FC<{ items: MegaMenuItem[]; isMobile?: boolean }> = ({ ite
   const navigate = useNavigate();
   const hoverTimeout = useRef<number | null>(null);
   // store actual DOM elements (span wrappers) so Callout.target gets an element
-  const buttonRefs = useRef<Array<Element | null>>([]);
+  const buttonRefs = useRef<Array<HTMLElement | null>>([]);
 
   useEffect(() => {
     return () => {
@@ -72,34 +72,38 @@ const MegaMenu: React.FC<{ items: MegaMenuItem[]; isMobile?: boolean }> = ({ ite
                 <Stack tokens={{ childrenGap: 6 }} styles={{ root: { marginTop: 8 } }}>
                   {/* Don't repeat the parent title here to avoid duplicate entries */}
                   {(() => {
-                    const parentKey = (it.title || '').trim().toLowerCase();
+                    const parentKey = slugify(it.title || '');
                     const map: Record<string, any> = {};
                     (it.children || []).forEach((ch: any) => {
-                      const key = (ch.title || '').trim().toLowerCase();
+                      const key = `${slugify(ch.title || '')}|${slugify(ch.url || '')}`;
                       if (!key) return;
-                      if (key === parentKey) return; // skip duplicates matching parent
+                      if (slugify(ch.title || '') === parentKey) return; // skip duplicates matching parent
                       if (!map[key]) map[key] = ch;
                     });
                     const children = Object.values(map);
-                    return children.map((c: any) => (
-                      <div
-                        key={c.title}
-                        role="button"
-                        onClick={() => {
-                          const target = resolveTarget(c.url, it.title, c.title);
-                          if (target === null) {
-                            // external link -> navigate full window
-                            if (c.url) window.location.href = c.url;
-                            return;
-                          }
-                          navigate(target);
-                          setExpanded((s) => ({ ...s, [idx]: false }));
-                        }}
-                        style={{ textDecoration: 'none', cursor: 'pointer' }}
-                      >
-                        <Text>{c.title}</Text>
-                      </div>
-                    ));
+                    return children.map((c: any) => {
+                      const target = resolveTarget(c.url, it.title, c.title);
+                      const isExternal = target === null;
+                      const href = isExternal ? c.url || '#' : (target || '#');
+                      return (
+                        <a
+                          key={`${slugify(c.title || '')}|${slugify(c.url || '')}`}
+                          href={href}
+                          target={isExternal ? '_blank' : undefined}
+                          rel={isExternal ? 'noopener noreferrer' : undefined}
+                          onClick={(e) => {
+                            if (!isExternal) {
+                              e.preventDefault();
+                              navigate(target as string);
+                              setExpanded((s) => ({ ...s, [idx]: false }));
+                            }
+                          }}
+                          style={{ display: 'block', textDecoration: 'none', cursor: 'pointer', color: 'inherit', padding: '4px 0' }}
+                        >
+                          <Text>{c.title}</Text>
+                        </a>
+                      );
+                    });
                   })()}
                 </Stack>
               </div>
@@ -115,11 +119,11 @@ const MegaMenu: React.FC<{ items: MegaMenuItem[]; isMobile?: boolean }> = ({ ite
     <nav aria-label="Mega menu">
       <Stack horizontal tokens={{ childrenGap: 12 }} styles={{ root: { alignItems: 'center' } }}>
         {items.map((col, i) => (
-          <div key={col.title} style={{ position: 'relative' }} onMouseLeave={() => {
+          <div key={slugify(col.title)} style={{ position: 'relative' }} onMouseLeave={() => {
             // delay close to allow hover into callout
             hoverTimeout.current = window.setTimeout(() => setOpenIndex(null), 150);
           }}>
-            <span ref={(el) => (buttonRefs.current[i] = el)}>
+            <span ref={(el) => (buttonRefs.current[i] = el as HTMLElement)}>
               <DefaultButton
                 onMouseEnter={() => {
                   if (hoverTimeout.current) window.clearTimeout(hoverTimeout.current);
@@ -167,13 +171,13 @@ const MegaMenu: React.FC<{ items: MegaMenuItem[]; isMobile?: boolean }> = ({ ite
                   {(col.children || []).length > 0 && (
                     (() => {
                       const allChildren = col.children || [];
-                      const parentKey = (col.title || '').trim().toLowerCase();
+                      const parentKey = slugify(col.title || '');
                       const map: Record<string, any> = {};
                       allChildren.forEach((it: any) => {
-                        const key = (it.title || '').trim().toLowerCase();
+                        const key = `${slugify(it.title || '')}|${slugify(it.url || '')}`;
                         if (!key) return;
-                        if (key === parentKey) return; // skip child that matches parent title
-                        if (!map[key]) map[key] = it; // dedupe by title
+                        if (slugify(it.title || '') === parentKey) return; // skip child that matches parent title
+                        if (!map[key]) map[key] = it; // dedupe by title+url
                       });
                       const children = Object.values(map);
                       if (children.length === 0) return null;
@@ -185,26 +189,31 @@ const MegaMenu: React.FC<{ items: MegaMenuItem[]; isMobile?: boolean }> = ({ ite
                         <div style={{ display: 'flex', gap: 24 }}>
                           {groups.map((grp: any, gi: number) => (
                             <div key={gi} style={{ minWidth: 160 }}>
-                              {grp.map((c: any) => (
-                                <div key={c.title} style={{ marginBottom: 8 }}>
-                                  <div
-                                    role="button"
-                                    onClick={() => {
-                                      const target = resolveTarget(c.url, col.title, c.title);
-                                      if (target === null) {
-                                        if (c.url) window.location.href = c.url;
-                                        return;
-                                      }
-                                      if (target) navigate(target);
-                                      setOpenIndex(null);
-                                    }}
-                                    style={{ textDecoration: 'none', cursor: 'pointer' }}
-                                  >
-                                    <Text styles={{ root: { display: 'block' } }}>{c.title}</Text>
-                                    {c.description && <Text styles={{ root: { color: theme.palette.neutralSecondary, fontSize: 12 } }}>{c.description}</Text>}
+                              {grp.map((c: any) => {
+                                const target = resolveTarget(c.url, col.title, c.title);
+                                const isExternal = target === null;
+                                const href = isExternal ? c.url || '#' : (target || '#');
+                                return (
+                                  <div key={`${slugify(c.title || '')}|${slugify(c.url || '')}`} style={{ marginBottom: 8 }}>
+                                    <a
+                                      href={href}
+                                      target={isExternal ? '_blank' : undefined}
+                                      rel={isExternal ? 'noopener noreferrer' : undefined}
+                                      onClick={(e) => {
+                                        if (!isExternal) {
+                                          e.preventDefault();
+                                          navigate(target as string);
+                                          setOpenIndex(null);
+                                        }
+                                      }}
+                                      style={{ textDecoration: 'none', cursor: 'pointer', color: 'inherit', display: 'block' }}
+                                    >
+                                      <Text styles={{ root: { display: 'block' } }}>{c.title}</Text>
+                                      {c.description && <Text styles={{ root: { color: theme.palette.neutralSecondary, fontSize: 12 } }}>{c.description}</Text>}
+                                    </a>
                                   </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           ))}
                         </div>
