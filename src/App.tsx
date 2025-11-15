@@ -20,6 +20,7 @@ const MediaDemo = lazy(() => import('./pages/MediaDemo'));
 const EntityMetadata = lazy(() => import('./pages/EntityMetadata'));
 const ArticleCategories = lazy(() => import('./pages/ArticleCategories'));
 const ArticlesBySubject = lazy(() => import('./pages/ArticlesBySubject'));
+const DataverseDebug = lazy(() => import('./pages/DataverseDebug'));
 
 // Initialize Fluent UI icons
 initializeIcons();
@@ -99,6 +100,7 @@ const App: React.FC = () => {
                   <Route path="/admin" element={<AdminConfig />} />
                   <Route path="/admin/icons" element={<AdminIcons />} />
                   <Route path="/media-demo" element={<MediaDemo />} />
+                  <Route path="/dataverse-debug" element={<DataverseDebug />} />
                   <Route path="/settings" element={<Settings />} />
                 </Routes>
               </AuthGate>
