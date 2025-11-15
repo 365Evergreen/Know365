@@ -88,7 +88,7 @@ const Home: React.FC = () => {
       const m = (r['@odata.id'] as string).match(/\(([0-9a-fA-F\-]{36})\)/);
       return m ? m[1] : '';
     })() : '') || '';
-    const title = r.title || r.e365_name || r.name || 'Untitled';
+    const title = r.displayName || r.title || r.e365_name || r.name || 'Untitled';
     // try common lookup/name fields for subject
     const subject = r._e365_subject_value || r.e365_subject || r.subject || r.e365_subjectname || r['e365_subjectname'] || '';
     const source = r.e365_source || r.source || r._e365_source_value || '';
