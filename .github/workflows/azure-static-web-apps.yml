@@ -26,21 +26,26 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-          cache: 'npm'
+          cache: 'pnpm'
 
-      - name: Install dependencies (npm)
+      - name: Enable Corepack and setup pnpm
         run: |
-          npm -v
-          npm ci --include=dev
+          corepack enable
+          corepack prepare pnpm@latest --activate
+          pnpm -v
+
+      - name: Install dependencies (pnpm)
+        run: |
+          pnpm install --frozen-lockfile
 
       - name: Ensure Vite plugins installed
         run: |
           echo "Checking for @vitejs/plugin-react..."
-          npm ls @vitejs/plugin-react || npm install @vitejs/plugin-react --no-save
+          pnpm ls @vitejs/plugin-react || pnpm add -D @vitejs/plugin-react
           echo "Installed/verified @vitejs/plugin-react"
 
       - name: Build project (vite)
-        run: npm run build
+        run: pnpm build
         env:
           VITE_CLIENT_ID: ${{ secrets.VITE_CLIENT_ID }}
           VITE_TENANT_ID: ${{ secrets.VITE_TENANT_ID }}
