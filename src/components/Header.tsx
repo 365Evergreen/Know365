@@ -195,7 +195,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = '
   const auth = useAuth();
 
   // Default public blob URL (public container). Will be used as a fallback.
-  const defaultLogoUrl = 'https://blobknow365.blob.core.windows.net/assets/logo.svg';
+  const defaultLogoUrl = 'https://blobknow365.blob.core.windows.net/assets/know365-logo.svg';
   const [logoUrl, setLogoUrl] = useState<string>(defaultLogoUrl);
 
   useEffect(() => {

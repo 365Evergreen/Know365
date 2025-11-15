@@ -16,11 +16,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js (20.x) and pnpm
+      - name: Setup Node.js (20.x)
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-          cache: 'pnpm'
+          cache: 'npm'
 
       - name: Enable Corepack and install dependencies (pnpm)
         run: |
