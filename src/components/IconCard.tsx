@@ -4,14 +4,13 @@ import { Stack, Checkbox } from '@fluentui/react';
 interface IconCardProps {
   id: string;
   name?: string;
-  e365_Icontitle?: string;
+  e365_icontitle?: string;
   url?: string;
   svgContent?: string; // optional raw SVG string to inline without fetching
   selected?: boolean;
   onToggle: (id: string) => void;
 }
-
-const IconCard: React.FC<IconCardProps> = ({ id, name, e365_Icontitle, url, svgContent, selected, onToggle }) => {
+const IconCard: React.FC<IconCardProps> = ({ id, e365_icontitle, url, svgContent, selected, onToggle }) => {
   const [svgMarkup, setSvgMarkup] = useState<string | null>(svgContent || null);
 
   useEffect(() => {
@@ -68,7 +67,7 @@ const IconCard: React.FC<IconCardProps> = ({ id, name, e365_Icontitle, url, svgC
     return () => { cancelled = true };
   }, [url, svgContent]);
 
-  const title = e365_Icontitle || name || id;
+  const title = e365_icontitle || id;
 
   return (
     <div style={{ width: 160, padding: 8, border: '1px solid var(--neutral-light, #e1e1e1)', borderRadius: 6 }}>
