@@ -53,3 +53,26 @@ export const darkTheme: Theme = createTheme({
     white: '#1c1c1c',
   },
 });
+
+// Create a theme from a UI config object. Accepts partial values and falls back to defaults.
+export function createThemeFromConfig(cfg?: { primaryColor?: string; fontFamily?: string }): Theme {
+  const primary = cfg?.primaryColor || '#0078d4';
+  const font = cfg?.fontFamily || undefined;
+
+  const base = createTheme({
+    palette: {
+      themePrimary: primary,
+      themeLighterAlt: '#eff6fc',
+      themeLighter: '#deecf9',
+      themeLight: '#c7e0f4',
+      themeTertiary: '#71afe5',
+      themeSecondary: '#2b88d8',
+      themeDarkAlt: '#106ebe',
+      themeDark: '#005a9e',
+      themeDarker: '#004578',
+    },
+    fonts: font ? { small: { fontFamily: font }, medium: { fontFamily: font }, large: { fontFamily: font } } : undefined,
+  });
+
+  return base;
+}

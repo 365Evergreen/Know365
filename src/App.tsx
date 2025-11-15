@@ -3,7 +3,8 @@ import { ThemeProvider, Stack, initializeIcons } from '@fluentui/react';
 import { BrowserRouter as Router, Routes, Route, useParams, Navigate } from 'react-router-dom';
 
 import { MsalProvider } from '@azure/msal-react';
-import { lightTheme, darkTheme } from './theme';
+import { lightTheme, darkTheme, createThemeFromConfig } from './theme';
+import useAppConfig from './hooks/useAppConfig';
 import { msalInstance } from './services/authConfig';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -15,6 +16,7 @@ const Knowledge = lazy(() => import('./pages/Knowledge'));
 const About = lazy(() => import('./pages/About'));
 const Settings = lazy(() => import('./pages/Settings'));
 const AdminConfig = lazy(() => import('./pages/AdminConfig'));
+const AdminUI = lazy(() => import('./pages/AdminUI'));
 const AdminIcons = lazy(() => import('./pages/AdminIcons'));
 const MyKnowledge = lazy(() => import('./pages/MyKnowledge'));
 const MyContributions = lazy(() => import('./pages/MyContributions'));
@@ -63,6 +65,7 @@ const BrowsePage: React.FC = () => {
 const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [headerHeight, setHeaderHeight] = useState<number>(0);
+  const { settings } = useAppConfig() as any;
 
   useEffect(() => {
     // Check for saved theme preference
@@ -112,15 +115,18 @@ const App: React.FC = () => {
   // Workaround: cast MsalProvider to a generic React component type to avoid JSX typing mismatch
   const MsalProviderAsAny = MsalProvider as unknown as React.ComponentType<any>;
 
+  // prefer runtime-configured theme if present, otherwise respect dark mode
+  const runtimeTheme = settings ? createThemeFromConfig({ primaryColor: settings.primaryColor, fontFamily: settings.fontFamily }) : null;
+
   return (
     <MsalProviderAsAny instance={msalInstance}>
-      <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
+      <ThemeProvider theme={runtimeTheme || (isDarkMode ? darkTheme : lightTheme)}>
         <Router>
           <Stack
             verticalFill
             styles={{ root: { minHeight: '100vh', display: 'flex', flexDirection: 'column', paddingTop: headerHeight } }}
           >
-            <Header onToggleTheme={handleToggleTheme} isDarkMode={isDarkMode} />
+            <Header onToggleTheme={handleToggleTheme} isDarkMode={isDarkMode} logoUrl={settings?.logoUrl} />
             <Suspense fallback={<div style={{ padding: 24 }}>Loading page…</div>}>
               <AuthGate>
                 {/* Workaround for react-router-dom / @types/react type incompatibility */}
@@ -132,6 +138,7 @@ const App: React.FC = () => {
                   <Route path="/articles/:subjectId" element={<ArticlesBySubject />} />
                   <Route path="/metadata" element={<EntityMetadata />} />
                   <Route path="/admin" element={<AdminConfig />} />
+                  <Route path="/admin/ui" element={<AdminUI />} />
                   <Route path="/admin/icons" element={<AdminIcons />} />
                   <Route path="/my-knowledge" element={<MyKnowledge />} />
                   <Route path="/my-knowledge/contributions" element={<MyContributions />} />
