@@ -23,6 +23,7 @@ import {
   IDropdownOption,
   Spinner,
 } from '@fluentui/react';
+import UIConfigEditor from '../components/UIConfigEditor';
 
 const AdminConfig: React.FC = () => {
   const [items, setItems] = useState<any[]>([]);
@@ -267,6 +268,9 @@ const AdminConfig: React.FC = () => {
             </Stack>
           </div>
         )}
+
+        {/* UI configuration editor for site appearance */}
+        <UIConfigEditor />
       </div>
 
       <div style={{ marginTop: 24 }}>
