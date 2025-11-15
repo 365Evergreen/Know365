@@ -25,6 +25,12 @@ export const lightTheme: Theme = createTheme({
     black: '#000000',
     white: '#ffffff',
   },
+  // Ensure fonts are present so Fluent components can safely read theme.fonts.medium
+  fonts: {
+    small: { fontFamily: 'Segoe UI, Arial, sans-serif' },
+    medium: { fontFamily: 'Segoe UI, Arial, sans-serif' },
+    large: { fontFamily: 'Segoe UI, Arial, sans-serif' },
+  },
 });
 
 export const darkTheme: Theme = createTheme({
@@ -52,12 +58,17 @@ export const darkTheme: Theme = createTheme({
     black: '#f8f8f8',
     white: '#1c1c1c',
   },
+  fonts: {
+    small: { fontFamily: 'Segoe UI, Arial, sans-serif' },
+    medium: { fontFamily: 'Segoe UI, Arial, sans-serif' },
+    large: { fontFamily: 'Segoe UI, Arial, sans-serif' },
+  },
 });
 
 // Create a theme from a UI config object. Accepts partial values and falls back to defaults.
 export function createThemeFromConfig(cfg?: { primaryColor?: string; fontFamily?: string }): Theme {
   const primary = cfg?.primaryColor || '#0078d4';
-  const font = cfg?.fontFamily || undefined;
+  const font = cfg?.fontFamily || 'Segoe UI, Arial, sans-serif';
 
   const base = createTheme({
     palette: {
@@ -71,7 +82,7 @@ export function createThemeFromConfig(cfg?: { primaryColor?: string; fontFamily?
       themeDark: '#005a9e',
       themeDarker: '#004578',
     },
-    fonts: font ? { small: { fontFamily: font }, medium: { fontFamily: font }, large: { fontFamily: font } } : undefined,
+    fonts: { small: { fontFamily: font }, medium: { fontFamily: font }, large: { fontFamily: font } },
   });
 
   return base;
