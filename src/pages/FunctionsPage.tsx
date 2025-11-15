@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Stack, Text, DefaultButton, Spinner, SpinnerSize } from '@fluentui/react';
+import DataGrid, { GridColumn } from '../components/DataGrid';
 import { getKnowledgeArticlesByFunction } from '../services/dataverseClient';
 
 const readable = (s?: string) => (s || '').replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -65,22 +66,65 @@ const FunctionsPage: React.FC = () => {
         ) : !articles || articles.length === 0 ? (
           <Text variant="small">No articles found for {title}.</Text>
         ) : (
-          <Stack tokens={{ childrenGap: 8 }}>
-            {articles.map((a, i) => {
-              const titleText = a.displayName || a.title || a.Title || a.name || 'Untitled';
-              const excerpt = a.excerpt || a.preview || a.Excerpt || '';
-              const site = a.siteUrl || a.site || a.SiteUrl || a.siteUrl;
-              return (
-                <Stack key={i} tokens={{ childrenGap: 4 }}>
-                  <Text variant="medium">{titleText}</Text>
-                  {excerpt && <Text variant="small">{excerpt}</Text>}
-                  {site && (
-                    <Text variant="small">Source: <a href={site} target="_blank" rel="noreferrer">{site}</a></Text>
-                  )}
-                </Stack>
-              );
-            })}
-          </Stack>
+          <DataGrid
+            items={articles}
+            columns={([
+              {
+                key: 'title',
+                name: 'Title',
+                fieldName: 'displayName',
+                minWidth: 220,
+                isResizable: true,
+                onRender: (item: any) => {
+                  return <Text style={{ fontWeight: 600 }}>{item.displayName || item.title || item.name}</Text>;
+                },
+              },
+              {
+                key: 'excerpt',
+                name: 'Summary',
+                fieldName: 'excerpt',
+                minWidth: 240,
+                isResizable: true,
+                onRender: (item: any) => {
+                  const excerpt = item.excerpt || item.preview || item.Excerpt || '';
+                  return <Text>{excerpt}</Text>;
+                },
+              },
+              {
+                key: 'subject',
+                name: 'Subject',
+                fieldName: 'e365_knowledgearticlesubject',
+                minWidth: 160,
+                onRender: (item: any) => {
+                  return <Text>{item.e365_knowledgearticlesubject?.Name || ''}</Text>;
+                },
+              },
+              {
+                key: 'source',
+                name: 'Source',
+                fieldName: 'siteUrl',
+                minWidth: 160,
+                onRender: (item: any) => {
+                  const site = item.siteUrl || item.site || item.SiteUrl || item.graphUrl || '';
+                  return site ? <a href={site} target="_blank" rel="noreferrer">Source</a> : <span />;
+                },
+              },
+            ] as GridColumn[])}
+            onItemInvoked={(item: any) => {
+              // prefer an article web url if present, otherwise open the source site
+              const url = item.webUrl || item.url || item.siteUrl || item.site || item.SiteUrl;
+              if (url) {
+                window.open(url, '_blank', 'noopener');
+                return;
+              }
+              // fallback: navigate to a local detail route if available
+              if (item.id || item.KnowledgeArticleId || item.knowledgearticleid) {
+                navigate(`/knowledge/article/${item.id || item.KnowledgeArticleId || item.knowledgearticleid}`);
+              } else {
+                console.log('Item invoked, no url available', item);
+              }
+            }}
+          />
         )}
       </div>
     </Stack>
