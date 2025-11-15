@@ -58,7 +58,7 @@ const Knowledge: React.FC = () => {
         // dedupe articles by id or title to avoid duplicate renderings
         const seen = new Set<string>();
         const deduped = (items || []).filter((a: any) => {
-          const key = (a.id || a.KnowledgeArticleId || a.articleid || a.title || '').toString();
+          const key = (a.id || a.KnowledgeArticleId || a.articleid || a.displayName || a.title || '').toString();
           if (!key) return false;
           if (seen.has(key)) return false;
           seen.add(key);
@@ -125,7 +125,7 @@ const Knowledge: React.FC = () => {
                 ) : (
                   <Stack tokens={{ childrenGap: 8 }}>
                     {articles.map((a, i) => {
-                      const title = a.title || a.Title || a.name || a.subject || 'Untitled';
+                      const title = a.displayName || a.title || a.Title || a.name || a.subject || 'Untitled';
                       const excerpt = a.excerpt || a.preview || a.Excerpt || a.previewText || '';
                       const site = a.siteUrl || a.site || a.SiteUrl || a.siteUrl;
                       return (
