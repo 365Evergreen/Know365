@@ -803,3 +803,103 @@ export const deleteAppConfigItem = async (id: string): Promise<void> => {
     throw e;
   }
 };
+
+// Carousel configuration helpers stored in the e365_knowledgecentreconfiguration table
+export const getCarouselConfig = async (pageKey: string): Promise<any | null> => {
+  try {
+    const logical = 'e365_knowledgecentreconfiguration';
+    const entitySet = await resolveEntitySetForLogicalName(logical).catch(() => logical);
+    const accessToken = await getDataverseAccessToken();
+
+    // try to discover display/value attribute names
+    let meta: { keyName: string; displayName?: string; valueName?: string } | null = null;
+    try {
+      meta = await getEntitySetMetadata(entitySet);
+    } catch {
+      meta = null;
+    }
+
+    // build a set of candidate filters to find the record for the page
+    const displayField = (meta && meta.displayName) || 'name';
+    const candidates = [`${displayField} eq '${pageKey.replace(/'/g, "''")}'`];
+
+    for (const f of candidates) {
+      try {
+        const resourcePath = `${entitySet}?$filter=${encodeURIComponent(f)}&$top=1`;
+        const data = await fetchDataverseResource(resourcePath, {
+          headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        });
+        const rec = (data?.value || [])[0];
+        if (rec) {
+          // return parsed JSON if valueName exists
+          const valueField = (meta && meta.valueName) || 'value';
+          const rawValue = rec[valueField] || rec.value || rec.configvalue || rec.description || null;
+          let parsed = rawValue;
+          try {
+            parsed = rawValue ? JSON.parse(rawValue) : null;
+          } catch { /* ignore JSON parse errors */ }
+          return { id: (() => {
+            if (meta && meta.keyName && rec[meta.keyName]) return rec[meta.keyName];
+            if (rec['@odata.id']) {
+              const m = rec['@odata.id'].match(/\(([0-9a-fA-F\-]{36})\)/);
+              if (m) return m[1];
+            }
+            return rec.id || null;
+          })(), key: pageKey, config: parsed, raw: rec };
+        }
+      } catch (e) {
+        // try next candidate
+      }
+    }
+
+    return null;
+  } catch (e) {
+    console.error('Error loading carousel config', e);
+    return null;
+  }
+};
+
+export const saveCarouselConfig = async (pageKey: string, configObj: any): Promise<any> => {
+  try {
+    const logical = 'e365_knowledgecentreconfiguration';
+    const entitySet = await resolveEntitySetForLogicalName(logical).catch(() => logical);
+    const accessToken = await getDataverseAccessToken();
+
+    // discover metadata names
+    let meta: { keyName: string; displayName?: string; valueName?: string } | null = null;
+    try {
+      meta = await getEntitySetMetadata(entitySet);
+    } catch {
+      meta = null;
+    }
+
+    const displayField = (meta && meta.displayName) || 'name';
+    const valueField = (meta && meta.valueName) || 'value';
+
+    // find existing record for pageKey
+    const existing = await getCarouselConfig(pageKey);
+    const payload: any = {};
+    payload[displayField] = pageKey;
+    payload[valueField] = JSON.stringify(configObj || {});
+
+    if (existing && existing.id) {
+      const path = buildEntityPath(entitySet, existing.id);
+      await fetchDataverseResource(path, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return { id: existing.id, key: pageKey };
+    }
+
+    const data = await fetchDataverseResource(entitySet, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return data;
+  } catch (e) {
+    console.error('Error saving carousel config', e);
+    throw e;
+  }
+};

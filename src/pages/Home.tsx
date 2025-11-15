@@ -5,6 +5,7 @@ import GridCards from '../components/GridCards';
 import RecentDocuments from '../components/RecentDocuments';
 import { getEntityRecords, getRecentKnowledgeArticles } from '../services/dataverseClient';
 import { useNavigate } from 'react-router-dom';
+import ConfigurableCarousel from '../components/ConfigurableCarousel';
 
 const SUBJECT_ENTITY = 'e365_knowledgearticlesubject';
 
@@ -128,8 +129,14 @@ const Home: React.FC = () => {
           )}
         </section>
       </Stack>
+      <ConfigurableCarousel items={demoItems} config={{ layout: 'card', autoplay: true, intervalMs: 4000 }} />
     </main>
   );
 };
 
 export default Home;
+
+const demoItems = [
+  { id: '1', title: 'Card 1', summary: 'Summary 1', image: '/path/to/img1.jpg', url: '/about' },
+  { id: '2', title: 'Card 2', summary: 'Summary 2', image: '/path/to/img2.jpg' },
+];
