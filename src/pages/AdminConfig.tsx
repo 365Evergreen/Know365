@@ -33,8 +33,9 @@ import {
   MessageBarType,
   getTheme,
 } from '@fluentui/react';
-import { getCarouselConfig, saveCarouselConfig } from '../services/dataverseClient';
+import { getCarouselConfig, saveCarouselConfig, createCarouselConfig } from '../services/dataverseClient';
 import ConfigurableCarousel from '../components/ConfigurableCarousel';
+import FormBuilder from '../components/FormBuilder';
 
 const AdminConfig: React.FC = () => {
   const [items, setItems] = useState<any[]>([]);
@@ -58,6 +59,8 @@ const AdminConfig: React.FC = () => {
   const [message, setMessage] = useState<string | null>(null);
   const [messageType, setMessageType] = useState<MessageBarType>(MessageBarType.info);
   const messageTimer = useRef<number | null>(null);
+  const [savingCarousel, setSavingCarousel] = useState(false);
+  const [carouselRecordId, setCarouselRecordId] = useState<string | null>(null);
   const navigate = useNavigate();
   const theme = getTheme();
 
@@ -106,6 +109,33 @@ const AdminConfig: React.FC = () => {
     dragIndex.current = idx;
     e.dataTransfer.effectAllowed = 'move';
   };
+
+  // Autosave carousel config with debounce when admin edits the form
+  useEffect(() => {
+    if (!selectedCarouselPage) return;
+    // Don't autosave while loading an existing config
+    if (loadingCarouselConfig) return;
+    // If the admin cleared the config (null) we don't autosave; they can click Save to create/clear explicitly
+    if (carouselConfig === null) return;
+
+    const handle = window.setTimeout(async () => {
+      setSavingCarousel(true);
+      try {
+        await saveCarouselConfig(selectedCarouselPage, carouselConfig || {});
+        showMessage('Carousel configuration auto-saved', MessageBarType.success, 2000);
+      } catch (e) {
+        console.error('Auto-save failed', e);
+        showMessage('Auto-save failed: see console', MessageBarType.error, 5000);
+      } finally {
+        setSavingCarousel(false);
+      }
+    }, 1200);
+
+    return () => {
+      window.clearTimeout(handle);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [carouselConfig, selectedCarouselPage, loadingCarouselConfig]);
   const onDropPage = (e: React.DragEvent, idx: number) => {
     e.preventDefault();
     if (dragIndex.current === null) return;
@@ -362,6 +392,15 @@ const AdminConfig: React.FC = () => {
           </Stack>
         </PivotItem>
 
+        <PivotItem headerText="Forms">
+          <Stack tokens={{ childrenGap: 12 }}>
+            <Text>Use the Form Builder to create contribution forms that map to Dataverse tables.</Text>
+            <div style={{ marginTop: 12 }}>
+              <FormBuilder />
+            </div>
+          </Stack>
+        </PivotItem>
+
         <PivotItem headerText="Settings">
           <Stack tokens={{ childrenGap: 12 }}>
             <h3>App configuration</h3>
@@ -470,20 +509,22 @@ const AdminConfig: React.FC = () => {
                       placeholder="Select a page to configure carousel"
                       options={pages.map((p) => ({ key: p.id, text: p.title }))}
                       selectedKey={selectedCarouselPage}
-                      onChange={async (_, option) => {
-                        const key = option?.key as string;
-                        setSelectedCarouselPage(key);
-                        setLoadingCarouselConfig(true);
-                        try {
-                          const cfg = await getCarouselConfig(key);
-                          setCarouselConfig(cfg ? cfg.config || null : null);
-                        } catch (e) {
-                          console.error('Failed to load carousel config', e);
-                          setCarouselConfig(null);
-                        } finally {
-                          setLoadingCarouselConfig(false);
-                        }
-                      }}
+                        onChange={async (_, option) => {
+                          const key = option?.key as string;
+                          setSelectedCarouselPage(key);
+                          setLoadingCarouselConfig(true);
+                          try {
+                            const cfg = await getCarouselConfig(key);
+                            setCarouselConfig(cfg ? cfg.config || null : null);
+                            setCarouselRecordId(cfg && cfg.id ? String(cfg.id) : null);
+                          } catch (e) {
+                            console.error('Failed to load carousel config', e);
+                            setCarouselConfig(null);
+                            setCarouselRecordId(null);
+                          } finally {
+                            setLoadingCarouselConfig(false);
+                          }
+                        }}
                       styles={{ root: { minWidth: 360 } }}
                     />
                   </div>
@@ -540,18 +581,48 @@ const AdminConfig: React.FC = () => {
                               showMessage('Select a page first', MessageBarType.warning);
                               return;
                             }
+                            setSavingCarousel(true);
                             try {
                               await saveCarouselConfig(selectedCarouselPage, carouselConfig || {});
+                              // re-fetch to ensure we capture the record id
+                              const fresh = await getCarouselConfig(selectedCarouselPage);
+                              setCarouselRecordId(fresh && fresh.id ? String(fresh.id) : null);
                               showMessage('Carousel configuration saved', MessageBarType.success);
                               await loadItems();
                             } catch (e) {
                               console.error('Save failed', e);
                               showMessage('Failed to save carousel configuration', MessageBarType.error);
+                            } finally {
+                              setSavingCarousel(false);
                             }
                           }}
                         >
                           Save carousel config
                         </PrimaryButton>
+                        <DefaultButton
+                          onClick={async () => {
+                            if (!selectedCarouselPage) {
+                              showMessage('Select a page first', MessageBarType.warning);
+                              return;
+                            }
+                            setSavingCarousel(true);
+                            try {
+                              // force create a new record even if one exists
+                              await createCarouselConfig(selectedCarouselPage, carouselConfig || {});
+                              const fresh = await getCarouselConfig(selectedCarouselPage);
+                              setCarouselRecordId(fresh && fresh.id ? String(fresh.id) : null);
+                              showMessage('New carousel configuration record created', MessageBarType.success);
+                              await loadItems();
+                            } catch (e) {
+                              console.error('Create new record failed', e);
+                              showMessage('Failed to create carousel config record', MessageBarType.error);
+                            } finally {
+                              setSavingCarousel(false);
+                            }
+                          }}
+                        >
+                          Save as new record
+                        </DefaultButton>
                         <DefaultButton onClick={() => setCarouselConfig(null)}>Clear</DefaultButton>
                       </Stack>
                     </Stack>
@@ -559,7 +630,13 @@ const AdminConfig: React.FC = () => {
                   <div style={{ marginTop: 18 }}>
                     <h4>Preview</h4>
                     <div style={{ border: '1px solid #e1e1e1', padding: 12, borderRadius: 6, maxWidth: 960 }}>
-                      <ConfigurableCarousel
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                          <div style={{ fontSize: 12, color: theme.palette.neutralSecondary }}>{carouselRecordId ? `Record: ${carouselRecordId}` : ''}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            {savingCarousel && <Spinner label="Saving..." />}
+                          </div>
+                        </div>
+                        <ConfigurableCarousel
                         config={carouselConfig || {
                           layout: 'card',
                           itemLimit: 5,
