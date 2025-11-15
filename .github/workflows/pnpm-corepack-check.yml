@@ -10,6 +10,8 @@ jobs:
   check-pnpm-corepack:
     name: Check pnpm workflows for Corepack activation
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository
