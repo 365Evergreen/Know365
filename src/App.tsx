@@ -71,8 +71,11 @@ const App: React.FC = () => {
     return () => window.removeEventListener('resize', updateHeaderHeight);
   }, []);
 
+  // Workaround: cast MsalProvider to a generic React component type to avoid JSX typing mismatch
+  const MsalProviderAsAny = MsalProvider as unknown as React.ComponentType<any>;
+
   return (
-    <MsalProvider instance={msalInstance}>
+    <MsalProviderAsAny instance={msalInstance}>
       <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
         <BrowserRouter>
           <Stack
@@ -82,6 +85,7 @@ const App: React.FC = () => {
             <Header onToggleTheme={handleToggleTheme} isDarkMode={isDarkMode} userName={userName} />
             <Suspense fallback={<div style={{ padding: 24 }}>Loading page…</div>}>
               <AuthGate>
+                {/* Workaround for react-router-dom / @types/react type incompatibility */}
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/knowledge" element={<Knowledge />} />
@@ -98,7 +102,7 @@ const App: React.FC = () => {
           </Stack>
         </BrowserRouter>
       </ThemeProvider>
-    </MsalProvider>
+    </MsalProviderAsAny>
   );
 };
 
