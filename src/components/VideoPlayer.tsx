@@ -72,7 +72,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, preload = 'metad
 
   return (
     <div className={className}>
-      <video ref={ref} src={src} poster={poster} preload={preload} muted={muted} style={{ width: '100%', maxHeight: 480 }} />
+      <video ref={ref} src={src} poster={poster} preload={preload} muted={muted} autoPlay={autoPlay} loop={loop} style={{ width: '100%', maxHeight: 480 }} />
 
       <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 8 }} styles={{ root: { marginTop: 8 } }}>
         <IconButton iconProps={{ iconName: playing ? 'Pause' : 'Play' }} title={playing ? 'Pause' : 'Play'} onClick={togglePlay} />
