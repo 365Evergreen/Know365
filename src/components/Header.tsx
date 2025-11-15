@@ -74,42 +74,40 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode }) => {
     {
       title: 'My Knowledge',
       icon: 'Contact',
-      url: '/my-knowledge',
+      url: '/browse/my-knowledge',
       children: [
-        { title: 'My Contributions', url: '/my-knowledge/contributions' },
-        { title: 'Saved Items', url: '/my-knowledge/saved' },
-        { title: 'Recently Viewed', url: '/my-knowledge/recent' },
+        { title: 'My Contributions', url: '/browse/my-knowledge/contributions' },
+        { title: 'Saved Items', url: '/browse/my-knowledge/saved' },
+        { title: 'Recently Viewed', url: '/browse/my-knowledge/recent' },
       ],
     },
     {
       title: 'Browse by Function',
       icon: 'Work',
-      url: '/functions',
+      url: '/browse/functions',
       children: [
-        { title: 'Operations', url: '/functions/operations' },
-        { title: 'Customer Service', url: '/functions/customer-service' },
-        { title: 'Finance', url: '/functions/finance' },
-        { title: 'HR', url: '/functions/hr' },
+        { title: 'Operations', url: '/browse/functions/operations' },
+        { title: 'Customer Service', url: '/browse/functions/customer-service' },
+        { title: 'Finance', url: '/browse/functions/finance' },
+        { title: 'HR', url: '/browse/functions/hr' },
       ],
     },
     {
       title: 'Document Types',
       icon: 'Page',
-      url: '/document-types',
+      url: '/browse/document-types',
       children: [
-        { title: 'Policies', url: '/document-types/policies' },
-        { title: 'Procedures', url: '/document-types/procedures' },
-        { title: 'FAQs', url: '/document-types/faqs' },
-        { title: 'How-To Guides', url: '/document-types/how-to' },
+        { title: 'Policies', url: '/browse/document-types/policies' },
+        { title: 'Procedures', url: '/browse/document-types/procedures' },
+        { title: 'FAQs', url: '/browse/document-types/faqs' },
+        { title: 'How-To Guides', url: '/browse/document-types/how-to' },
       ],
     },
-    { title: 'Tags & Topics', icon: 'Tag', url: '/tags', description: 'Browse content by thematic tags' },
-    { title: 'Contribute Knowledge', icon: 'Upload', url: '/contribute', description: 'Submit new knowledge items' },
-    { title: 'Help & Support', icon: 'Help', url: '/help', description: 'FAQs and guidance on using the site' },
-    { title: 'Admin', icon: 'Settings', url: '/admin', description: 'Manage content and view analytics', visibleTo: ['Manager', 'Admin'] },
+    { title: 'Tags & Topics', icon: 'Tag', url: '/browse/tags', description: 'Browse content by thematic tags' },
+    { title: 'Contribute Knowledge', icon: 'Upload', url: '/browse/contribute', description: 'Submit new knowledge items' },
+    { title: 'Help & Support', icon: 'Help', url: '/browse/help', description: 'FAQs and guidance on using the site' },
+    { title: 'Admin', icon: 'Settings', url: '/browse/admin', description: 'Manage content and view analytics', visibleTo: ['Manager', 'Admin'] },
   ];
-
-  
 
   React.useEffect(() => {
     if (!headerRef.current) return;
