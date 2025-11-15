@@ -83,8 +83,9 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
-          # Upload the built artifact folder only to avoid sending the whole repository.
-          app_location: "dist"
+          # Source app directory (root); output build artifacts are in `dist`.
+          app_location: "/"
+          output_location: "dist"
           skip_app_build: true
 
   close_pull_request_job:
@@ -97,6 +98,7 @@ jobs:
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: "close"
-          app_location: "dist"
+          app_location: "/"
+          output_location: "dist"
           skip_app_build: true
           
