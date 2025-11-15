@@ -42,7 +42,7 @@ jobs:
       - name: Install pnpm on runner
         uses: pnpm/action-setup@v2
         with:
-          version: 'latest'
+          version: '10'
 
       - name: Install pnpm globally (fallback)
         run: |
@@ -51,18 +51,31 @@ jobs:
 
       - name: Install dependencies (pnpm)
         run: |
-          echo "pnpm version:" || true
-          pnpm -v || true
+          echo "Checking pnpm availability..."
+          if ! command -v pnpm >/dev/null 2>&1; then
+            echo "pnpm not found; attempting to enable Corepack and install pnpm"
+            corepack enable || true
+            corepack prepare pnpm@10 --activate || true
+            npm i -g pnpm@10 || true
+            export PATH="$(npm bin -g):$PATH"
+            hash -r || true
+          fi
+          echo "pnpm version: $(pnpm -v || echo 'not available')"
           echo "Attempting install with frozen lockfile..."
           if pnpm install --frozen-lockfile; then
             echo "Installed dependencies using --frozen-lockfile"
           else
             echo "Warning: --frozen-lockfile install failed. Showing diagnostics:" >&2
-            echo "pnpm version:"; pnpm -v || true
+            echo "pnpm version: $(pnpm -v || echo 'not available')"
             echo "Lockfile status:"; ls -la pnpm-lock.yaml || true
             echo "Listing package.json and lockfile headers:"; head -n 5 package.json || true; head -n 5 pnpm-lock.yaml || true
             echo "Falling back to non-frozen install to allow CI to continue (lockfile may differ)."
-            pnpm install || (echo "Fallback pnpm install failed" && exit 1)
+            if command -v pnpm >/dev/null 2>&1; then
+              pnpm install || (echo "Fallback pnpm install failed" && exit 1)
+            else
+              echo "pnpm still not available; attempting npx pnpm install..."
+              npx -y pnpm@10 install || (echo "npx pnpm install failed" && exit 1)
+            fi
           fi
 
       - name: Ensure Vite plugins installed
