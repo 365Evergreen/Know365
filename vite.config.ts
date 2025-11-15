@@ -14,5 +14,38 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+    // Improve chunking to avoid oversized bundles in production
+    chunkSizeWarningLimit: 500,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id) return undefined;
+          // normalize Windows paths
+          const nid = id.replace(/\\+/g, '/');
+
+          // Scoped Fluent UI packages -> separate fluentui-<pkg> chunks (finer splitting)
+          if (nid.includes('/node_modules/@fluentui/')) {
+            const m = nid.match(/node_modules\/@fluentui\/([^\/]+)/);
+            if (m && m[1]) return `fluentui-${m[1]}`;
+            return 'fluentui';
+          }
+
+          // Split other node_modules packages into per-package vendor chunks
+          if (nid.includes('/node_modules/')) {
+            const m = nid.match(/node_modules\/([^\/]+)/);
+            if (m && m[1]) return `vendor-${m[1]}`;
+            return 'vendor';
+          }
+
+          // Create a chunk per page to code-split route-level pages under src/pages
+          if (nid.includes('/src/pages/')) {
+            const m = nid.match(/\/src\/pages\/([^/.]+)\./);
+            if (m && m[1]) return `page-${m[1]}`;
+          }
+
+          return undefined;
+        },
+      },
+    },
   },
 })
