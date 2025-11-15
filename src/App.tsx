@@ -16,6 +16,7 @@ const About = lazy(() => import('./pages/About'));
 const Settings = lazy(() => import('./pages/Settings'));
 const AdminConfig = lazy(() => import('./pages/AdminConfig'));
 const AdminIcons = lazy(() => import('./pages/AdminIcons'));
+const MediaDemo = lazy(() => import('./pages/MediaDemo'));
 const EntityMetadata = lazy(() => import('./pages/EntityMetadata'));
 const ArticleCategories = lazy(() => import('./pages/ArticleCategories'));
 const ArticlesBySubject = lazy(() => import('./pages/ArticlesBySubject'));
@@ -97,6 +98,7 @@ const App: React.FC = () => {
                   <Route path="/metadata" element={<EntityMetadata />} />
                   <Route path="/admin" element={<AdminConfig />} />
                   <Route path="/admin/icons" element={<AdminIcons />} />
+                  <Route path="/media-demo" element={<MediaDemo />} />
                   <Route path="/settings" element={<Settings />} />
                 </Routes>
               </AuthGate>
