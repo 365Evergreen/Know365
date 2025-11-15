@@ -522,7 +522,7 @@ export const getKnowledgeArticlesByFunction = async (fn: string, q?: string): Pr
     try {
       entitySet = await resolveEntitySetForLogicalName(logical);
     } catch (e) {
-      // ignore and use legacy
+      // ignore and use fallback entity set name
     }
 
     let displayProp = 'title';
@@ -534,10 +534,13 @@ export const getKnowledgeArticlesByFunction = async (fn: string, q?: string): Pr
     }
 
     const safeFn = (fn || '').replace(/'/g, "''");
-    let filterParts: string[] = [];
-    // filter on tagsText containing the function name as a best-effort heuristic
-    filterParts.push(`contains(tagsText,'${safeFn}')`);
+    const filterParts: string[] = [];
 
+    // Prefer server-side filtering using the explicit subject attribute when available
+    // Uses equality check on the `e365_knowledgearticlesubject` attribute.
+    filterParts.push(`e365_knowledgearticlesubject eq '${safeFn}'`);
+
+    // If a free-text query is provided, also restrict by displayProp or tagsText
     if (q && q.trim()) {
       const safe = q.replace(/'/g, "''");
       filterParts.push(`contains(${displayProp},'${safe}') or contains(tagsText,'${safe}')`);
