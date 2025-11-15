@@ -59,7 +59,21 @@ const MegaMenu: React.FC<{ items: MegaMenuItem[]; isMobile?: boolean }> = ({ ite
         {items.map((it, idx) => (
           <div key={it.title} style={{ marginBottom: 8 }}>
             <DefaultButton
-              onClick={() => setExpanded((s) => ({ ...s, [idx]: !s[idx] }))}
+              onClick={() => {
+                // If the top-level item has a URL, navigate instead of toggling.
+                if (it.url) {
+                  const topTarget = resolveTarget(it.url, undefined, it.title);
+                  const isExternalTop = topTarget === null;
+                  if (isExternalTop) {
+                    window.open(it.url, '_blank', 'noopener');
+                    return;
+                  }
+                  navigate(topTarget as string);
+                  setExpanded((s) => ({ ...s, [idx]: false }));
+                  return;
+                }
+                setExpanded((s) => ({ ...s, [idx]: !s[idx] }));
+              }}
               aria-expanded={!!expanded[idx]}
               styles={{ root: { width: '100%', textAlign: 'left', padding: '10px', border: 'none', boxShadow: 'none', background: 'transparent' } }}
             >
@@ -129,7 +143,23 @@ const MegaMenu: React.FC<{ items: MegaMenuItem[]; isMobile?: boolean }> = ({ ite
                   if (hoverTimeout.current) window.clearTimeout(hoverTimeout.current);
                   setOpenIndex(i);
                 }}
-                onClick={() => setOpenIndex(openIndex === i ? null : i)}
+                onClick={() => {
+                  // If the top-level column provides a URL, navigate to it (internal) or open externally.
+                  if (col.url) {
+                    const topTarget = resolveTarget(col.url, undefined, col.title);
+                    const isExternalTop = topTarget === null;
+                    if (isExternalTop) {
+                      // open external in new tab
+                      window.open(col.url, '_blank', 'noopener');
+                      setOpenIndex(null);
+                      return;
+                    }
+                    navigate(topTarget as string);
+                    setOpenIndex(null);
+                    return;
+                  }
+                  setOpenIndex(openIndex === i ? null : i);
+                }}
                 styles={{ root: { padding: '8px 12px', minWidth: 120, border: 'none', boxShadow: 'none', background: 'transparent' } }}
               >
                 <span style={{ marginRight: 8 }}>{col.icon ? <Icon iconName={col.icon} /> : null}</span>
@@ -145,11 +175,9 @@ const MegaMenu: React.FC<{ items: MegaMenuItem[]; isMobile?: boolean }> = ({ ite
                 gapSpace={8}
                 styles={{ root: { padding: 12, borderRadius: 6, boxShadow: '0 6px 18px rgba(0,0,0,0.12)' } }}
               >
-                <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', minWidth: 420 }}>
-                  <div style={{ minWidth: 240 }}>
-                    {/* Do not repeat the parent heading/button inside the dropdown to avoid duplication with the top-level trigger. */}
-                    {col.description && <Text styles={{ root: { marginTop: 6, color: theme.palette.neutralSecondary } }}>{col.description}</Text>}
-                  </div>
+                {/* Remove the left-hand spacer column by placing the optional description above the link columns */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 420 }}>
+                  {col.description && <Text styles={{ root: { marginTop: 6, color: theme.palette.neutralSecondary } }}>{col.description}</Text>}
 
                   {(col.children || []).length > 0 && (
                     (() => {
