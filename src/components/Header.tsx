@@ -12,8 +12,10 @@ import {
   Panel,
   PanelType,
   Stack,
+  Callout,
 } from '@fluentui/react';
-import { HomeIcon, DocumentationIcon, SearchIcon, SettingsIcon, DatabaseIcon, SunIcon, MoonIcon } from '../icons/SvgIcons';
+import { SunIcon, MoonIcon } from '../icons/SvgIcons';
+import MegaMenu, { MegaMenuItem } from './MegaMenu';
 import useAuth from '../hooks/useAuth';
 import { getEntityRecords } from '../services/dataverseClient';
 
@@ -117,6 +119,47 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = '
   }, [auth]);
 
   // Primary items for the CommandBar; include brand/logo as the first item
+  const menuData: MegaMenuItem[] = [
+    { title: 'Home', icon: 'Home', url: '/', description: 'Landing page with featured content and search' },
+    {
+      title: 'My Knowledge',
+      icon: 'Contact',
+      url: '/my-knowledge',
+      children: [
+        { title: 'My Contributions', url: '/my-knowledge/contributions' },
+        { title: 'Saved Items', url: '/my-knowledge/saved' },
+        { title: 'Recently Viewed', url: '/my-knowledge/recent' },
+      ],
+    },
+    {
+      title: 'Browse by Function',
+      icon: 'Work',
+      url: '/functions',
+      children: [
+        { title: 'Operations', url: '/functions/operations' },
+        { title: 'Customer Service', url: '/functions/customer-service' },
+        { title: 'Finance', url: '/functions/finance' },
+        { title: 'HR', url: '/functions/hr' },
+      ],
+    },
+    {
+      title: 'Document Types',
+      icon: 'Page',
+      url: '/document-types',
+      children: [
+        { title: 'Policies', url: '/document-types/policies' },
+        { title: 'Procedures', url: '/document-types/procedures' },
+        { title: 'FAQs', url: '/document-types/faqs' },
+        { title: 'How-To Guides', url: '/document-types/how-to' },
+      ],
+    },
+    { title: 'Tags & Topics', icon: 'Tag', url: '/tags', description: 'Browse content by thematic tags' },
+    { title: 'Search', icon: 'Find', url: '/search', description: 'Advanced search with filters' },
+    { title: 'Contribute Knowledge', icon: 'Upload', url: '/contribute', description: 'Submit new knowledge items' },
+    { title: 'Help & Support', icon: 'Help', url: '/help', description: 'FAQs and guidance on using the site' },
+    { title: 'Admin', icon: 'Settings', url: '/admin', description: 'Manage content and view analytics', visibleTo: ['Manager', 'Admin'] },
+  ];
+
   const items: ICommandBarItemProps[] = [
     {
       key: 'brand',
@@ -126,136 +169,19 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = '
         </NavLink>
       ),
     },
+    // render a single CommandBar slot that will contain the MegaMenu (desktop)
     {
-      key: 'home',
-      text: 'Home',
-      iconProps: { iconName: 'Home' },
+      key: 'menu',
       onRender: () => (
-        <NavLink
-          to="/"
-          style={({ isActive }) => ({
-            textDecoration: 'none',
-            color: isActive ? theme.palette.themePrimary : undefined,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '4px 8px',
-            borderRadius: 4,
-          })}
-        >
-          <HomeIcon style={{ color: 'inherit', marginRight: 6 }} />
-          <span>Home</span>
-        </NavLink>
-      ),
-    },
-    {
-      key: 'docs',
-      text: 'Documents',
-      iconProps: { iconName: 'Documentation' },
-      onRender: () => (
-        <NavLink
-          to="/knowledge"
-          style={({ isActive }) => ({
-            textDecoration: 'none',
-            color: isActive ? theme.palette.themePrimary : undefined,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '4px 8px',
-            borderRadius: 4,
-          })}
-        >
-          <DocumentationIcon style={{ color: 'inherit', marginRight: 6 }} />
-          <span>Documents</span>
-        </NavLink>
-      ),
-    },
-    {
-      key: 'search',
-      text: 'Search',
-      iconProps: { iconName: 'Search' },
-      onRender: () => (
-        <NavLink
-          to="/knowledge"
-          style={({ isActive }) => ({
-            textDecoration: 'none',
-            color: isActive ? theme.palette.themePrimary : undefined,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '4px 8px',
-            borderRadius: 4,
-          })}
-        >
-          <SearchIcon style={{ color: 'inherit', marginRight: 6 }} />
-          <span>Search</span>
-        </NavLink>
-      ),
-    },
-    {
-      key: 'admin',
-      text: 'Admin',
-      iconProps: { iconName: 'Settings' },
-      onRender: () => (
-        <NavLink
-          to="/admin"
-          style={({ isActive }) => ({
-            textDecoration: 'none',
-            color: isActive ? theme.palette.themePrimary : undefined,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '4px 8px',
-            borderRadius: 4,
-          })}
-        >
-          <SettingsIcon style={{ color: 'inherit', marginRight: 6 }} />
-          <span>Admin</span>
-        </NavLink>
-      ),
-    },
-    {
-      key: 'metadata',
-      text: 'Metadata',
-      iconProps: { iconName: 'Database' },
-      onRender: () => (
-        <NavLink
-          to="/metadata"
-          style={({ isActive }) => ({
-            textDecoration: 'none',
-            color: isActive ? theme.palette.themePrimary : undefined,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '4px 8px',
-            borderRadius: 4,
-          })}
-        >
-          <DatabaseIcon style={{ color: 'inherit', marginRight: 6 }} />
-          <span>Metadata</span>
-        </NavLink>
-      ),
-    },
-    {
-      key: 'media',
-      text: 'Media',
-      iconProps: { iconName: 'Video' },
-      onRender: () => (
-        <NavLink
-          to="/media-demo"
-          style={({ isActive }) => ({
-            textDecoration: 'none',
-            color: isActive ? theme.palette.themePrimary : undefined,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '4px 8px',
-            borderRadius: 4,
-          })}
-        >
-          <span style={{ marginRight: 6 }}>📺</span>
-          <span>Media</span>
-        </NavLink>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <NavLink to="/" aria-label="Home" style={{ display: 'inline-flex', alignItems: 'center' }}>
+            <img src={logoUrl} alt="Know365" className="header-logo" style={{ height: 48 }} />
+          </NavLink>
+          <div style={{ position: 'relative' }}>
+            <Callout target={`.ms-CommandBar`} setInitialFocus={false} gapSpace={8} hidden={true} />
+            <MegaMenu items={menuData} />
+          </div>
+        </div>
       ),
     },
   ];
@@ -303,6 +229,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = '
           items={items}
           farItems={farItems}
           ariaLabel="Main navigation commands"
+          styles={{ root: { paddingLeft: 16, paddingRight: 24 } }}
         />
       )}
 
@@ -335,18 +262,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = '
               navigate(`/knowledge?q=${encodeURIComponent(query)}`);
             }}
           />
-          <NavLink to="/" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none' }}>
-            Home
-          </NavLink>
-          <NavLink to="/knowledge" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none' }}>
-            Documents
-          </NavLink>
-          <NavLink to="/media-demo" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none' }}>
-            Media
-          </NavLink>
-          <NavLink to="/admin" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none' }}>
-            Admin
-          </NavLink>
+          <MegaMenu items={menuData} isMobile />
           <div>
             {useAuth().isAuthenticated() ? (
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
