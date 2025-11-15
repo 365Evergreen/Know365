@@ -1,18 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  CommandBar,
-  ICommandBarItemProps,
-  SearchBox,
-  Persona,
-  PersonaSize,
   useTheme,
-  DefaultButton,
   IconButton,
   Panel,
   PanelType,
   Stack,
-  Callout,
 } from '@fluentui/react';
 import { SunIcon, MoonIcon } from '../icons/SvgIcons';
 import MegaMenu, { MegaMenuItem } from './MegaMenu';
@@ -25,7 +17,7 @@ interface HeaderProps {
   userName?: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = 'User' }) => {
+const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode }) => {
   const theme = useTheme();
   const headerRef = React.useRef<HTMLElement | null>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
@@ -38,50 +30,8 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = '
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  const farItems: ICommandBarItemProps[] = [
-    {
-      key: 'searchBox',
-      onRender: () => {
-        const navigate = useNavigate();
-        return (
-          <SearchBox
-            placeholder="Search knowledge..."
-            ariaLabel="Search knowledge articles"
-            styles={{ root: { width: 200, marginRight: 10 } }}
-            onSearch={(newValue?: string) => {
-              const q = newValue ?? '';
-              navigate(`/knowledge?q=${encodeURIComponent(q)}`);
-            }}
-          />
-        );
-      },
-    },
-    {
-      key: 'themeToggle',
-      text: isDarkMode ? 'Light Mode' : 'Dark Mode',
-      iconProps: { iconName: isDarkMode ? 'Sunny' : 'ClearNight' },
-      onClick: onToggleTheme,
-      ariaLabel: 'Toggle theme',
-    },
-    {
-      key: 'auth',
-      onRender: () => {
-        const auth = useAuth();
-        const signedIn = auth.isAuthenticated();
+  // theme toggle rendered directly in the header
 
-        return signedIn ? (
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            <Persona text={userName} size={PersonaSize.size32} styles={{ root: { marginLeft: 10 } }} />
-            <DefaultButton onClick={() => auth.logout()}>Sign out</DefaultButton>
-          </div>
-        ) : (
-          <DefaultButton onClick={() => auth.login()}>Sign in</DefaultButton>
-        );
-      },
-    },
-  ];
-
-  const navigate = useNavigate();
   const auth = useAuth();
 
   // Default public blob URL (public container). Will be used as a fallback.
@@ -154,37 +104,12 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = '
       ],
     },
     { title: 'Tags & Topics', icon: 'Tag', url: '/tags', description: 'Browse content by thematic tags' },
-    { title: 'Search', icon: 'Find', url: '/search', description: 'Advanced search with filters' },
     { title: 'Contribute Knowledge', icon: 'Upload', url: '/contribute', description: 'Submit new knowledge items' },
     { title: 'Help & Support', icon: 'Help', url: '/help', description: 'FAQs and guidance on using the site' },
     { title: 'Admin', icon: 'Settings', url: '/admin', description: 'Manage content and view analytics', visibleTo: ['Manager', 'Admin'] },
   ];
 
-  const items: ICommandBarItemProps[] = [
-    {
-      key: 'brand',
-      onRender: () => (
-        <NavLink to="/" style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 12px' }} aria-label="Home">
-          <img src={logoUrl} alt="Know365" className="header-logo" />
-        </NavLink>
-      ),
-    },
-    // render a single CommandBar slot that will contain the MegaMenu (desktop)
-    {
-      key: 'menu',
-      onRender: () => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <NavLink to="/" aria-label="Home" style={{ display: 'inline-flex', alignItems: 'center' }}>
-            <img src={logoUrl} alt="Know365" className="header-logo" style={{ height: 48 }} />
-          </NavLink>
-          <div style={{ position: 'relative' }}>
-            <Callout target={`.ms-CommandBar`} setInitialFocus={false} gapSpace={8} hidden={true} />
-            <MegaMenu items={menuData} />
-          </div>
-        </div>
-      ),
-    },
-  ];
+  
 
   React.useEffect(() => {
     if (!headerRef.current) return;
@@ -225,12 +150,22 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = '
       }}
     >
       {!isMobile && (
-        <CommandBar
-          items={items}
-          farItems={farItems}
-          ariaLabel="Main navigation commands"
-          styles={{ root: { paddingLeft: 16, paddingRight: 24 } }}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingLeft: 16, paddingRight: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <a href="/" aria-label="Home" style={{ display: 'inline-flex', alignItems: 'center' }}>
+              <img src={logoUrl} alt="Know365" className="header-logo" style={{ height: 48 }} />
+            </a>
+            <MegaMenu items={menuData} />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {isDarkMode ? (
+              <SunIcon onClick={onToggleTheme} style={{ cursor: 'pointer' }} />
+            ) : (
+              <MoonIcon onClick={onToggleTheme} style={{ cursor: 'pointer' }} />
+            )}
+          </div>
+        </div>
       )}
 
       {isMobile && (
@@ -254,25 +189,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = '
         headerText="Menu"
       >
         <Stack tokens={{ childrenGap: 10 }}>
-          <SearchBox
-            placeholder="Search knowledge..."
-            onSearch={(q?: string) => {
-              const query = q ?? '';
-              setMenuOpen(false);
-              navigate(`/knowledge?q=${encodeURIComponent(query)}`);
-            }}
-          />
           <MegaMenu items={menuData} isMobile />
-          <div>
-            {useAuth().isAuthenticated() ? (
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <Persona text={userName} size={PersonaSize.size32} />
-                <DefaultButton onClick={() => { useAuth().logout(); setMenuOpen(false); }}>Sign out</DefaultButton>
-              </div>
-            ) : (
-              <DefaultButton onClick={() => { useAuth().login(); setMenuOpen(false); }}>Sign in</DefaultButton>
-            )}
-          </div>
         </Stack>
       </Panel>
     </header>

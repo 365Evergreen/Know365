@@ -501,6 +501,34 @@ export const getKnowledgeArticles = async (q?: string): Promise<any[]> => {
   }
 };
 
+// Fetch the most recently created knowledge articles (ordered by createdon desc)
+export const getRecentKnowledgeArticles = async (top = 10): Promise<any[]> => {
+  try {
+    const logical = 'e365_knowledgearticle';
+    let entitySet = 'KnowledgeArticles';
+    try {
+      entitySet = await resolveEntitySetForLogicalName(logical);
+    } catch (e) {
+      // fallback to legacy name
+    }
+
+    const accessToken = await getDataverseAccessToken();
+    // request createdon, title, subject and source fields where available
+    const resourcePath = `${entitySet}?$select=*,createdon,title&$orderby=createdon desc&$top=${top}`;
+    const data = await fetchDataverseResource(resourcePath, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    return data?.value || [];
+  } catch (error) {
+    console.error('Error fetching recent knowledge articles:', error);
+    return [];
+  }
+};
+
 // Attempt to fetch knowledge articles filtered by a subject id.
 export const getKnowledgeArticlesBySubject = async (subjectId: string, top = 50): Promise<any[]> => {
   try {

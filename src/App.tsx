@@ -45,7 +45,6 @@ initializeIcons();
 
 const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [userName] = useState<string>('User');
   const [headerHeight, setHeaderHeight] = useState<number>(0);
 
   useEffect(() => {
@@ -104,7 +103,7 @@ const App: React.FC = () => {
             verticalFill
             styles={{ root: { minHeight: '100vh', display: 'flex', flexDirection: 'column', paddingTop: headerHeight } }}
           >
-            <Header onToggleTheme={handleToggleTheme} isDarkMode={isDarkMode} userName={userName} />
+            <Header onToggleTheme={handleToggleTheme} isDarkMode={isDarkMode} />
             <Suspense fallback={<div style={{ padding: 24 }}>Loading page…</div>}>
               <AuthGate>
                 {/* Workaround for react-router-dom / @types/react type incompatibility */}

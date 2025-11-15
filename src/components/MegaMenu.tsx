@@ -16,8 +16,10 @@ const theme = getTheme();
 
 const MegaMenu: React.FC<{ items: MegaMenuItem[]; isMobile?: boolean }> = ({ items, isMobile = false }) => {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [expanded, setExpanded] = useState<Record<number, boolean>>({});
   const hoverTimeout = useRef<number | null>(null);
-  const buttonRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  // store actual DOM elements (span wrappers) so Callout.target gets an element
+  const buttonRefs = useRef<Array<Element | null>>([]);
 
   useEffect(() => {
     return () => {
@@ -27,7 +29,6 @@ const MegaMenu: React.FC<{ items: MegaMenuItem[]; isMobile?: boolean }> = ({ ite
 
   if (isMobile) {
     // Render as an accordion for small screens
-    const [expanded, setExpanded] = useState<Record<number, boolean>>({});
     return (
       <div>
         {items.map((it, idx) => (
@@ -35,7 +36,7 @@ const MegaMenu: React.FC<{ items: MegaMenuItem[]; isMobile?: boolean }> = ({ ite
             <DefaultButton
               onClick={() => setExpanded((s) => ({ ...s, [idx]: !s[idx] }))}
               aria-expanded={!!expanded[idx]}
-              styles={{ root: { width: '100%', textAlign: 'left', padding: '10px' } }}
+              styles={{ root: { width: '100%', textAlign: 'left', padding: '10px', border: 'none', boxShadow: 'none', background: 'transparent' } }}
             >
               <span style={{ marginRight: 8 }}>{it.icon ? <Icon iconName={it.icon} /> : null}</span>
               {it.title}
@@ -72,60 +73,81 @@ const MegaMenu: React.FC<{ items: MegaMenuItem[]; isMobile?: boolean }> = ({ ite
             // delay close to allow hover into callout
             hoverTimeout.current = window.setTimeout(() => setOpenIndex(null), 150);
           }}>
-            <DefaultButton
-              componentRef={(el) => (buttonRefs.current[i] = el ? (el as unknown as HTMLButtonElement) : null)}
-              onMouseEnter={() => {
-                if (hoverTimeout.current) window.clearTimeout(hoverTimeout.current);
-                setOpenIndex(i);
-              }}
-              onClick={() => setOpenIndex(openIndex === i ? null : i)}
-              styles={{ root: { padding: '8px 12px', minWidth: 120 } }}
-            >
-              <span style={{ marginRight: 8 }}>{col.icon ? <Icon iconName={col.icon} /> : null}</span>
-              {col.title}
-            </DefaultButton>
+            <span ref={(el) => (buttonRefs.current[i] = el)}>
+              <DefaultButton
+                onMouseEnter={() => {
+                  if (hoverTimeout.current) window.clearTimeout(hoverTimeout.current);
+                  setOpenIndex(i);
+                }}
+                onClick={() => setOpenIndex(openIndex === i ? null : i)}
+                styles={{ root: { padding: '8px 12px', minWidth: 120, border: 'none', boxShadow: 'none', background: 'transparent' } }}
+              >
+                <span style={{ marginRight: 8 }}>{col.icon ? <Icon iconName={col.icon} /> : null}</span>
+                {col.title}
+              </DefaultButton>
+            </span>
 
             {openIndex === i && (
               <Callout
-                target={buttonRefs.current[i] || undefined}
+                target={buttonRefs.current[i] ?? null}
                 setInitialFocus={false}
                 onDismiss={() => setOpenIndex(null)}
                 gapSpace={8}
-                styles={{ root: { padding: 12 } }}
+                styles={{ root: { padding: 12, borderRadius: 6, boxShadow: '0 6px 18px rgba(0,0,0,0.12)' } }}
               >
-                <Stack horizontal tokens={{ childrenGap: 12 }} styles={{ root: { alignItems: 'flex-start' } }}>
-                  <div style={{ minWidth: 220 }}>
-                    <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 8 }}>
+                <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', minWidth: 420 }}>
+                  <div style={{ minWidth: 240 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       {col.icon ? <Icon iconName={col.icon} /> : null}
                       <Text variant="large" styles={{ root: { fontWeight: 600 } }}>{col.title}</Text>
-                    </Stack>
+                    </div>
                     {col.description && <Text styles={{ root: { marginTop: 6, color: theme.palette.neutralSecondary } }}>{col.description}</Text>}
-                    <Stack tokens={{ childrenGap: 6 }} styles={{ root: { marginTop: 8 } }}>
-                      {col.url && (
-                        <Link to={col.url} onClick={() => setOpenIndex(null)} style={{ textDecoration: 'none' }}>
-                          <Text>{col.title}</Text>
-                        </Link>
-                      )}
-                    </Stack>
+                    {/* intentionally not repeating a link to the parent title here to avoid duplicates */}
                   </div>
 
                   {(col.children || []).length > 0 && (
-                    <Stack tokens={{ childrenGap: 6 }} styles={{ root: { minWidth: 180 } }}>
-                      {(col.children || []).map((c) => (
-                        <Link to={c.url || '#'} key={c.title} onClick={() => setOpenIndex(null)} style={{ textDecoration: 'none' }}>
-                          <Text>{c.title}</Text>
-                        </Link>
-                      ))}
-                    </Stack>
+                    (() => {
+                      const allChildren = col.children || [];
+                      const parentKey = (col.title || '').trim().toLowerCase();
+                      const map: Record<string, any> = {};
+                      allChildren.forEach((it: any) => {
+                        const key = (it.title || '').trim().toLowerCase();
+                        if (!key) return;
+                        if (key === parentKey) return; // skip child that matches parent title
+                        if (!map[key]) map[key] = it; // dedupe by title
+                      });
+                      const children = Object.values(map);
+                      if (children.length === 0) return null;
+                      const cols = Math.min(2, Math.ceil(children.length / 4) || 1);
+                      const perCol = Math.ceil(children.length / cols);
+                      const groups: any[] = [];
+                      for (let g = 0; g < cols; g++) groups.push(children.slice(g * perCol, (g + 1) * perCol));
+                      return (
+                        <div style={{ display: 'flex', gap: 24 }}>
+                          {groups.map((grp: any, gi: number) => (
+                            <div key={gi} style={{ minWidth: 160 }}>
+                              {grp.map((c: any) => (
+                                <div key={c.title} style={{ marginBottom: 8 }}>
+                                  <Link to={c.url || '#'} onClick={() => setOpenIndex(null)} style={{ textDecoration: 'none' }}>
+                                    <Text styles={{ root: { display: 'block' } }}>{c.title}</Text>
+                                    {c.description && <Text styles={{ root: { color: theme.palette.neutralSecondary, fontSize: 12 } }}>{c.description}</Text>}
+                                  </Link>
+                                </div>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()
                   )}
-                </Stack>
+                </div>
               </Callout>
             )}
-          </div>
-        ))}
-      </Stack>
-    </nav>
-  );
-};
+            </div>
+          ))}
+        </Stack>
+      </nav>
+    );
+  };
 
-export default MegaMenu;
+  export default MegaMenu;
