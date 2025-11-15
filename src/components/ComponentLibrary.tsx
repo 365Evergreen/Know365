@@ -40,7 +40,9 @@ const ComponentLibrary: React.FC<Props> = ({ items }) => {
         ))}
       </Stack>
       <div style={{ marginTop: 8 }}>
-        <DefaultButton text="Add custom component" onClick={() => alert('To implement: custom component creation')} />
+        <DefaultButton text="Add custom component" onClick={() => {
+          try { const useMessage = require('../hooks/useMessage').useMessage as typeof import('../hooks/useMessage').useMessage; useMessage().showMessage('To implement: custom component creation', 2 as any); } catch { alert('To implement: custom component creation'); }
+        }} />
       </div>
     </div>
   );

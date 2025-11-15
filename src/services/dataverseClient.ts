@@ -769,6 +769,169 @@ export const createAppConfigItem = async (payload: any): Promise<any> => {
   }
 };
 
+// Generic create record for any entity set
+export const createEntityRecord = async (entitySetName: string, payload: any): Promise<any> => {
+  try {
+    const accessToken = await getDataverseAccessToken();
+    const data = await fetchDataverseResource(entitySetName, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return data;
+  } catch (e) {
+    console.error(`Error creating record in ${entitySetName}:`, e);
+    throw e;
+  }
+};
+
+// Generic update record for any entity set and id (GUID or OData path)
+export const updateEntityRecord = async (entitySetName: string, id: string, payload: any): Promise<void> => {
+  try {
+    const accessToken = await getDataverseAccessToken();
+    const path = buildEntityPath(entitySetName, id);
+    await fetchDataverseResource(path, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } catch (e) {
+    console.error(`Error updating record ${id} in ${entitySetName}:`, e);
+    throw e;
+  }
+};
+
+// List available fields (properties) for an entity set by resolving metadata
+export const listEntityFields = async (entitySetNameOrLogical: string): Promise<Array<{ name: string; type?: string }>> => {
+  try {
+    // Try resolving logical name to entity set if necessary
+    let entitySetName = entitySetNameOrLogical;
+    try {
+      entitySetName = await resolveEntitySetForLogicalName(entitySetNameOrLogical).catch(() => entitySetNameOrLogical);
+    } catch { /* ignore */ }
+
+    // fetch $metadata and parse EntityType for property list
+    const apiRoot = buildDataverseApiRoot();
+    const url = `${apiRoot}/$metadata`;
+    const accessToken = await getDataverseAccessToken();
+    const resp = await fetch(url, { headers: { Accept: 'application/xml', Authorization: `Bearer ${accessToken}` } });
+    if (!resp.ok) throw new Error('Failed to fetch $metadata for fields');
+    const xml = await resp.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xml, 'application/xml');
+    const entitySets = Array.from(doc.getElementsByTagName('EntitySet'));
+    const matched = entitySets.find((e) => (e.getAttribute('Name') || '').toLowerCase() === entitySetName.toLowerCase() || (e.getAttribute('Name') || '').toLowerCase().endsWith(entitySetName.toLowerCase()));
+    if (!matched) return [];
+    const entityTypeFull = matched.getAttribute('EntityType') || '';
+    const entityTypeLocal = entityTypeFull.split('.').pop() || entityTypeFull;
+    const entityTypes = Array.from(doc.getElementsByTagName('EntityType'));
+    const entityTypeEl = entityTypes.find((et) => et.getAttribute('Name') === entityTypeLocal);
+    if (!entityTypeEl) return [];
+    const props = Array.from(entityTypeEl.getElementsByTagName('Property')).map((p) => ({ name: p.getAttribute('Name') || '', type: p.getAttribute('Type') || '' }));
+    return props.filter((p) => p.name);
+  } catch (e) {
+    console.error('Error listing entity fields', e);
+    return [];
+  }
+};
+
+// Form mapping helpers: try to persist form mappings to a dedicated logical table
+const FORM_MAPPING_LOGICAL = 'e365_formconfiguration';
+
+export const getFormMapping = async (formKey: string): Promise<any | null> => {
+  try {
+    const logical = FORM_MAPPING_LOGICAL;
+    const entitySet = await resolveEntitySetForLogicalName(logical).catch(() => logical);
+    const accessToken = await getDataverseAccessToken();
+
+    // try to find by name/display field
+    // discover display/value attributes
+    let meta = null;
+    try {
+      meta = await getEntitySetMetadata(entitySet);
+    } catch { meta = null; }
+    const displayField = (meta && meta.displayName) || 'name';
+    const valueField = (meta && meta.valueName) || 'value';
+
+    const filter = `${displayField} eq '${formKey.replace(/'/g, "''")}'`;
+    const resourcePath = `${entitySet}?$filter=${encodeURIComponent(filter)}&$top=1`;
+    try {
+      const data = await fetchDataverseResource(resourcePath, { headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' } });
+      const rec = (data?.value || [])[0];
+      if (!rec) return null;
+      const rawValue = rec[valueField] || rec.value || rec.configvalue || rec.description || null;
+      let parsed = rawValue;
+      try { parsed = rawValue ? JSON.parse(rawValue) : null; } catch { parsed = rawValue; }
+      return { id: (() => { if (meta && meta.keyName && rec[meta.keyName]) return rec[meta.keyName]; if (rec['@odata.id']) { const m = rec['@odata.id'].match(/\(([0-9a-fA-F\-]{36})\)/); if (m) return m[1]; } return rec.id || null; })(), key: formKey, mapping: parsed, raw: rec };
+    } catch (e) {
+      // fallback: try app config table
+      return null;
+    }
+  } catch (e) {
+    console.error('Error getting form mapping', e);
+    return null;
+  }
+};
+
+export const saveFormMapping = async (formKey: string, mappingObj: any): Promise<any> => {
+  try {
+    // Try to save in dedicated table, but fall back to app config
+    const logical = FORM_MAPPING_LOGICAL;
+    const entitySet = await resolveEntitySetForLogicalName(logical).catch(() => null);
+    if (!entitySet) {
+      // fallback to app config
+      return await createAppConfigItem({ name: formKey, value: JSON.stringify(mappingObj) });
+    }
+
+    const accessToken = await getDataverseAccessToken();
+    // discover metadata names
+    let meta = null;
+    try { meta = await getEntitySetMetadata(entitySet); } catch { meta = null; }
+    const displayField = (meta && meta.displayName) || 'name';
+    const valueField = (meta && meta.valueName) || 'value';
+
+    // find existing
+    const existing = await getFormMapping(formKey);
+    const payload: any = {};
+    payload[displayField] = formKey;
+    payload[valueField] = JSON.stringify(mappingObj || {});
+    if (existing && existing.id) {
+      const path = buildEntityPath(entitySet, existing.id);
+      await fetchDataverseResource(path, { method: 'PATCH', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      return { id: existing.id, key: formKey };
+    }
+    const data = await fetchDataverseResource(entitySet, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    return data;
+  } catch (e) {
+    console.error('Error saving form mapping', e);
+    throw e;
+  }
+};
+
+export const createFormMapping = async (formKey: string, mappingObj: any): Promise<any> => {
+  try {
+    const logical = FORM_MAPPING_LOGICAL;
+    const entitySet = await resolveEntitySetForLogicalName(logical).catch(() => null);
+    if (!entitySet) {
+      // fallback to app config
+      return await createAppConfigItem({ name: formKey, value: JSON.stringify(mappingObj) });
+    }
+    const accessToken = await getDataverseAccessToken();
+    let meta = null;
+    try { meta = await getEntitySetMetadata(entitySet); } catch { meta = null; }
+    const displayField = (meta && meta.displayName) || 'name';
+    const valueField = (meta && meta.valueName) || 'value';
+    const payload: any = {};
+    payload[displayField] = formKey;
+    payload[valueField] = JSON.stringify(mappingObj || {});
+    const data = await fetchDataverseResource(entitySet, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    return data;
+  } catch (e) {
+    console.error('Error creating form mapping', e);
+    throw e;
+  }
+};
+
 export const updateAppConfigItem = async (id: string, payload: any): Promise<void> => {
   try {
     const accessToken = await getDataverseAccessToken();
@@ -900,6 +1063,40 @@ export const saveCarouselConfig = async (pageKey: string, configObj: any): Promi
     return data;
   } catch (e) {
     console.error('Error saving carousel config', e);
+    throw e;
+  }
+};
+
+// Force-create a new carousel config record for the given pageKey (always POST)
+export const createCarouselConfig = async (pageKey: string, configObj: any): Promise<any> => {
+  try {
+    const logical = 'e365_knowledgecentreconfiguration';
+    const entitySet = await resolveEntitySetForLogicalName(logical).catch(() => logical);
+    const accessToken = await getDataverseAccessToken();
+
+    // discover metadata names
+    let meta: { keyName: string; displayName?: string; valueName?: string } | null = null;
+    try {
+      meta = await getEntitySetMetadata(entitySet);
+    } catch {
+      meta = null;
+    }
+
+    const displayField = (meta && meta.displayName) || 'name';
+    const valueField = (meta && meta.valueName) || 'value';
+
+    const payload: any = {};
+    payload[displayField] = pageKey;
+    payload[valueField] = JSON.stringify(configObj || {});
+
+    const data = await fetchDataverseResource(entitySet, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return data;
+  } catch (e) {
+    console.error('Error creating carousel config', e);
     throw e;
   }
 };
