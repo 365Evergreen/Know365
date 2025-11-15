@@ -312,6 +312,12 @@ const AdminConfig: React.FC = () => {
             </Stack>
           </div>
         )}
+        {showIconsInline && (
+          <div style={{ marginTop: 16 }}>
+            <h4>Icon Manager (inline)</h4>
+            <AdminIcons />
+          </div>
+        )}
       </div>
 
       <Dialog hidden={!confirmDelete} onDismiss={() => setConfirmDelete(null)} dialogContentProps={{ type: DialogType.normal, title: 'Confirm delete', subText: 'Delete this configuration item?' }}>
