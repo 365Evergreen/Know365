@@ -72,7 +72,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, logoUrl }) =
     { title: 'Tags & Topics', icon: 'Tag', url: '/browse/tags', description: 'Browse content by thematic tags' },
     { title: 'Contribute Knowledge', icon: 'Upload', url: '/browse/contribute', description: 'Submit new knowledge items' },
     { title: 'Help & Support', icon: 'Help', url: '/browse/help', description: 'FAQs and guidance on using the site' },
-    { title: 'Admin', icon: 'Settings', url: '/browse/admin', description: 'Manage content and view analytics', visibleTo: ['Manager', 'Admin'] },
+    { title: 'Admin', icon: 'Settings', url: '/admin', description: 'Manage content and view analytics', visibleTo: ['Manager', 'Admin'] },
   ];
 
   React.useEffect(() => {

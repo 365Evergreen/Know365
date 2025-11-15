@@ -147,25 +147,8 @@ const MegaMenu: React.FC<{ items: MegaMenuItem[]; isMobile?: boolean }> = ({ ite
               >
                 <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', minWidth: 420 }}>
                   <div style={{ minWidth: 240 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      {col.icon ? <Icon iconName={col.icon} /> : null}
-                      <Text variant="large" styles={{ root: { fontWeight: 600 } }}>{col.title}</Text>
-                    </div>
+                    {/* Do not repeat the parent heading/button inside the dropdown to avoid duplication with the top-level trigger. */}
                     {col.description && <Text styles={{ root: { marginTop: 6, color: theme.palette.neutralSecondary } }}>{col.description}</Text>}
-                    {/* intentionally not repeating a link to the parent title here to avoid duplicates */}
-                    <div style={{ marginTop: 8 }}>
-                      <DefaultButton
-                        onClick={() => {
-                          const target = resolveTarget(col.url, col.title, undefined);
-                          if (target === null) { if (col.url) window.location.href = col.url; return; }
-                          if (target) navigate(target);
-                          setOpenIndex(null);
-                        }}
-                        styles={{ root: { padding: '6px 10px', boxShadow: 'none' } }}
-                      >
-                        View {col.title}
-                      </DefaultButton>
-                    </div>
                   </div>
 
                   {(col.children || []).length > 0 && (
