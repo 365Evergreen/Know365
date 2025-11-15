@@ -1,0 +1,52 @@
+Key,Description,Value,Notes,PageKey,Type
+carousel.layout,Default carousel layout for a page,card,Default used in AdminConfig preview,global,string
+carousel.itemLimit,Max items shown in carousel,5,Admin preview default,global,number
+carousel.intervalMs,Autoplay interval in milliseconds,4000,Admin preview default,global,number
+carousel.autoplay,Autoplay enabled,false,Admin preview default,global,boolean
+carousel.pauseOnHover,Pause autoplay on hover,true,Admin preview default,global,boolean
+carousel.pauseOnFocus,Pause autoplay on focus,true,Admin preview default,global,boolean
+carousel.showIndicators,Show pagination indicators,true,Admin preview default,global,boolean
+carousel.showNav,Show navigation arrows,false,Toggle exists in UI; default false if not set,global,boolean
+carousel.recordId,Dataverse record id for saved per-page carousel config,,Populated after save,page,string
+
+e365_knowledgecentreconfiguration,Dataverse logical table for carousel configs,e365_knowledgecentreconfiguration,Table referenced in code,global,string
+e365_formconfiguration,Dataverse logical table for form mappings,e365_formconfiguration,Proposed table for form mapping JSON,global,string
+formMapping.keyPattern,Key prefix for saved mappings,"mapping:<EntitySetName>",Used in AdminConfig when saving mappings,global,string
+formMapping.value,Mapping JSON blob,,JSON describing field mappings and inputType,global,json
+
+inputType.textarea,Render as multiline text input,textarea,Contribute maps to multiline TextField,global,string
+inputType.number,Render as numeric input,number,Contribute maps to TextField type=number,global,string
+inputType.date,Render as date picker,date,Contribute maps to DatePicker and stores ISO string,global,string
+inputType.choice,Render as choice/dropdown,choice,Admin FormBuilder needs options editor,global,string
+
+message.durationMs,Default message / toast duration,4000,showMessage default in AdminConfig,global,number
+appConfig.items,Generic key/value app configuration items,,Managed via getAppConfigItems / createAppConfigItem,global,json
+metadata.primaryKey,Detected entity primary key name,,Detected via $metadata inspector,entity,string
+metadata.displayProperty,Detected entity display property,,Detected via $metadata inspector,entity,string
+metadata.valueProperty,Detected entity value property,,Detected via $metadata inspector,entity,string
+
+env.VITE_CLIENT_ID,MSAL / AAD client id,,Set in environment / build secrets,global,string
+env.VITE_TENANT_ID,MSAL / AAD tenant id,,Set in environment / build secrets,global,string
+env.VITE_DATAVERSE_API,Dataverse API base URL,,Used by src/services/dataverseClient.ts,global,string
+env.VITE_GRAPH_ENDPOINT,Graph API endpoint,https://graph.microsoft.com,Default MS Graph base,global,string
+
+theme.primaryColor,Primary theme color,#0067B8,Example default primary color (placeholder),global,string
+theme.secondaryColor,Secondary theme color,#005A9E,Example placeholder,global,string
+theme.fontFamily,Primary font family,"Segoe UI",Default Fluent UI font,global,string
+theme.fontSizes,Font sizes JSON,,Tokens set in src/theme.ts,global,json
+
+nav.megaMenu.leftPadding,MegaMenu left padding,0,Removed left-hand spacing per change,global,number
+nav.structure,Navigation structure JSON,,Defined in src/components/MegaMenu.tsx,global,json
+nav.pages,Page list JSON,,Used to populate dropdown in AdminConfig,pages,json
+
+dataSource.sharePoint.siteUrl,Default SharePoint site URL,,Configured per source in Dataverse,global,string
+dataSource.sharePoint.libraryName,Default library name,,Configured per source in Dataverse,global,string
+dataSource.dataverse.api,Dataverse API base URL,,Same as env.VITE_DATAVERSE_API,global,string
+dataSource.graph.endpoint,Graph endpoint,https://graph.microsoft.com,Default MS Graph base,global,string
+
+cache.enabled,Enable client-side caching,true,Used by RecentDocuments etc.,global,boolean
+cache.ttlSeconds,Cache TTL seconds,3600,Default 1 hour,global,number
+
+icons.embedInline,Embed icons inline,true,Toggle in Admin to inline icons in pages,global,boolean
+
+notes,Instructions,,Import rows into Dataverse table with columns: Key, Description, Value, Notes, PageKey, Type,,
