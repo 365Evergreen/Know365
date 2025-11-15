@@ -504,7 +504,10 @@ export const getKnowledgeArticles = async (q?: string): Promise<any[]> => {
       },
     });
 
-    return data?.value || [];
+    const list = data?.value || [];
+    // normalize returned items with a consistent `displayName` property so callers don't need
+    // to know the actual display field name in the target org.
+    return (list || []).map((it: any) => ({ ...it, displayName: it[displayProp] || it.title || it.name || it.e365_name || '' }));
   } catch (error) {
     console.error('Error fetching knowledge articles:', error);
     return [];
@@ -539,7 +542,9 @@ export const getRecentKnowledgeArticles = async (top = 10): Promise<any[]> => {
       },
     });
 
-    return data?.value || [];
+    const list = data?.value || [];
+    const mapped = (list || []).map((it: any) => ({ ...it, displayName: it[displayProp] || it.title || it.name || it.e365_name || '' }));
+    return mapped;
   } catch (error) {
     console.error('Error fetching recent knowledge articles:', error);
     return [];
