@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminIcons from './AdminIcons';
 import {
@@ -28,10 +28,13 @@ import {
   DocumentCardTitle,
   DocumentCardDetails,
   DocumentCardActions,
-  IconButton,
   Text,
+  MessageBar,
+  MessageBarType,
+  getTheme,
 } from '@fluentui/react';
-import UIConfigEditor from '../components/UIConfigEditor';
+import { getCarouselConfig, saveCarouselConfig } from '../services/dataverseClient';
+import ConfigurableCarousel from '../components/ConfigurableCarousel';
 
 const AdminConfig: React.FC = () => {
   const [items, setItems] = useState<any[]>([]);
@@ -48,7 +51,15 @@ const AdminConfig: React.FC = () => {
   const [mappings, setMappings] = useState<any[]>([]);
   const [mappingEditing, setMappingEditing] = useState<any | null>(null);
   const [showIconsInline, setShowIconsInline] = useState(false);
+  // carousel config state
+  const [selectedCarouselPage, setSelectedCarouselPage] = useState<string | undefined>(undefined);
+  const [carouselConfig, setCarouselConfig] = useState<any | null>(null);
+  const [loadingCarouselConfig, setLoadingCarouselConfig] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [messageType, setMessageType] = useState<MessageBarType>(MessageBarType.info);
+  const messageTimer = useRef<number | null>(null);
   const navigate = useNavigate();
+  const theme = getTheme();
 
   const columns: IColumn[] = [
     { key: 'col1', name: 'Key', fieldName: 'key', minWidth: 100, maxWidth: 300 },
@@ -165,6 +176,13 @@ const AdminConfig: React.FC = () => {
     }
   };
 
+  const showMessage = (text: string, type: MessageBarType = MessageBarType.info, duration = 4000) => {
+    setMessage(text);
+    setMessageType(type);
+    if (messageTimer.current) window.clearTimeout(messageTimer.current);
+    messageTimer.current = window.setTimeout(() => setMessage(null), duration) as unknown as number;
+  };
+
   const beginEditMapping = (m: any) => {
     setMappingEditing(m);
     // populate form with parsed mapping JSON if available
@@ -268,11 +286,16 @@ const AdminConfig: React.FC = () => {
   return (
     <div style={{ padding: 20 }}>
       <h2>Administration</h2>
+      {message && (
+        <div style={{ marginTop: 8, marginBottom: 8 }}>
+          <MessageBar messageBarType={messageType} onDismiss={() => setMessage(null)}>{message}</MessageBar>
+        </div>
+      )}
       <Pivot aria-label="Admin tabs">
         <PivotItem headerText="Pages">
           <Stack tokens={{ childrenGap: 12 }}>
             <Stack horizontal tokens={{ childrenGap: 8 }} verticalAlign="center">
-              <PrimaryButton text="Create new page" onClick={() => alert('Create page - template flow (placeholder)')} />
+              <PrimaryButton text="Create new page" onClick={() => showMessage('Create page - template flow (placeholder)', MessageBarType.info)} />
               <Text styles={{ root: { marginLeft: 8, color: theme.palette.neutralSecondary } }}>Create and edit pages using templates and drag & drop components.</Text>
             </Stack>
 
@@ -286,8 +309,8 @@ const AdminConfig: React.FC = () => {
                     </DocumentCardDetails>
                     <DocumentCardActions
                       actions={[
-                        { iconProps: { iconName: 'Edit' }, title: 'Edit', onClick: () => alert(`Edit page ${p.title} (placeholder)`) },
-                        { iconProps: { iconName: 'Delete' }, title: 'Delete', onClick: () => alert(`Delete page ${p.title} (confirm modal placeholder)`) },
+                        { iconProps: { iconName: 'Edit' }, title: 'Edit', onClick: () => showMessage(`Edit page ${p.title} (placeholder)`, MessageBarType.info) },
+                        { iconProps: { iconName: 'Delete' }, title: 'Delete', onClick: () => showMessage(`Delete page ${p.title} (confirm modal placeholder)`, MessageBarType.warning) },
                       ]}
                     />
                   </DocumentCard>
@@ -323,9 +346,9 @@ const AdminConfig: React.FC = () => {
           <Stack tokens={{ childrenGap: 12 }}>
             <Text>Choose a primary theme color. The primary color will influence the generated theme tokens.</Text>
             <div style={{ display: 'flex', gap: 12, marginTop: 8, alignItems: 'center' }}>
-              <button onClick={() => alert('Primary color set to Blue (placeholder)')} style={{ width: 32, height: 32, background: '#0063B1', border: 'none', borderRadius: 4 }} />
-              <button onClick={() => alert('Primary color set to Teal (placeholder)')} style={{ width: 32, height: 32, background: '#008272', border: 'none', borderRadius: 4 }} />
-              <button onClick={() => alert('Primary color set to Purple (placeholder)')} style={{ width: 32, height: 32, background: '#5C2D91', border: 'none', borderRadius: 4 }} />
+              <button onClick={() => showMessage('Primary color set to Blue (placeholder)', MessageBarType.info)} style={{ width: 32, height: 32, background: '#0063B1', border: 'none', borderRadius: 4 }} />
+              <button onClick={() => showMessage('Primary color set to Teal (placeholder)', MessageBarType.info)} style={{ width: 32, height: 32, background: '#008272', border: 'none', borderRadius: 4 }} />
+              <button onClick={() => showMessage('Primary color set to Purple (placeholder)', MessageBarType.info)} style={{ width: 32, height: 32, background: '#5C2D91', border: 'none', borderRadius: 4 }} />
               <div style={{ marginLeft: 12 }}>
                 <Text>Preview</Text>
                 <div style={{ marginTop: 8, padding: 12, borderRadius: 6, background: '#f3f2f1' }}>
@@ -440,6 +463,131 @@ const AdminConfig: React.FC = () => {
                     <AdminIcons />
                   </div>
                 )}
+                <div style={{ marginTop: 20 }}>
+                  <h4>Carousel Configuration (per-page)</h4>
+                  <div style={{ marginBottom: 8 }}>
+                    <Dropdown
+                      placeholder="Select a page to configure carousel"
+                      options={pages.map((p) => ({ key: p.id, text: p.title }))}
+                      selectedKey={selectedCarouselPage}
+                      onChange={async (_, option) => {
+                        const key = option?.key as string;
+                        setSelectedCarouselPage(key);
+                        setLoadingCarouselConfig(true);
+                        try {
+                          const cfg = await getCarouselConfig(key);
+                          setCarouselConfig(cfg ? cfg.config || null : null);
+                        } catch (e) {
+                          console.error('Failed to load carousel config', e);
+                          setCarouselConfig(null);
+                        } finally {
+                          setLoadingCarouselConfig(false);
+                        }
+                      }}
+                      styles={{ root: { minWidth: 360 } }}
+                    />
+                  </div>
+
+                  {loadingCarouselConfig && <Spinner label="Loading carousel config..." />}
+
+                  <div style={{ marginTop: 12 }}>
+                    <Stack tokens={{ childrenGap: 8 }}>
+                      <Dropdown
+                        label="Layout"
+                        selectedKey={(carouselConfig && carouselConfig.layout) || 'card'}
+                        options={[{ key: 'card', text: 'Card' }, { key: 'gallery', text: 'Gallery' }, { key: 'banner', text: 'Banner' }]}
+                        onChange={(_, o) => setCarouselConfig((c: any) => ({ ...(c || {}), layout: String(o?.key) }))}
+                        styles={{ root: { width: 240 } }}
+                      />
+                      <TextField
+                        label="Item limit"
+                        type="number"
+                        value={carouselConfig && carouselConfig.itemLimit !== undefined ? String(carouselConfig.itemLimit) : ''}
+                        onChange={(_, v) => setCarouselConfig((c: any) => ({ ...(c || {}), itemLimit: v ? parseInt(v) : undefined }))}
+                      />
+                      <TextField
+                        label="Interval (ms)"
+                        type="number"
+                        value={carouselConfig && carouselConfig.intervalMs !== undefined ? String(carouselConfig.intervalMs) : ''}
+                        onChange={(_, v) => setCarouselConfig((c: any) => ({ ...(c || {}), intervalMs: v ? parseInt(v) : undefined }))}
+                      />
+                      <Stack horizontal tokens={{ childrenGap: 8 }}>
+                        <DefaultButton
+                          text={carouselConfig && carouselConfig.autoplay ? 'Autoplay: On' : 'Autoplay: Off'}
+                          onClick={() => setCarouselConfig((c: any) => ({ ...(c || {}), autoplay: !c?.autoplay }))}
+                        />
+                        <DefaultButton
+                          text={carouselConfig && carouselConfig.pauseOnHover ? 'Pause On Hover: Yes' : 'Pause On Hover: No'}
+                          onClick={() => setCarouselConfig((c: any) => ({ ...(c || {}), pauseOnHover: !c?.pauseOnHover }))}
+                        />
+                        <DefaultButton
+                          text={carouselConfig && carouselConfig.pauseOnFocus ? 'Pause On Focus: Yes' : 'Pause On Focus: No'}
+                          onClick={() => setCarouselConfig((c: any) => ({ ...(c || {}), pauseOnFocus: !c?.pauseOnFocus }))}
+                        />
+                        <DefaultButton
+                          text={carouselConfig && carouselConfig.showIndicators ? 'Indicators: On' : 'Indicators: Off'}
+                          onClick={() => setCarouselConfig((c: any) => ({ ...(c || {}), showIndicators: !c?.showIndicators }))}
+                        />
+                        <DefaultButton
+                          text={carouselConfig && carouselConfig.showNav ? 'Nav: On' : 'Nav: Off'}
+                          onClick={() => setCarouselConfig((c: any) => ({ ...(c || {}), showNav: !c?.showNav }))}
+                        />
+                      </Stack>
+                      <Stack horizontal tokens={{ childrenGap: 8 }}>
+                        <PrimaryButton
+                          onClick={async () => {
+                            if (!selectedCarouselPage) {
+                              showMessage('Select a page first', MessageBarType.warning);
+                              return;
+                            }
+                            try {
+                              await saveCarouselConfig(selectedCarouselPage, carouselConfig || {});
+                              showMessage('Carousel configuration saved', MessageBarType.success);
+                              await loadItems();
+                            } catch (e) {
+                              console.error('Save failed', e);
+                              showMessage('Failed to save carousel configuration', MessageBarType.error);
+                            }
+                          }}
+                        >
+                          Save carousel config
+                        </PrimaryButton>
+                        <DefaultButton onClick={() => setCarouselConfig(null)}>Clear</DefaultButton>
+                      </Stack>
+                    </Stack>
+                  </div>
+                  <div style={{ marginTop: 18 }}>
+                    <h4>Preview</h4>
+                    <div style={{ border: '1px solid #e1e1e1', padding: 12, borderRadius: 6, maxWidth: 960 }}>
+                      <ConfigurableCarousel
+                        config={carouselConfig || {
+                          layout: 'card',
+                          itemLimit: 5,
+                          intervalMs: 4000,
+                          autoplay: false,
+                          pauseOnHover: true,
+                          pauseOnFocus: true,
+                          showIndicators: true,
+                        }}
+                        items={Array.from({ length: (carouselConfig && carouselConfig.itemLimit) || 5 }).map((_, i) => ({
+                          id: `sample-${i}`,
+                          title: `Sample Item ${i + 1}`,
+                          description: 'Placeholder content for preview',
+                          image: `https://picsum.photos/seed/preview${i}/800/300`,
+                        }))}
+                        renderItem={(item: any) => (
+                          <div style={{ padding: 8 }}>
+                            <img src={item.image} alt={item.title} style={{ width: '100%', height: 180, objectFit: 'cover', borderRadius: 4 }} />
+                            <div style={{ marginTop: 8 }}>
+                              <strong>{item.title}</strong>
+                              <div style={{ fontSize: 12, color: '#666' }}>{item.description}</div>
+                            </div>
+                          </div>
+                        )}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </Stack>

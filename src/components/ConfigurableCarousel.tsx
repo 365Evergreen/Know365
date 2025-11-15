@@ -1,6 +1,6 @@
 import React from 'react'
 import Carousel from './Carousel'
-import { Stack, Text, PrimaryButton } from '@fluentui/react'
+import { Text, PrimaryButton } from '@fluentui/react'
 
 export type CarouselItem = {
   id: string
@@ -49,7 +49,7 @@ const CardSlide: React.FC<{ item: CarouselItem }> = ({ item }) => (
     <div style={{ flex: '1 1 auto' }}>
       <Text variant="large">{item.title}</Text>
       {item.summary && <Text styles={{ root: { color: '#666' } }}>{item.summary}</Text>}
-      {item.url && <PrimaryButton styles={{ root: { marginTop: 8 } }} onClick={() => (window.location.href = item.url)}>Open</PrimaryButton>}
+      {item.url && <PrimaryButton styles={{ root: { marginTop: 8 } }} onClick={() => { if (item.url) window.location.href = item.url }}>Open</PrimaryButton>}
     </div>
   </div>
 )
