@@ -16,17 +16,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Setup Node.js (20.x)
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20.x'
           cache: 'npm'
 
-      - name: Install dependencies (npm)
-        run: npm ci
+      - name: Enable Corepack and install dependencies (pnpm)
+        run: |
+          corepack enable
+          corepack prepare pnpm@latest --activate
+          pnpm -v
+          pnpm install --frozen-lockfile
 
-      - name: Build (npm)
-        run: npm run build
+      - name: Build (pnpm)
+        run: pnpm build
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
