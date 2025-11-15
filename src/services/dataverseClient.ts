@@ -533,12 +533,16 @@ export const getKnowledgeArticlesByFunction = async (fn: string, q?: string): Pr
       // ignore
     }
 
-    const safeFn = (fn || '').replace(/'/g, "''");
+    // Convert slug-like function (e.g. 'customer-service') to a human Name ('Customer Service')
+    const fnName = (fn || '')
+      .replace(/-/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase())
+      .replace(/'/g, "''");
     const filterParts: string[] = [];
 
-    // Prefer server-side filtering using the explicit subject attribute when available
-    // Uses equality check on the `e365_knowledgearticlesubject` attribute.
-    filterParts.push(`e365_knowledgearticlesubject eq '${safeFn}'`);
+    // Server-side filtering using the lookup's Name property (navigation property)
+    // e.g. e365_knowledgearticlesubject/Name eq 'Finance'
+    filterParts.push(`e365_knowledgearticlesubject/Name eq '${fnName}'`);
 
     // If a free-text query is provided, also restrict by displayProp or tagsText
     if (q && q.trim()) {
@@ -546,8 +550,8 @@ export const getKnowledgeArticlesByFunction = async (fn: string, q?: string): Pr
       filterParts.push(`contains(${displayProp},'${safe}') or contains(tagsText,'${safe}')`);
     }
 
-    const filter = `?$filter=${encodeURIComponent(filterParts.join(' and '))}&$top=50`;
-    const resourcePath = `${entitySet}${filter}`;
+    const filter = `${encodeURIComponent(filterParts.join(' and '))}`;
+    const resourcePath = `${entitySet}?$expand=e365_knowledgearticlesubject&$filter=${filter}&$top=50`;
     const accessToken = await getDataverseAccessToken();
     const data = await fetchDataverseResource(resourcePath, {
       headers: {
