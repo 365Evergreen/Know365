@@ -1,5 +1,6 @@
 import React, { useState, useEffect, Suspense, lazy, useLayoutEffect } from 'react';
 import { ThemeProvider, Stack, initializeIcons } from '@fluentui/react';
+import { BrowserRouter as Router, Routes, Route, useParams, Navigate } from 'react-router-dom';
 
 import { MsalProvider } from '@azure/msal-react';
 import { lightTheme, darkTheme } from './theme';
@@ -7,7 +8,6 @@ import { msalInstance } from './services/authConfig';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import './styles/global.css';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import AuthGate from './components/AuthGate';
 
 const Home = lazy(() => import('./pages/Home'));
@@ -42,6 +42,23 @@ const DataverseDebug = lazy(() => import('./pages/DataverseDebug'));
 
 // Initialize Fluent UI icons
 initializeIcons();
+
+// lightweight page to consume readable urls
+const BrowsePage: React.FC = () => {
+  const params = useParams<{ category: string; item?: string }>();
+  const { category, item } = params;
+
+  // ...replace with real data-loading logic (graph/dataverse) as needed...
+  if (!category) return <Navigate to="/" replace />;
+
+  return (
+    <div style={{ padding: 24 }}>
+      <h1>{(category || '').replace(/-/g, ' ')}</h1>
+      {item && <h2>{item.replace(/-/g, ' ')}</h2>}
+      <p>Content for {category}{item ? ` / ${item}` : ''} goes here.</p>
+    </div>
+  );
+};
 
 const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -98,7 +115,7 @@ const App: React.FC = () => {
   return (
     <MsalProviderAsAny instance={msalInstance}>
       <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
-        <BrowserRouter>
+        <Router>
           <Stack
             verticalFill
             styles={{ root: { minHeight: '100vh', display: 'flex', flexDirection: 'column', paddingTop: headerHeight } }}
@@ -137,12 +154,13 @@ const App: React.FC = () => {
                   <Route path="/media-demo" element={<MediaDemo />} />
                   <Route path="/dataverse-debug" element={<DataverseDebug />} />
                   <Route path="/settings" element={<Settings />} />
+                  <Route path="/browse/:category/:item?" element={<BrowsePage />} />
                 </Routes>
               </AuthGate>
             </Suspense>
             <Footer />
           </Stack>
-        </BrowserRouter>
+        </Router>
       </ThemeProvider>
     </MsalProviderAsAny>
   );

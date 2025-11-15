@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Stack, Text, getTheme, Callout, DefaultButton, Icon } from '@fluentui/react';
 
 export interface MegaMenuItem {
@@ -12,11 +12,36 @@ export interface MegaMenuItem {
 }
 
 const theme = getTheme();
+
+// added: readable slug helper + resolver for internal/external URLs
+const slugify = (s?: string) =>
+  (s || '')
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+
+const resolveTarget = (url: string | undefined, parent?: string, title?: string): string | null => {
+  // external full URLs -> return null to indicate open externally
+  if (url && /^https?:\/\//.test(url)) return null;
+  // if url provided and starts with '/', treat as internal path
+  if (url && url.startsWith('/')) return url;
+  // build readable path using browse pattern
+  const p = parent ? slugify(parent) : undefined;
+  const t = title ? slugify(title) : undefined;
+  if (p && t) return `/browse/${p}/${t}`;
+  if (p) return `/browse/${p}`;
+  if (t) return `/browse/${t}`;
+  return '/';
+};
+
 // (colStyle and IconFor removed — not needed in interactive layout)
 
 const MegaMenu: React.FC<{ items: MegaMenuItem[]; isMobile?: boolean }> = ({ items, isMobile = false }) => {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
+  const navigate = useNavigate();
   const hoverTimeout = useRef<number | null>(null);
   // store actual DOM elements (span wrappers) so Callout.target gets an element
   const buttonRefs = useRef<Array<Element | null>>([]);
@@ -45,16 +70,37 @@ const MegaMenu: React.FC<{ items: MegaMenuItem[]; isMobile?: boolean }> = ({ ite
               <div style={{ padding: '8px 12px' }}>
                 {it.description && <Text styles={{ root: { color: theme.palette.neutralSecondary } }}>{it.description}</Text>}
                 <Stack tokens={{ childrenGap: 6 }} styles={{ root: { marginTop: 8 } }}>
-                  {it.url && (
-                    <Link to={it.url} onClick={() => {}} style={{ textDecoration: 'none' }}>
-                      <Text>{it.title}</Text>
-                    </Link>
-                  )}
-                  {(it.children || []).map((c) => (
-                    <Link to={c.url || '#'} key={c.title} style={{ textDecoration: 'none' }}>
-                      <Text>{c.title}</Text>
-                    </Link>
-                  ))}
+                  {/* Don't repeat the parent title here to avoid duplicate entries */}
+                  {(() => {
+                    const parentKey = (it.title || '').trim().toLowerCase();
+                    const map: Record<string, any> = {};
+                    (it.children || []).forEach((ch: any) => {
+                      const key = (ch.title || '').trim().toLowerCase();
+                      if (!key) return;
+                      if (key === parentKey) return; // skip duplicates matching parent
+                      if (!map[key]) map[key] = ch;
+                    });
+                    const children = Object.values(map);
+                    return children.map((c: any) => (
+                      <div
+                        key={c.title}
+                        role="button"
+                        onClick={() => {
+                          const target = resolveTarget(c.url, it.title, c.title);
+                          if (target === null) {
+                            // external link -> navigate full window
+                            if (c.url) window.location.href = c.url;
+                            return;
+                          }
+                          navigate(target);
+                          setExpanded((s) => ({ ...s, [idx]: false }));
+                        }}
+                        style={{ textDecoration: 'none', cursor: 'pointer' }}
+                      >
+                        <Text>{c.title}</Text>
+                      </div>
+                    ));
+                  })()}
                 </Stack>
               </div>
             )}
@@ -103,6 +149,19 @@ const MegaMenu: React.FC<{ items: MegaMenuItem[]; isMobile?: boolean }> = ({ ite
                     </div>
                     {col.description && <Text styles={{ root: { marginTop: 6, color: theme.palette.neutralSecondary } }}>{col.description}</Text>}
                     {/* intentionally not repeating a link to the parent title here to avoid duplicates */}
+                    <div style={{ marginTop: 8 }}>
+                      <DefaultButton
+                        onClick={() => {
+                          const target = resolveTarget(col.url, col.title, undefined);
+                          if (target === null) { if (col.url) window.location.href = col.url; return; }
+                          if (target) navigate(target);
+                          setOpenIndex(null);
+                        }}
+                        styles={{ root: { padding: '6px 10px', boxShadow: 'none' } }}
+                      >
+                        View {col.title}
+                      </DefaultButton>
+                    </div>
                   </div>
 
                   {(col.children || []).length > 0 && (
@@ -128,10 +187,22 @@ const MegaMenu: React.FC<{ items: MegaMenuItem[]; isMobile?: boolean }> = ({ ite
                             <div key={gi} style={{ minWidth: 160 }}>
                               {grp.map((c: any) => (
                                 <div key={c.title} style={{ marginBottom: 8 }}>
-                                  <Link to={c.url || '#'} onClick={() => setOpenIndex(null)} style={{ textDecoration: 'none' }}>
+                                  <div
+                                    role="button"
+                                    onClick={() => {
+                                      const target = resolveTarget(c.url, col.title, c.title);
+                                      if (target === null) {
+                                        if (c.url) window.location.href = c.url;
+                                        return;
+                                      }
+                                      if (target) navigate(target);
+                                      setOpenIndex(null);
+                                    }}
+                                    style={{ textDecoration: 'none', cursor: 'pointer' }}
+                                  >
                                     <Text styles={{ root: { display: 'block' } }}>{c.title}</Text>
                                     {c.description && <Text styles={{ root: { color: theme.palette.neutralSecondary, fontSize: 12 } }}>{c.description}</Text>}
-                                  </Link>
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -143,11 +214,11 @@ const MegaMenu: React.FC<{ items: MegaMenuItem[]; isMobile?: boolean }> = ({ ite
                 </div>
               </Callout>
             )}
-            </div>
-          ))}
-        </Stack>
-      </nav>
-    );
-  };
+          </div>
+        ))}
+      </Stack>
+    </nav>
+  );
+};
 
-  export default MegaMenu;
+export default MegaMenu;
