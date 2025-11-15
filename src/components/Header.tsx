@@ -50,12 +50,12 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, logoUrl }) =
     {
       title: 'Browse by Function',
       icon: 'Work',
-      url: '/browse/functions',
+      url: '/functions',
       children: [
-        { title: 'Operations', url: '/browse/functions/operations' },
-        { title: 'Customer Service', url: '/browse/functions/customer-service' },
-        { title: 'Finance', url: '/browse/functions/finance' },
-        { title: 'HR', url: '/browse/functions/hr' },
+        { title: 'Operations', url: '/functions/operations' },
+        { title: 'Customer Service', url: '/functions/customer-service' },
+        { title: 'Finance', url: '/functions/finance' },
+        { title: 'HR', url: '/functions/hr' },
       ],
     },
     {

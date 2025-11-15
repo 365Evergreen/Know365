@@ -23,10 +23,7 @@ const MyContributions = lazy(() => import('./pages/MyContributions'));
 const SavedItems = lazy(() => import('./pages/SavedItems'));
 const RecentlyViewed = lazy(() => import('./pages/RecentlyViewed'));
 const FunctionsIndex = lazy(() => import('./pages/FunctionsIndex'));
-const FunctionsOperations = lazy(() => import('./pages/FunctionsOperations'));
-const FunctionsCustomerService = lazy(() => import('./pages/FunctionsCustomerService'));
-const FunctionsFinance = lazy(() => import('./pages/FunctionsFinance'));
-const FunctionsHR = lazy(() => import('./pages/FunctionsHR'));
+const FunctionsPage = lazy(() => import('./pages/FunctionsPage'));
 const DocumentTypesIndex = lazy(() => import('./pages/DocumentTypesIndex'));
 const DocumentPolicies = lazy(() => import('./pages/DocumentPolicies'));
 const DocumentProcedures = lazy(() => import('./pages/DocumentProcedures'));
@@ -145,10 +142,7 @@ const App: React.FC = () => {
                   <Route path="/my-knowledge/saved" element={<SavedItems />} />
                   <Route path="/my-knowledge/recent" element={<RecentlyViewed />} />
                   <Route path="/functions" element={<FunctionsIndex />} />
-                  <Route path="/functions/operations" element={<FunctionsOperations />} />
-                  <Route path="/functions/customer-service" element={<FunctionsCustomerService />} />
-                  <Route path="/functions/finance" element={<FunctionsFinance />} />
-                  <Route path="/functions/hr" element={<FunctionsHR />} />
+                  <Route path="/functions/:fn" element={<FunctionsPage />} />
                   <Route path="/document-types" element={<DocumentTypesIndex />} />
                   <Route path="/document-types/policies" element={<DocumentPolicies />} />
                   <Route path="/document-types/procedures" element={<DocumentProcedures />} />
