@@ -309,6 +309,39 @@ async function resolveEntitySetForLogicalName(logicalName: string): Promise<stri
   throw new Error(`Could not resolve EntitySetName for logical name '${logicalName}'`);
 }
 
+// Find lookup attribute logical names on an entity, prefer attributes that reference
+// a 'subject'-like target or whose name contains 'subject'. Returns attribute logical
+// names (e.g. 'e365_subjectid' or 'regardingobjectid') ordered by likelihood.
+async function findLookupAttributesForEntity(entityLogicalName: string): Promise<string[]> {
+  try {
+    const accessToken = await getDataverseAccessToken();
+    const resourcePath = `EntityDefinitions(LogicalName='${entityLogicalName}')/Attributes?$select=LogicalName,AttributeType,Targets`;
+    const data = await fetchDataverseResource(resourcePath, {
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    });
+
+    const attrs = (data?.value || []) as Array<any>;
+    const lookupAttrs = attrs.filter((a) => a.AttributeType === 'Lookup' || a.AttributeType === 'Customer');
+
+    // Score and sort: attributes whose LogicalName contains 'subject' first, then those whose Targets include 'subject', then others.
+    const scored = lookupAttrs.map((a) => {
+      const name: string = (a.LogicalName || '').toLowerCase();
+      const targets: string[] = Array.isArray(a.Targets) ? a.Targets.map((t: string) => (t || '').toLowerCase()) : [];
+      let score = 0;
+      if (name.includes('subject')) score += 10;
+      if (targets.some((t) => t.includes('subject'))) score += 8;
+      if (name.includes('topic')) score += 4;
+      return { name: a.LogicalName, score };
+    });
+
+    scored.sort((x, y) => y.score - x.score);
+    return scored.map((s) => s.name).filter(Boolean);
+  } catch (e) {
+    console.warn('findLookupAttributesForEntity failed', e);
+    return [];
+  }
+}
+
 export const getKnowledgeSources = async (): Promise<KnowledgeSource[]> => {
   try {
     // Prefer resolving the actual entity set name for the known logical name
@@ -514,6 +547,40 @@ export const getKnowledgeArticlesBySubject = async (subjectId: string, top = 50)
       }
     }
 
+    // If the above guessed filter attributes failed, attempt discovery of lookup attributes
+    // on the article entity and try filters of the form `_<attr>_value eq guid'...'` for each
+    // discovered lookup attribute.
+    try {
+      const lookupAttrs = await findLookupAttributesForEntity(logical);
+      for (const attr of lookupAttrs) {
+        const lookupFilter = `_${attr}_value eq guid'${subjectId}'`;
+        try {
+          const resourcePath2 = `${entitySet}?$filter=${encodeURIComponent(lookupFilter)}&$top=${top}`;
+          const data2 = await fetchDataverseResource(resourcePath2, {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          const list2 = data2?.value || [];
+          if (Array.isArray(list2) && list2.length > 0) {
+            // persist mapping of attribute to speed up future queries
+            try {
+              const mapKey = `${logical}::lookup::subject`;
+              entitySetMap.set(mapKey.toLowerCase(), attr);
+              persistEntitySetMap();
+            } catch (e) { /* ignore */ }
+            return list2;
+          }
+        } catch (e) {
+          console.warn(`Dataverse: lookup attribute filter failed for ${attr}`, e);
+          // try next attribute
+        }
+      }
+    } catch (e) {
+      console.warn('Error discovering lookup attributes for articles', e);
+    }
+
     // fallback: return empty
     return [];
   } catch (error) {
@@ -564,61 +631,5 @@ export const getAppConfigItems = async (): Promise<any[]> => {
   } catch (e) {
     console.error('Error fetching app config items:', e);
     return [];
-  }
-};
-
-export const createAppConfigItem = async (item: Record<string, any>): Promise<any> => {
-  const accessToken = await getDataverseAccessToken();
-  return await fetchDataverseResource(APP_CONFIG_ENTITY_SET, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(item),
-  });
-};
-
-export const updateAppConfigItem = async (id: string, item: Record<string, any>): Promise<any> => {
-  const accessToken = await getDataverseAccessToken();
-  // Dataverse PATCH on entity set requires URL: <entitySet>(id)
-  const apiRoot = buildDataverseApiRoot();
-  const cleanId = id.replace(/[{}]/g, '');
-  const url = `${apiRoot}/${APP_CONFIG_ENTITY_SET}(${cleanId})`;
-
-  const resp = await fetch(url, {
-    method: 'PATCH',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
-    },
-    body: JSON.stringify(item),
-  });
-
-  if (!resp.ok) {
-    const body = await resp.text().catch(() => '<no body>');
-    throw new Error(`Failed to update config item: ${resp.status} ${resp.statusText}\n${body}`);
-  }
-
-  return await resp.json().catch(() => ({}));
-};
-
-export const deleteAppConfigItem = async (id: string): Promise<void> => {
-  const accessToken = await getDataverseAccessToken();
-  const apiRoot = buildDataverseApiRoot();
-  const cleanId = id.replace(/[{}]/g, '');
-  const url = `${apiRoot}/${APP_CONFIG_ENTITY_SET}(${cleanId})`;
-
-  const resp = await fetch(url, {
-    method: 'DELETE',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-
-  if (!resp.ok && resp.status !== 204) {
-    const body = await resp.text().catch(() => '<no body>');
-    throw new Error(`Failed to delete config item: ${resp.status} ${resp.statusText}\n${body}`);
   }
 };
