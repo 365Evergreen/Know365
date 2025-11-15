@@ -1,0 +1,53 @@
+name: pnpm Corepack Activation Check
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  check-pnpm-corepack:
+    name: Check pnpm workflows for Corepack activation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Find workflows that use pnpm
+        id: find
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(grep -RIl --include="*.yml" --include="*.yaml" "\bpnpm\b" .github/workflows || true)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "no_files=true" >> $GITHUB_OUTPUT
+            echo "No workflow files reference pnpm."
+            exit 0
+          fi
+          echo "Found workflows using pnpm:" >&2
+          for f in "${files[@]}"; do echo " - $f" >&2; done
+          printf "%s\n" "${files[@]}" > /tmp/pnpm_workflows.txt
+          echo "no_files=false" >> $GITHUB_OUTPUT
+
+      - name: Verify Corepack activation present
+        if: steps.find.outputs.no_files == 'false'
+        run: |
+          set -euo pipefail
+          missing=()
+          while IFS= read -r f; do
+            # check for corepack enable or corepack prepare pnpm
+            if ! grep -qE "corepack enable|corepack prepare pnpm|corepack prepare pnpm@" "$f"; then
+              missing+=("$f")
+            fi
+          done < /tmp/pnpm_workflows.txt
+
+          if [ ${#missing[@]} -ne 0 ]; then
+            echo "The following workflow files reference pnpm but do not enable Corepack / prepare pnpm:" >&2
+            for m in "${missing[@]}"; do echo " - $m" >&2; done
+            echo "Please add a Corepack activation step (e.g. 'corepack enable' + 'corepack prepare pnpm@latest --activate') before calling pnpm." >&2
+            exit 1
+          fi
+
+      - name: Success message
+        run: echo "All workflows that use pnpm include Corepack activation."
