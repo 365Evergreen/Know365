@@ -476,11 +476,21 @@ export const getKnowledgeArticles = async (q?: string): Promise<any[]> => {
     } catch (e) {
       // fallback to legacy guess 'KnowledgeArticles'
     }
+    // Resolve a reasonable display property (e.g. title/name) for this entity set so we don't
+    // hardcode a field name that might not exist in some orgs. Fall back to 'title'.
+    let displayProp = 'title';
+    try {
+      const meta = await getEntitySetMetadata(entitySet);
+      if (meta && meta.displayName) displayProp = meta.displayName;
+    } catch (e) {
+      // ignore and keep default
+    }
 
     let filter = '';
     if (q && q.trim()) {
       const safe = q.replace(/'/g, "''");
-      filter = `?$filter=contains(title,'${safe}') or contains(tagsText,'${safe}')&$top=50`;
+      // try searching both display prop and a common tags field if present
+      filter = `?$filter=contains(${displayProp},'${safe}') or contains(tagsText,'${safe}')&$top=50`;
     } else {
       filter = '?$top=50';
     }
@@ -513,8 +523,15 @@ export const getRecentKnowledgeArticles = async (top = 10): Promise<any[]> => {
     }
 
     const accessToken = await getDataverseAccessToken();
-    // request createdon, title, subject and source fields where available
-    const resourcePath = `${entitySet}?$select=*,createdon,title&$orderby=createdon desc&$top=${top}`;
+    // request createdon and a sensible display property (title/name) for the entity
+    let displayProp = 'title';
+    try {
+      const meta = await getEntitySetMetadata(entitySet);
+      if (meta && meta.displayName) displayProp = meta.displayName;
+    } catch (e) {
+      // ignore and fall back to 'title'
+    }
+    const resourcePath = `${entitySet}?$select=*,createdon,${displayProp}&$orderby=createdon desc&$top=${top}`;
     const data = await fetchDataverseResource(resourcePath, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
