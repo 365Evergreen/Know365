@@ -253,18 +253,75 @@ async function getDataverseAccessToken(): Promise<string> {
   }
 }
 
-export const getKnowledgeSources = async (): Promise<KnowledgeSource[]> => {
+// Resolve an EntitySetName from a logical entity name (LogicalName). This helps avoid
+// hardcoded OData paths like 'KnowledgeSources' which may not match the target org's
+// EntitySetName (publisher prefixes / pluralization differ). The resolved mapping is
+// cached in `entitySetMap` and persisted to localStorage.
+async function resolveEntitySetForLogicalName(logicalName: string): Promise<string> {
+  const key = logicalName.toLowerCase();
+  if (entitySetMap.has(key)) return entitySetMap.get(key)!;
+
   try {
     const accessToken = await getDataverseAccessToken();
-
-    const data = await fetchDataverseResource('KnowledgeSources', {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
+    // Query the EntityDefinitions for the logical name
+    const resourcePath = `EntityDefinitions(LogicalName='${logicalName}')?$select=EntitySetName,LogicalName`;
+    const data = await fetchDataverseResource(resourcePath, {
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
     });
 
-    return data?.value || [];
+    const entitySetName = data && data.EntitySetName;
+    if (entitySetName && typeof entitySetName === 'string') {
+      try {
+        entitySetMap.set(key, entitySetName);
+        persistEntitySetMap();
+      } catch (e) {
+        /* ignore persistence errors */
+      }
+      return entitySetName;
+    }
+  } catch (err) {
+    // ignore and try fallback heuristics below
+    console.warn(`resolveEntitySetForLogicalName: failed to query EntityDefinitions for ${logicalName}`, err);
+  }
+
+  // Fallback: scan available EntitySets for a likely match
+  try {
+    const sets = await listEntitySets();
+    const target = logicalName.toLowerCase();
+    // Try simple heuristics: exact, contains, tokens
+    let match = sets.find((s) => s.toLowerCase() === target || s.toLowerCase().endsWith(target));
+    if (!match) {
+      const tokens = target.split(/[^a-z0-9]+/).filter(Boolean);
+      match = sets.find((s) => tokens.every((t) => s.toLowerCase().includes(t)));
+      if (!match) match = sets.find((s) => tokens.some((t) => s.toLowerCase().includes(t)));
+    }
+    if (match) {
+      try {
+        entitySetMap.set(key, match);
+        persistEntitySetMap();
+      } catch (e) { /* ignore */ }
+      return match;
+    }
+  } catch (e) {
+    console.warn('resolveEntitySetForLogicalName: metadata fallback failed', e);
+  }
+
+  throw new Error(`Could not resolve EntitySetName for logical name '${logicalName}'`);
+}
+
+export const getKnowledgeSources = async (): Promise<KnowledgeSource[]> => {
+  try {
+    // Prefer resolving the actual entity set name for the known logical name
+    const logical = 'e365_knowledgesource';
+    let entitySetName: string | null = null;
+    try {
+      entitySetName = await resolveEntitySetForLogicalName(logical);
+    } catch (e) {
+      // ignore and fallback to legacy name
+      entitySetName = 'KnowledgeSources';
+    }
+
+    return await getEntityRecords(entitySetName, 200) as KnowledgeSource[];
   } catch (error) {
     console.error('Error fetching knowledge sources:', error);
     return [];
@@ -378,7 +435,14 @@ export const createKnowledgeSource = async (source: KnowledgeSource): Promise<vo
 
 export const getKnowledgeArticles = async (q?: string): Promise<any[]> => {
   try {
-    const accessToken = await getDataverseAccessToken();
+    // Try to use resolved entity set name for the articles logical name
+    const logical = 'e365_knowledgearticle';
+    let entitySet = 'KnowledgeArticles';
+    try {
+      entitySet = await resolveEntitySetForLogicalName(logical);
+    } catch (e) {
+      // fallback to legacy guess 'KnowledgeArticles'
+    }
 
     let filter = '';
     if (q && q.trim()) {
@@ -388,7 +452,8 @@ export const getKnowledgeArticles = async (q?: string): Promise<any[]> => {
       filter = '?$top=50';
     }
 
-    const resourcePath = `KnowledgeArticles${filter}`;
+    const resourcePath = `${entitySet}${filter}`;
+    const accessToken = await getDataverseAccessToken();
     const data = await fetchDataverseResource(resourcePath, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -406,6 +471,15 @@ export const getKnowledgeArticles = async (q?: string): Promise<any[]> => {
 // Attempt to fetch knowledge articles filtered by a subject id.
 export const getKnowledgeArticlesBySubject = async (subjectId: string, top = 50): Promise<any[]> => {
   try {
+    // Resolve the entity set to use for knowledge articles (fallback to 'KnowledgeArticles')
+    const logical = 'e365_knowledgearticle';
+    let entitySet = 'KnowledgeArticles';
+    try {
+      entitySet = await resolveEntitySetForLogicalName(logical);
+    } catch (e) {
+      // fallback to legacy name
+    }
+
     const accessToken = await getDataverseAccessToken();
 
     // Try several plausible lookup attribute names until one returns results
@@ -418,7 +492,7 @@ export const getKnowledgeArticlesBySubject = async (subjectId: string, top = 50)
 
     for (const filter of candidates) {
       try {
-        const resourcePath = `KnowledgeArticles?$filter=${encodeURIComponent(filter)}&$top=${top}`;
+        const resourcePath = `${entitySet}?$filter=${encodeURIComponent(filter)}&$top=${top}`;
         const data = await fetchDataverseResource(resourcePath, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -428,6 +502,14 @@ export const getKnowledgeArticlesBySubject = async (subjectId: string, top = 50)
         const list = data?.value || [];
         if (Array.isArray(list) && list.length > 0) return list;
       } catch (e) {
+        // log candidate failure to help diagnose 400/404 responses
+        try {
+          // include filter in the warning to make debugging easier
+          // eslint-disable-next-line no-console
+          console.warn(`Dataverse: candidate filter failed: ${filter}`, e);
+        } catch (logErr) {
+          /* ignore logging errors */
+        }
         // try next candidate
       }
     }
