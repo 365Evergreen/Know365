@@ -33,6 +33,11 @@ jobs:
         with:
           version: 'latest'
 
+      - name: Install pnpm globally (fallback)
+        run: |
+          echo "Installing pnpm globally as a fallback"
+          npm i -g pnpm@latest
+
       - name: Install dependencies (pnpm)
         run: pnpm install --frozen-lockfile
 
