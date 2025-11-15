@@ -514,6 +514,53 @@ export const getKnowledgeArticles = async (q?: string): Promise<any[]> => {
   }
 };
 
+// Fetch knowledge articles filtered by a function name (uses tagsText as a heuristic filter).
+export const getKnowledgeArticlesByFunction = async (fn: string, q?: string): Promise<any[]> => {
+  try {
+    const logical = 'e365_knowledgearticle';
+    let entitySet = 'KnowledgeArticles';
+    try {
+      entitySet = await resolveEntitySetForLogicalName(logical);
+    } catch (e) {
+      // ignore and use legacy
+    }
+
+    let displayProp = 'title';
+    try {
+      const meta = await getEntitySetMetadata(entitySet);
+      if (meta && meta.displayName) displayProp = meta.displayName;
+    } catch (e) {
+      // ignore
+    }
+
+    const safeFn = (fn || '').replace(/'/g, "''");
+    let filterParts: string[] = [];
+    // filter on tagsText containing the function name as a best-effort heuristic
+    filterParts.push(`contains(tagsText,'${safeFn}')`);
+
+    if (q && q.trim()) {
+      const safe = q.replace(/'/g, "''");
+      filterParts.push(`contains(${displayProp},'${safe}') or contains(tagsText,'${safe}')`);
+    }
+
+    const filter = `?$filter=${encodeURIComponent(filterParts.join(' and '))}&$top=50`;
+    const resourcePath = `${entitySet}${filter}`;
+    const accessToken = await getDataverseAccessToken();
+    const data = await fetchDataverseResource(resourcePath, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const list = data?.value || [];
+    return (list || []).map((it: any) => ({ ...it, displayName: it[displayProp] || it.title || it.name || it.e365_name || '' }));
+  } catch (error) {
+    console.error('Error fetching knowledge articles by function:', error);
+    return [];
+  }
+};
+
 // Fetch the most recently created knowledge articles (ordered by createdon desc)
 export const getRecentKnowledgeArticles = async (top = 10): Promise<any[]> => {
   try {
