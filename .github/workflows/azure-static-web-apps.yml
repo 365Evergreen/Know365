@@ -64,28 +64,54 @@ jobs:
           echo "Attempting install with frozen lockfile..."
           if pnpm install --frozen-lockfile; then
             echo "Installed dependencies using --frozen-lockfile"
+            echo "PM=pnpm" >> $GITHUB_ENV
           else
             echo "Warning: --frozen-lockfile install failed. Showing diagnostics:" >&2
             echo "pnpm version: $(pnpm -v || echo 'not available')"
             echo "Lockfile status:"; ls -la pnpm-lock.yaml || true
             echo "Listing package.json and lockfile headers:"; head -n 5 package.json || true; head -n 5 pnpm-lock.yaml || true
-            echo "Falling back to non-frozen install to allow CI to continue (lockfile may differ)."
+            echo "Falling back: trying pnpm install, then npm ci if pnpm unavailable or fails."
             if command -v pnpm >/dev/null 2>&1; then
-              pnpm install || (echo "Fallback pnpm install failed" && exit 1)
+              if pnpm install; then
+                echo "Installed dependencies using pnpm"
+                echo "PM=pnpm" >> $GITHUB_ENV
+              else
+                echo "pnpm install failed; attempting npm ci fallback"
+                if npm ci --prefer-offline --no-audit --progress=false; then
+                  echo "Installed dependencies using npm ci"
+                  echo "PM=npm" >> $GITHUB_ENV
+                else
+                  echo "npm ci fallback also failed" && exit 1
+                fi
+              fi
             else
-              echo "pnpm still not available; attempting npx pnpm install..."
-              npx -y pnpm@10 install || (echo "npx pnpm install failed" && exit 1)
+              echo "pnpm not available; attempting npm ci as fallback"
+              if npm ci --prefer-offline --no-audit --progress=false; then
+                echo "Installed dependencies using npm ci"
+                echo "PM=npm" >> $GITHUB_ENV
+              else
+                echo "npm ci fallback failed" && exit 1
+              fi
             fi
           fi
 
       - name: Ensure Vite plugins installed
         run: |
           echo "Checking for @vitejs/plugin-react..."
-          pnpm ls @vitejs/plugin-react || pnpm add -D @vitejs/plugin-react
+          if [ "${PM}" = "pnpm" ]; then
+            pnpm ls @vitejs/plugin-react || pnpm add -D @vitejs/plugin-react
+          else
+            npm ls @vitejs/plugin-react || npm install --save-dev @vitejs/plugin-react
+          fi
           echo "Installed/verified @vitejs/plugin-react"
 
       - name: Build project (vite)
-        run: pnpm build
+        run: |
+          if [ "${PM}" = "pnpm" ]; then
+            pnpm build
+          else
+            npm run build
+          fi
         env:
           VITE_CLIENT_ID: ${{ secrets.VITE_CLIENT_ID }}
           VITE_TENANT_ID: ${{ secrets.VITE_TENANT_ID }}
