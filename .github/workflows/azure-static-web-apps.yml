@@ -1,5 +1,10 @@
 name: Azure Static Web Apps CI/CD
 
+# NOTE: This workflow is completely independent and self-contained.
+# It is SAFE to delete old workflow runs from GitHub Actions history.
+# Each run builds fresh from source and does not depend on previous runs.
+# See WORKFLOW-MAINTENANCE.md for details on safely deleting failed runs.
+
 on:
   push:
     branches:
