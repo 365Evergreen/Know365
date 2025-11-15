@@ -6,7 +6,6 @@ import {
   SearchBox,
   Persona,
   PersonaSize,
-  Icon,
   useTheme,
   DefaultButton,
   IconButton,
@@ -14,6 +13,7 @@ import {
   PanelType,
   Stack,
 } from '@fluentui/react';
+import { HomeIcon, DocumentationIcon, SearchIcon, SettingsIcon, DatabaseIcon, SunIcon, MoonIcon } from '../icons/SvgIcons';
 import useAuth from '../hooks/useAuth';
 import { getEntityRecords } from '../services/dataverseClient';
 
@@ -25,6 +25,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = 'User' }) => {
   const theme = useTheme();
+  const headerRef = React.useRef<HTMLElement | null>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -34,119 +35,6 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = '
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
-
-  const items: ICommandBarItemProps[] = [
-    {
-      key: 'home',
-      text: 'Home',
-      iconProps: { iconName: 'Home' },
-      onRender: () => (
-        <NavLink
-          to="/"
-          style={({ isActive }) => ({
-            textDecoration: 'none',
-            color: isActive ? theme.palette.themePrimary : undefined,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '4px 8px',
-            borderRadius: 4,
-          })}
-        >
-          <Icon iconName="Home" styles={{ root: { color: 'inherit' } }} />
-          <span>Home</span>
-        </NavLink>
-      ),
-    },
-    {
-      key: 'docs',
-      text: 'Documents',
-      iconProps: { iconName: 'Documentation' },
-      onRender: () => (
-        <NavLink
-          to="/knowledge"
-          style={({ isActive }) => ({
-            textDecoration: 'none',
-            color: isActive ? theme.palette.themePrimary : undefined,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '4px 8px',
-            borderRadius: 4,
-          })}
-        >
-          <Icon iconName="Documentation" styles={{ root: { color: 'inherit' } }} />
-          <span>Documents</span>
-        </NavLink>
-      ),
-    },
-    {
-      key: 'search',
-      text: 'Search',
-      iconProps: { iconName: 'Search' },
-      onRender: () => (
-        <NavLink
-          to="/knowledge"
-          style={({ isActive }) => ({
-            textDecoration: 'none',
-            color: isActive ? theme.palette.themePrimary : undefined,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '4px 8px',
-            borderRadius: 4,
-          })}
-        >
-          <Icon iconName="Search" styles={{ root: { color: 'inherit' } }} />
-          <span>Search</span>
-        </NavLink>
-      ),
-    },
-    {
-      key: 'admin',
-      text: 'Admin',
-      iconProps: { iconName: 'Settings' },
-      onRender: () => (
-        <NavLink
-          to="/admin"
-          style={({ isActive }) => ({
-            textDecoration: 'none',
-            color: isActive ? theme.palette.themePrimary : undefined,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '4px 8px',
-            borderRadius: 4,
-          })}
-        >
-          <Icon iconName="Settings" styles={{ root: { color: 'inherit' } }} />
-          <span>Admin</span>
-        </NavLink>
-      ),
-    },
-    {
-      key: 'metadata',
-      text: 'Metadata',
-      iconProps: { iconName: 'Database' },
-      onRender: () => (
-        <NavLink
-          to="/metadata"
-          style={({ isActive }) => ({
-            textDecoration: 'none',
-            color: isActive ? theme.palette.themePrimary : undefined,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '4px 8px',
-            borderRadius: 4,
-          })}
-        >
-          <Icon iconName="Database" styles={{ root: { color: 'inherit' } }} />
-          <span>Metadata</span>
-        </NavLink>
-      ),
-    },
-  ];
 
   const farItems: ICommandBarItemProps[] = [
     {
@@ -228,8 +116,149 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = '
     return () => { mounted = false; };
   }, [auth]);
 
+  // Primary items for the CommandBar; include brand/logo as the first item
+  const items: ICommandBarItemProps[] = [
+    {
+      key: 'brand',
+      onRender: () => (
+        <NavLink to="/" style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 12px' }} aria-label="Home">
+          <img src={logoUrl} alt="Know365" className="header-logo" />
+        </NavLink>
+      ),
+    },
+    {
+      key: 'home',
+      text: 'Home',
+      iconProps: { iconName: 'Home' },
+      onRender: () => (
+        <NavLink
+          to="/"
+          style={({ isActive }) => ({
+            textDecoration: 'none',
+            color: isActive ? theme.palette.themePrimary : undefined,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '4px 8px',
+            borderRadius: 4,
+          })}
+        >
+          <HomeIcon style={{ color: 'inherit', marginRight: 6 }} />
+          <span>Home</span>
+        </NavLink>
+      ),
+    },
+    {
+      key: 'docs',
+      text: 'Documents',
+      iconProps: { iconName: 'Documentation' },
+      onRender: () => (
+        <NavLink
+          to="/knowledge"
+          style={({ isActive }) => ({
+            textDecoration: 'none',
+            color: isActive ? theme.palette.themePrimary : undefined,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '4px 8px',
+            borderRadius: 4,
+          })}
+        >
+          <DocumentationIcon style={{ color: 'inherit', marginRight: 6 }} />
+          <span>Documents</span>
+        </NavLink>
+      ),
+    },
+    {
+      key: 'search',
+      text: 'Search',
+      iconProps: { iconName: 'Search' },
+      onRender: () => (
+        <NavLink
+          to="/knowledge"
+          style={({ isActive }) => ({
+            textDecoration: 'none',
+            color: isActive ? theme.palette.themePrimary : undefined,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '4px 8px',
+            borderRadius: 4,
+          })}
+        >
+          <SearchIcon style={{ color: 'inherit', marginRight: 6 }} />
+          <span>Search</span>
+        </NavLink>
+      ),
+    },
+    {
+      key: 'admin',
+      text: 'Admin',
+      iconProps: { iconName: 'Settings' },
+      onRender: () => (
+        <NavLink
+          to="/admin"
+          style={({ isActive }) => ({
+            textDecoration: 'none',
+            color: isActive ? theme.palette.themePrimary : undefined,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '4px 8px',
+            borderRadius: 4,
+          })}
+        >
+          <SettingsIcon style={{ color: 'inherit', marginRight: 6 }} />
+          <span>Admin</span>
+        </NavLink>
+      ),
+    },
+    {
+      key: 'metadata',
+      text: 'Metadata',
+      iconProps: { iconName: 'Database' },
+      onRender: () => (
+        <NavLink
+          to="/metadata"
+          style={({ isActive }) => ({
+            textDecoration: 'none',
+            color: isActive ? theme.palette.themePrimary : undefined,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '4px 8px',
+            borderRadius: 4,
+          })}
+        >
+          <DatabaseIcon style={{ color: 'inherit', marginRight: 6 }} />
+          <span>Metadata</span>
+        </NavLink>
+      ),
+    },
+  ];
+
+  React.useEffect(() => {
+    if (!headerRef.current) return;
+    const el = headerRef.current;
+    const setVar = () => {
+      const h = el.getBoundingClientRect().height;
+      document.documentElement.style.setProperty('--app-header-height', `${Math.ceil(h)}px`);
+    };
+
+    setVar();
+    const ro = new ResizeObserver(() => setVar());
+    ro.observe(el);
+    window.addEventListener('resize', setVar);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', setVar);
+    };
+  }, []);
+
   return (
     <header
+      ref={headerRef}
       role="banner"
       aria-label="Main navigation"
       style={{
@@ -238,9 +267,13 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = '
         left: 0,
         right: 0,
         zIndex: 1000,
+        height: 80,
         paddingTop: 10,
+        paddingBottom: 10,
         background: theme.semanticColors.bodyBackground || theme.palette.neutralLighter,
-        boxShadow: '0 1px 2px rgba(0,0,0,0.08)'
+        boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
+        display: 'flex',
+        alignItems: 'center'
       }}
     >
       {!isMobile && (
@@ -256,7 +289,11 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = '
           <IconButton iconProps={{ iconName: 'GlobalNavButton' }} ariaLabel="Open menu" onClick={() => setMenuOpen(true)} />
           <div style={{ fontWeight: 600 }}>{/* simple title */}Knowledge Centre</div>
           <div>
-            <Icon iconName={isDarkMode ? 'Sunny' : 'ClearNight'} onClick={onToggleTheme} style={{ cursor: 'pointer' }} />
+            {isDarkMode ? (
+              <SunIcon onClick={onToggleTheme} style={{ cursor: 'pointer' }} />
+            ) : (
+              <MoonIcon onClick={onToggleTheme} style={{ cursor: 'pointer' }} />
+            )}
           </div>
         </Stack>
       )}
@@ -297,7 +334,6 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode, userName = '
           </div>
         </Stack>
       </Panel>
-      <img src={logoUrl} alt="Know365" style={{ height: 32 }} />
     </header>
   );
 };

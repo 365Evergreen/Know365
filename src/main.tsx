@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { msalInstance } from './services/authConfig';
+import './icons/registerSvgIcons';
 
 // Initialize MSAL before mounting the app to prevent "uninitialized_public_client_application" errors
 async function bootstrap() {
