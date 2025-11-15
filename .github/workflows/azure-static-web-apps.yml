@@ -28,6 +28,17 @@ jobs:
           node-version: '20.x'
           cache: 'npm'
 
+      - name: Enable Corepack and prepare pnpm
+        run: |
+          echo "Enabling Corepack and preparing pnpm"
+          corepack enable
+          corepack prepare pnpm@10 --activate
+          if ! command -v pnpm >/dev/null 2>&1; then
+            echo "pnpm not found after corepack prepare, installing globally"
+            npm i -g pnpm@10
+          fi
+          echo "pnpm version: $(pnpm -v || echo 'not available')"
+
       - name: Install pnpm on runner
         uses: pnpm/action-setup@v2
         with:
