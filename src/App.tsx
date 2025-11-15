@@ -16,6 +16,24 @@ const About = lazy(() => import('./pages/About'));
 const Settings = lazy(() => import('./pages/Settings'));
 const AdminConfig = lazy(() => import('./pages/AdminConfig'));
 const AdminIcons = lazy(() => import('./pages/AdminIcons'));
+const MyKnowledge = lazy(() => import('./pages/MyKnowledge'));
+const MyContributions = lazy(() => import('./pages/MyContributions'));
+const SavedItems = lazy(() => import('./pages/SavedItems'));
+const RecentlyViewed = lazy(() => import('./pages/RecentlyViewed'));
+const FunctionsIndex = lazy(() => import('./pages/FunctionsIndex'));
+const FunctionsOperations = lazy(() => import('./pages/FunctionsOperations'));
+const FunctionsCustomerService = lazy(() => import('./pages/FunctionsCustomerService'));
+const FunctionsFinance = lazy(() => import('./pages/FunctionsFinance'));
+const FunctionsHR = lazy(() => import('./pages/FunctionsHR'));
+const DocumentTypesIndex = lazy(() => import('./pages/DocumentTypesIndex'));
+const DocumentPolicies = lazy(() => import('./pages/DocumentPolicies'));
+const DocumentProcedures = lazy(() => import('./pages/DocumentProcedures'));
+const DocumentFAQs = lazy(() => import('./pages/DocumentFAQs'));
+const DocumentHowTo = lazy(() => import('./pages/DocumentHowTo'));
+const Tags = lazy(() => import('./pages/Tags'));
+const SearchPage = lazy(() => import('./pages/SearchPage'));
+const Contribute = lazy(() => import('./pages/Contribute'));
+const Help = lazy(() => import('./pages/Help'));
 const MediaDemo = lazy(() => import('./pages/MediaDemo'));
 const EntityMetadata = lazy(() => import('./pages/EntityMetadata'));
 const ArticleCategories = lazy(() => import('./pages/ArticleCategories'));
@@ -99,6 +117,24 @@ const App: React.FC = () => {
                   <Route path="/metadata" element={<EntityMetadata />} />
                   <Route path="/admin" element={<AdminConfig />} />
                   <Route path="/admin/icons" element={<AdminIcons />} />
+                  <Route path="/my-knowledge" element={<MyKnowledge />} />
+                  <Route path="/my-knowledge/contributions" element={<MyContributions />} />
+                  <Route path="/my-knowledge/saved" element={<SavedItems />} />
+                  <Route path="/my-knowledge/recent" element={<RecentlyViewed />} />
+                  <Route path="/functions" element={<FunctionsIndex />} />
+                  <Route path="/functions/operations" element={<FunctionsOperations />} />
+                  <Route path="/functions/customer-service" element={<FunctionsCustomerService />} />
+                  <Route path="/functions/finance" element={<FunctionsFinance />} />
+                  <Route path="/functions/hr" element={<FunctionsHR />} />
+                  <Route path="/document-types" element={<DocumentTypesIndex />} />
+                  <Route path="/document-types/policies" element={<DocumentPolicies />} />
+                  <Route path="/document-types/procedures" element={<DocumentProcedures />} />
+                  <Route path="/document-types/faqs" element={<DocumentFAQs />} />
+                  <Route path="/document-types/how-to" element={<DocumentHowTo />} />
+                  <Route path="/tags" element={<Tags />} />
+                  <Route path="/search" element={<SearchPage />} />
+                  <Route path="/contribute" element={<Contribute />} />
+                  <Route path="/help" element={<Help />} />
                   <Route path="/media-demo" element={<MediaDemo />} />
                   <Route path="/dataverse-debug" element={<DataverseDebug />} />
                   <Route path="/settings" element={<Settings />} />
