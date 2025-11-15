@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import AdminIcons from './AdminIcons';
 import {
   getAppConfigItems,
   createAppConfigItem,
@@ -36,6 +38,8 @@ const AdminConfig: React.FC = () => {
   const [entityMeta, setEntityMeta] = useState<{ keyName: string; displayName?: string; valueName?: string } | null>(null);
   const [mappings, setMappings] = useState<any[]>([]);
   const [mappingEditing, setMappingEditing] = useState<any | null>(null);
+  const [showIconsInline, setShowIconsInline] = useState(false);
+  const navigate = useNavigate();
 
   const columns: IColumn[] = [
     { key: 'col1', name: 'Key', fieldName: 'key', minWidth: 100, maxWidth: 300 },
@@ -267,6 +271,10 @@ const AdminConfig: React.FC = () => {
 
       <div style={{ marginTop: 24 }}>
         <h3>$metadata inspector</h3>
+        <div style={{ marginBottom: 12 }}>
+          <DefaultButton onClick={() => navigate('/admin/icons')} text="Open Icon Manager" />
+          <DefaultButton styles={{ root: { marginLeft: 8 } }} text={showIconsInline ? 'Hide Icons Inline' : 'Embed Icons Inline'} onClick={() => setShowIconsInline(!showIconsInline)} />
+        </div>
         <Stack horizontal tokens={{ childrenGap: 8 }} verticalAlign="center">
           <PrimaryButton onClick={() => loadEntitySets()} text="Load entity sets" />
           {loadingMetadata && <Spinner label="Loading metadata..." />}
