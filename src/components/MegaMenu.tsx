@@ -143,6 +143,14 @@ const MegaMenu: React.FC<{ items: MegaMenuItem[]; isMobile?: boolean }> = ({ ite
                   if (hoverTimeout.current) window.clearTimeout(hoverTimeout.current);
                   setOpenIndex(i);
                 }}
+                onFocus={() => {
+                  if (hoverTimeout.current) window.clearTimeout(hoverTimeout.current);
+                  setOpenIndex(i);
+                }}
+                onBlur={() => {
+                  // schedule close; if focus moves into the callout quickly it will be cleared
+                  hoverTimeout.current = window.setTimeout(() => setOpenIndex(null), 150);
+                }}
                 onClick={() => {
                   // If the top-level column provides a URL, navigate to it (internal) or open externally.
                   if (col.url) {
@@ -174,6 +182,13 @@ const MegaMenu: React.FC<{ items: MegaMenuItem[]; isMobile?: boolean }> = ({ ite
                 onDismiss={() => setOpenIndex(null)}
                 gapSpace={8}
                 styles={{ root: { padding: 12, borderRadius: 6, boxShadow: '0 6px 18px rgba(0,0,0,0.12)' } }}
+                onMouseEnter={() => {
+                  if (hoverTimeout.current) window.clearTimeout(hoverTimeout.current);
+                }}
+                onMouseLeave={() => {
+                  // delay close so small pointer gaps don't immediately dismiss the menu
+                  hoverTimeout.current = window.setTimeout(() => setOpenIndex(null), 150);
+                }}
               >
                 {/* Remove the left-hand spacer column by placing the optional description above the link columns */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 420 }}>
