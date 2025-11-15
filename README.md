@@ -522,6 +522,21 @@ jobs:
           output_location: "dist" # Vite build output folder'''
 
 
+# Maintenance & Operations
+
+## GitHub Actions Workflow Maintenance
+
+The repository uses GitHub Actions for CI/CD with Azure Static Web Apps. It is **completely safe to delete old workflow runs** from the Actions history, including failed runs. Each deployment is self-contained and does not depend on previous workflow runs.
+
+For detailed information on workflow maintenance and safely deleting runs, see:
+- [WORKFLOW-MAINTENANCE.md](./WORKFLOW-MAINTENANCE.md) - Complete guide on workflow deletion safety
+
+### Quick Facts
+- ✅ Safe to delete any old workflow runs
+- ✅ Deployments build fresh from source each time
+- ✅ No cross-run dependencies
+- ✅ Azure deployment history is independent
+
 # Contribute
 TODO: Explain how other users and developers can contribute to make your code better. 
 
