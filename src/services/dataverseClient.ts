@@ -538,11 +538,16 @@ export const getKnowledgeArticlesByFunction = async (fn: string, q?: string): Pr
       .replace(/-/g, ' ')
       .replace(/\b\w/g, (c) => c.toUpperCase())
       .replace(/'/g, "''");
+
+    // Build filter parts trying to match common lookup/navigation property names
     const filterParts: string[] = [];
 
-    // Server-side filtering using the lookup's Name property (navigation property)
-    // e.g. e365_knowledgearticlesubject/Name eq 'Finance'
-    filterParts.push(`e365_knowledgearticlesubject/Name eq '${fnName}'`);
+    // Try navigation property for business function
+    filterParts.push(`e365_businessfunction/Name eq '${fnName}'`);
+    // fallback to common attribute name
+    filterParts.push(`e365_businessfunctionname eq '${fnName}'`);
+    // also allow matching in tagsText or displayProp
+    filterParts.push(`contains(tagsText,'${fnName}') or contains(${displayProp},'${fnName}')`);
 
     // If a free-text query is provided, also restrict by displayProp or tagsText
     if (q && q.trim()) {
@@ -550,7 +555,7 @@ export const getKnowledgeArticlesByFunction = async (fn: string, q?: string): Pr
       filterParts.push(`contains(${displayProp},'${safe}') or contains(tagsText,'${safe}')`);
     }
 
-    const filter = `${encodeURIComponent(filterParts.join(' and '))}`;
+    const filter = `${encodeURIComponent(filterParts.join(' or '))}`;
     const resourcePath = `${entitySet}?$expand=e365_knowledgearticlesubject&$filter=${filter}&$top=50`;
     const accessToken = await getDataverseAccessToken();
     const data = await fetchDataverseResource(resourcePath, {

@@ -16,8 +16,8 @@ const Hero: React.FC = () => {
       verticalAlign="center"
       styles={{
         root: {
-          // keep padding but sit below header dynamically
-          marginTop: 'var(--app-header-height, 80px)',
+          // keep padding but sit below header dynamically (no extra top margin)
+          marginTop: 0,
           padding: '3rem 2rem',
           textAlign: 'left',
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
