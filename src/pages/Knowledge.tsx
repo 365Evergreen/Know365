@@ -3,6 +3,8 @@ import { Stack, Text, Link, Spinner, SpinnerSize } from '@fluentui/react';
 import ContentTabs from '../components/ContentTabs';
 import { useSearchParams } from 'react-router-dom';
 import { getKnowledgeSources, getKnowledgeArticles } from '../services/dataverseClient';
+import { listLibraryItems } from '../services/sharePointGraph';
+import { getCache, setCache } from '../utils/cache';
 
 interface KnowledgeSource {
   SourceName: string;
@@ -16,6 +18,8 @@ const Knowledge: React.FC = () => {
   const q = searchParams.get('q') ?? '';
 
   const [sources, setSources] = useState<KnowledgeSource[] | null>(null);
+  const [sourceItems, setSourceItems] = useState<Record<string, any[]>>({});
+  const [loadingSourceItems, setLoadingSourceItems] = useState<Record<string, boolean>>({});
   const [loadingSources, setLoadingSources] = useState(false);
   const [sourcesError, setSourcesError] = useState<string | null>(null);
   const [articles, setArticles] = useState<any[] | null>(null);
@@ -110,9 +114,62 @@ const Knowledge: React.FC = () => {
                         {s.LibraryName && <Text variant="small">Library: {s.LibraryName}</Text>}
                         {s.GraphEndpoint && <Text variant="small">Graph: {s.GraphEndpoint}</Text>}
                       </Stack.Item>
+                      <Stack.Item>
+                        <button
+                          onClick={async () => {
+                            const cacheKey = `libitems:${s.SharePointSiteUrl}::${s.LibraryName}`;
+                            const cached = getCache<any[]>(cacheKey);
+                            if (cached) {
+                              setSourceItems(prev => ({ ...prev, [cacheKey]: cached }));
+                              return;
+                            }
+                            setLoadingSourceItems(prev => ({ ...prev, [cacheKey]: true }));
+                            try {
+                              const items = await listLibraryItems(s.SharePointSiteUrl || '', s.LibraryName || '', 50);
+                              setSourceItems(prev => ({ ...prev, [cacheKey]: items }));
+                              setCache(cacheKey, items, 300);
+                            } catch (err) {
+                              console.error('Failed to load library items', err);
+                            } finally {
+                              setLoadingSourceItems(prev => ({ ...prev, [cacheKey]: false }));
+                            }
+                          }}
+                        >
+                          View items
+                        </button>
+                      </Stack.Item>
                     </Stack>
                   ))}
                 </Stack>
+              )}
+              { /* Render items for known caches */ }
+              {sources && sources.length > 0 && (
+                <div style={{ marginTop: 12 }}>
+                  {sources.map((s) => {
+                    const cacheKey = `libitems:${s.SharePointSiteUrl}::${s.LibraryName}`;
+                    const items = sourceItems[cacheKey];
+                    const loading = loadingSourceItems[cacheKey];
+                    return (
+                      <div key={cacheKey} style={{ marginTop: 8 }}>
+                        {loading ? (
+                          <Spinner label={`Loading items for ${s.SourceName}…`} size={SpinnerSize.small} />
+                        ) : items && items.length > 0 ? (
+                          <div>
+                            <Text variant="small">Items in {s.LibraryName || s.SourceName}:</Text>
+                            <Stack tokens={{ childrenGap: 6 }}>
+                              {items.map((it: any) => (
+                                <div key={it.id}>
+                                  <Link href={it.webUrl} target="_blank" rel="noreferrer">{it.name}</Link>
+                                  <Text variant="small"> — {new Date(it.lastModifiedDateTime).toLocaleString()}</Text>
+                                </div>
+                              ))}
+                            </Stack>
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
               )}
               <div style={{ marginTop: 16 }}>
                 <h3>Articles</h3>

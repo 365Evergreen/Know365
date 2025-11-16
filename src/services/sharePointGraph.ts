@@ -1,4 +1,4 @@
-import { getGraphClient } from './graphClient';
+import { getGraphClient, getAccessToken } from './graphClient';
 
 interface SharePointDocument {
   id: string;
@@ -91,6 +91,24 @@ export const searchDocuments = async (
     return response.value;
   } catch (error) {
     console.error('Search failed:', error);
+    return [];
+  }
+};
+
+// Higher-level helper: given a site URL and library name, resolve site & drive and list items.
+export const listLibraryItems = async (
+  siteUrl: string,
+  libraryName: string,
+  top: number = 50
+): Promise<SharePointDocument[]> => {
+  try {
+    const accessToken = await getAccessToken();
+    const siteId = await getSiteId(accessToken, siteUrl);
+    const driveId = await getDriveId(accessToken, siteId, libraryName);
+    const items = await getDocuments(accessToken, siteId, driveId, top);
+    return items;
+  } catch (err) {
+    console.error('listLibraryItems failed:', err);
     return [];
   }
 };
