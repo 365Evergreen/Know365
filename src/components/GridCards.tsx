@@ -1,6 +1,5 @@
 import React from 'react';
-import { Stack, Text, Link, IStackStyles } from '@fluentui/react';
-import { useNavigate } from 'react-router-dom';
+import { Text, Icon } from '@fluentui/react';
 
 interface CardItem {
   id: string;
@@ -8,9 +7,9 @@ interface CardItem {
   description?: string;
   href?: string;
   onClick?: () => void;
+  count?: number; // optional article count to display like "(11 Articles)"
 }
 
-const stackStyles: IStackStyles = { root: { width: '100%' } };
 
 const GridCards: React.FC<{ items?: CardItem[] }> = ({ items }) => {
   const cards = items ?? Array.from({ length: 6 }).map((_, i) => ({
@@ -19,44 +18,59 @@ const GridCards: React.FC<{ items?: CardItem[] }> = ({ items }) => {
     description: 'This is placeholder text. Replace with Dataverse content later.',
     href: '#',
     onClick: undefined,
+    count: undefined,
   }));
-  const navigate = useNavigate();
+  
+
+  // split into two columns for the layout similar to the provided design
+  const mid = Math.ceil(cards.length / 2);
+  const left = cards.slice(0, mid);
+  const right = cards.slice(mid);
+
+  const iconForTitle = (title?: string) => {
+    if (!title) return 'Page';
+    const t = title.toLowerCase();
+    if (t.includes('account')) return 'Contact';
+    if (t.includes('getting') || t.includes('start')) return 'Rocket';
+    if (t.includes('billing') || t.includes('payment') || t.includes('invoice')) return 'Money';
+    if (t.includes('copyright') || t.includes('legal')) return 'Gavel';
+    if (t.includes('mobile') || t.includes('app')) return 'Phone';
+    if (t.includes('developer') || t.includes('dev')) return 'Code';
+    if (t.includes('help') || t.includes('support')) return 'Help';
+    return 'Page';
+  };
+
+  const itemRow = (c: CardItem) => (
+    <div key={c.id} role="article" aria-labelledby={`${c.id}-title`} style={{ padding: '12px 0' }}>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+        <div style={{ width: 56, height: 56, borderRadius: 8, border: '1px solid var(--ms-color-neutralTertiaryAlt)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff' }}>
+          <Icon iconName={iconForTitle(c.title)} styles={{ root: { fontSize: 28, color: 'var(--ms-color-themePrimary)' } }} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, justifyContent: 'space-between' }}>
+            <Text id={`${c.id}-title`} variant="large" styles={{ root: { fontWeight: 700 } }}>{c.title}</Text>
+            {typeof c.count === 'number' ? (
+              <Text variant="small" styles={{ root: { color: 'rgba(0,0,0,0.5)' } }}>({c.count} Articles)</Text>
+            ) : null}
+          </div>
+          <Text variant="small" styles={{ root: { color: 'rgba(0,0,0,0.6)', marginTop: 6, display: 'block' } }}>{c.description}</Text>
+        </div>
+      </div>
+      <div style={{ height: 1, background: '#efefef', marginTop: 12 }} />
+    </div>
+  );
 
   return (
-    <Stack horizontal wrap tokens={{ childrenGap: 16 }} styles={stackStyles}>
-      {cards.map((c) => (
-        <div
-          key={c.id}
-          role="article"
-          aria-labelledby={`${c.id}-title`}
-          style={{ width: 280, padding: 12, boxSizing: 'border-box', border: '1px solid #e1e1e1', borderRadius: 6, background: '#fff' }}
-        >
-          <Stack tokens={{ childrenGap: 8 }}>
-            <Text id={`${c.id}-title`} variant="large" styles={{ root: { fontWeight: 600 } }}>{c.title}</Text>
-            <Text variant="small" styles={{ root: { color: 'rgba(0,0,0,0.6)' } }}>{c.description}</Text>
-            <div style={{ marginTop: 8, display: 'flex', gap: 12, alignItems: 'center' }}>
-              {c.onClick ? (
-                <button type="button" onClick={c.onClick} aria-label={`View ${c.title}`} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ms-color-themePrimary)', cursor: 'pointer' }}>
-                  View
-                </button>
-              ) : (
-                <Link href={c.href} underline>
-                  View
-                </Link>
-              )}
-
-              <button
-                onClick={() => navigate('/article-categories')}
-                style={{ background: 'transparent', border: '1px solid var(--ms-color-neutralTertiary)', padding: '6px 10px', borderRadius: 4, cursor: 'pointer' }}
-                aria-label="Open article categories"
-              >
-                Categories
-              </button>
-            </div>
-          </Stack>
+    <div style={{ width: '100%' }}>
+      <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div style={{ flex: '1 1 320px', minWidth: 320 }}>
+          {left.map(itemRow)}
         </div>
-      ))}
-    </Stack>
+        <div style={{ flex: '1 1 320px', minWidth: 320 }}>
+          {right.map(itemRow)}
+        </div>
+      </div>
+    </div>
   );
 };
 

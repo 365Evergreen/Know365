@@ -7,10 +7,10 @@ import { getEntityRecords, getRecentKnowledgeArticles } from '../services/datave
 import { useNavigate } from 'react-router-dom';
 import ConfigurableCarousel from '../components/ConfigurableCarousel';
 
-const SUBJECT_ENTITY = 'e365_knowledgearticlesubject';
+const BUSINESS_FUNCTION_ENTITY = 'e365_businessfunction';
 
 const Home: React.FC = () => {
-  const [subjects, setSubjects] = useState<any[] | null>(null);
+  const [functions, setFunctions] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -21,9 +21,7 @@ const Home: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const items = await getEntityRecords(SUBJECT_ENTITY, 100);
-        if (!mounted) return;
-        setSubjects(items || []);
+        // No longer fetching subjects here; keep loading state for functions below
       } catch (err: any) {
         console.error(err);
         if (mounted) setError(err.message || String(err));
@@ -35,21 +33,42 @@ const Home: React.FC = () => {
     return () => { mounted = false; };
   }, []);
 
-  const cards = (subjects || []).map((s: any) => {
+  // Load business functions for the Discover cards
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const items = await getEntityRecords(BUSINESS_FUNCTION_ENTITY, 200);
+        if (!mounted) return;
+        setFunctions(items || []);
+      } catch (err: any) {
+        console.error('Failed to load business functions', err);
+        if (mounted) setFunctions([]);
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, []);
+
+  const cards = (functions || []).map((s: any) => {
       // Prefer the e365 schema fields discovered in your org
-      const id = s.e365_knowledgearticlesubjectid || s.id || (s['@odata.id'] ? (() => {
+      const bfId = s.e365_businessfunctionid || s.id || (s['@odata.id'] ? (() => {
         const m = (s['@odata.id'] as string).match(/\(([0-9a-fA-F\-]{36})\)/);
         return m ? m[1] : '';
       })() : '');
-      const title = s.e365_name || s.name || s.title || s.subject || s.displayname || 'Untitled';
-      const description = s.e365_knowledgearticlesubjectdescription || s.description || s.notes || '';
+      const title = s.e365_name || s.name || s.title || s.displayname || s.subject || 'Untitled';
+      const description = s.e365_businessfunctiondescription || s.description || s.notes || '';
 
-      const safeId = id || (Math.random() + '');
+      // create a slug from the title for routing to /functions/:slug
+      const slug = (title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+      const safeId = bfId || (Math.random() + '');
       return {
         id: safeId,
         title,
         description,
-        onClick: () => navigate(`/articles/${encodeURIComponent(safeId)}`, { state: { title } }),
+        // navigate to Functions page which will filter by function slug
+        onClick: () => navigate(`/functions/${encodeURIComponent(slug)}`, { state: { title, id: safeId } }),
       };
   });
 
