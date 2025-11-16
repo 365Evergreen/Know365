@@ -40,25 +40,38 @@ const GridCards: React.FC<{ items?: CardItem[] }> = ({ items }) => {
     return 'Page';
   };
 
-  const itemRow = (c: CardItem) => (
-    <div key={c.id} role="article" aria-labelledby={`${c.id}-title`} style={{ padding: '12px 0' }}>
-      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-        <div style={{ width: 56, height: 56, borderRadius: 8, border: '1px solid var(--ms-color-neutralTertiaryAlt)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff' }}>
-          <Icon iconName={iconForTitle(c.title)} styles={{ root: { fontSize: 28, color: 'var(--ms-color-themePrimary)' } }} />
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, justifyContent: 'space-between' }}>
-            <Text id={`${c.id}-title`} variant="large" styles={{ root: { fontWeight: 700 } }}>{c.title}</Text>
-            {typeof c.count === 'number' ? (
-              <Text variant="small" styles={{ root: { color: 'rgba(0,0,0,0.5)' } }}>({c.count} Articles)</Text>
-            ) : null}
+  const itemRow = (c: CardItem) => {
+    const desc = c.description && c.description.trim() ? c.description : `Guides and articles for ${c.title}.`;
+    return (
+      <div key={c.id} role="article" aria-labelledby={`${c.id}-title`} style={{ padding: '12px 0' }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+          <div style={{ width: 56, height: 56, borderRadius: 8, border: '1px solid var(--ms-color-neutralTertiaryAlt)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff' }}>
+            <Icon iconName={iconForTitle(c.title)} styles={{ root: { fontSize: 28, color: 'var(--ms-color-themePrimary)' } }} />
           </div>
-          <Text variant="small" styles={{ root: { color: 'rgba(0,0,0,0.6)', marginTop: 6, display: 'block' } }}>{c.description}</Text>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, justifyContent: 'space-between' }}>
+              {c.onClick ? (
+                <button
+                  onClick={c.onClick}
+                  aria-label={`Open ${c.title}`}
+                  style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}
+                >
+                  <Text id={`${c.id}-title`} variant="large" styles={{ root: { fontWeight: 700, color: 'var(--ms-color-themePrimary)' } }}>{c.title}</Text>
+                </button>
+              ) : (
+                <Text id={`${c.id}-title`} variant="large" styles={{ root: { fontWeight: 700 } }}>{c.title}</Text>
+              )}
+              {typeof c.count === 'number' ? (
+                <Text variant="small" styles={{ root: { color: 'rgba(0,0,0,0.5)' } }}>({c.count} Articles)</Text>
+              ) : null}
+            </div>
+            <Text variant="small" styles={{ root: { color: 'rgba(0,0,0,0.6)', marginTop: 6, display: 'block' } }}>{desc}</Text>
+          </div>
         </div>
+        <div style={{ height: 1, background: '#efefef', marginTop: 12 }} />
       </div>
-      <div style={{ height: 1, background: '#efefef', marginTop: 12 }} />
-    </div>
-  );
+    );
+  };
 
   return (
     <div style={{ width: '100%' }}>
