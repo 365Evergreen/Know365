@@ -39,15 +39,13 @@ jobs:
           fi
           echo "pnpm version: $(pnpm -v || echo 'not available')"
 
-      - name: Install pnpm on runner
-        uses: pnpm/action-setup@v2
+      - name: Cache pnpm store
+        uses: actions/cache@v4
         with:
-          version: '10'
-
-      - name: Install pnpm globally (fallback)
-        run: |
-          echo "Installing pnpm globally as a fallback"
-          npm i -g pnpm@latest
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies (pnpm)
         run: |
