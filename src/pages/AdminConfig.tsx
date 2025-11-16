@@ -405,10 +405,49 @@ const AdminConfig: React.FC = () => {
                 setPageTitle('');
                 setPageSummary('');
                 setPageContent('');
+                setPageComponents([]);
                 setPageDialogOpen(true);
               }} />
               <Text styles={{ root: { marginLeft: 8, color: theme.palette.neutralSecondary } }}>Create and edit pages using templates and drag & drop components.</Text>
             </Stack>
+
+            {pageDialogOpen && (
+              <div style={{ width: '100%', marginTop: 16, padding: 12, background: '#fff', borderRadius: 6, border: '1px solid #e1e1e1' }}>
+                <Stack tokens={{ childrenGap: 8 }}>
+                  <Stack horizontal tokens={{ childrenGap: 8 }} styles={{ root: { alignItems: 'flex-start' } }}>
+                    <TextField label="Slug (used as page id)" value={pageSlug} onChange={(_, v) => setPageSlug(v || '')} styles={{ root: { minWidth: 260, maxWidth: 320 } }} />
+                    <TextField label="Title" value={pageTitle} onChange={(_, v) => setPageTitle(v || '')} styles={{ root: { flex: 1 } }} />
+                    <TextField label="Summary" value={pageSummary} onChange={(_, v) => setPageSummary(v || '')} styles={{ root: { minWidth: 320, maxWidth: 420 } }} />
+                  </Stack>
+
+                  <Stack horizontal tokens={{ childrenGap: 12 }} styles={{ root: { marginTop: 8 } }}>
+                    <div style={{ width: 260, padding: 8, background: '#fff', borderRadius: 6, border: '1px solid #eee' }}>
+                      <Text variant="mediumPlus" styles={{ root: { marginBottom: 8 } }}>Components</Text>
+                      <ComponentLibrary />
+                    </div>
+
+                    <div style={{ flex: 1 }}>
+                      <PageCanvas
+                        components={pageComponents}
+                        onAdd={(c: PageComponent) => handleAddComponent(c)}
+                        onRemove={(i: number) => handleRemoveComponent(i)}
+                        onMoveUp={(i: number) => handleMoveUp(i)}
+                        onMoveDown={(i: number) => handleMoveDown(i)}
+                      />
+                    </div>
+
+                    <div style={{ width: 360 }}>
+                      <TextField label="Content (JSON or free text)" multiline rows={16} value={pageContent} onChange={(_, v) => setPageContent(v || '')} />
+                    </div>
+                  </Stack>
+
+                  <Stack horizontal tokens={{ childrenGap: 8 }} styles={{ root: { marginTop: 12, justifyContent: 'flex-end' } }}>
+                    <PrimaryButton onClick={handleSavePage} text={pageEditingItem ? 'Save' : 'Create'} />
+                    <DefaultButton onClick={() => setPageDialogOpen(false)} text="Cancel" />
+                  </Stack>
+                </Stack>
+              </div>
+            )}
 
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 12 }}>
               {pages.map((p, idx) => (
@@ -801,59 +840,7 @@ const AdminConfig: React.FC = () => {
         </PivotItem>
       </Pivot>
 
-      <Dialog
-        hidden={!pageDialogOpen}
-        onDismiss={() => setPageDialogOpen(false)}
-        dialogContentProps={{ type: DialogType.normal, title: pageEditingItem ? 'Edit Page' : 'Create Page' }}
-        modalProps={{
-          styles: {
-            main: {
-              maxWidth: '95vw',
-              width: '95vw',
-              margin: '0 auto',
-              selectors: {
-                '.ms-Dialog-inner': { width: '100%', maxWidth: '95vw' },
-                '.ms-Dialog-content': { width: '100%', maxWidth: '95vw' },
-              },
-            },
-          },
-        }}
-      >
-        <div style={{ width: '95vw', maxWidth: '95vw', maxHeight: '85vh', overflow: 'auto', padding: 12 }}>
-          <Stack tokens={{ childrenGap: 8 }}>
-            <Stack horizontal tokens={{ childrenGap: 8 }} styles={{ root: { alignItems: 'flex-start' } }}>
-              <TextField label="Slug (used as page id)" value={pageSlug} onChange={(_, v) => setPageSlug(v || '')} styles={{ root: { minWidth: 260, maxWidth: 320 } }} />
-              <TextField label="Title" value={pageTitle} onChange={(_, v) => setPageTitle(v || '')} styles={{ root: { flex: 1 } }} />
-              <TextField label="Summary" value={pageSummary} onChange={(_, v) => setPageSummary(v || '')} styles={{ root: { minWidth: 320, maxWidth: 420 } }} />
-            </Stack>
-
-            <Stack horizontal tokens={{ childrenGap: 12 }} styles={{ root: { marginTop: 8 } }}>
-              <div style={{ width: 260, padding: 8, background: '#fff', borderRadius: 6, border: '1px solid #eee' }}>
-                <Text variant="mediumPlus" styles={{ root: { marginBottom: 8 } }}>Components</Text>
-                <ComponentLibrary />
-              </div>
-
-              <div style={{ flex: 1 }}>
-                <PageCanvas
-                  components={pageComponents}
-                  onAdd={(c: PageComponent) => handleAddComponent(c)}
-                  onRemove={(i: number) => handleRemoveComponent(i)}
-                  onMoveUp={(i: number) => handleMoveUp(i)}
-                  onMoveDown={(i: number) => handleMoveDown(i)}
-                />
-              </div>
-
-              <div style={{ width: 360 }}>
-                <TextField label="Content (JSON or free text)" multiline rows={16} value={pageContent} onChange={(_, v) => setPageContent(v || '')} />
-              </div>
-            </Stack>
-          </Stack>
-        </div>
-        <DialogFooter>
-          <PrimaryButton onClick={handleSavePage} text={pageEditingItem ? 'Save' : 'Create'} />
-          <DefaultButton onClick={() => setPageDialogOpen(false)} text="Cancel" />
-        </DialogFooter>
-      </Dialog>
+      
 
       <Dialog hidden={!confirmDelete} onDismiss={() => setConfirmDelete(null)} dialogContentProps={{ type: DialogType.normal, title: 'Confirm delete', subText: 'Delete this configuration item?' }}>
         <DialogFooter>
