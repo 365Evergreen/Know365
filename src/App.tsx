@@ -1,4 +1,5 @@
-import React, { useState, useEffect, Suspense, lazy, useLayoutEffect } from 'react';
+import * as React from 'react';
+import { useState, useEffect, Suspense, lazy, useLayoutEffect } from 'react';
 import { ThemeProvider, Stack, initializeIcons } from '@fluentui/react';
 import { BrowserRouter as Router, Routes, Route, useParams, Navigate } from 'react-router-dom';
 
@@ -110,10 +111,11 @@ const App: React.FC = () => {
   }, []);
 
   // Workaround: cast MsalProvider to a generic React component type to avoid JSX typing mismatch
-  const MsalProviderAsAny = MsalProvider as unknown as React.ComponentType<any>;
-
-  // prefer runtime-configured theme if present, otherwise respect dark mode
-  const runtimeTheme = settings ? createThemeFromConfig({ primaryColor: settings.primaryColor, fontFamily: settings.fontFamily }) : null;
+    const MsalProviderAsAny = MsalProvider as unknown as React.ComponentType<any>;
+    // Workaround: cast Route to a generic React component type to avoid @types/react / react-router-dom typing mismatch
+  
+    // prefer runtime-configured theme if present, otherwise respect dark mode
+    const runtimeTheme = settings ? createThemeFromConfig({ primaryColor: settings.primaryColor, fontFamily: settings.fontFamily }) : null;
 
   return (
     <MsalProviderAsAny instance={msalInstance}>
@@ -156,6 +158,8 @@ const App: React.FC = () => {
                   <Route path="/dataverse-debug" element={<DataverseDebug />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/browse/:category/:item?" element={<BrowsePage />} />
+                  {/* Redirect any unknown route back to home (prevents 404s on deep links) */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </AuthGate>
             </Suspense>
