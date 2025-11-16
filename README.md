@@ -5,14 +5,14 @@ Knowledge Centre hosted in your Microsoft 365 tenant, with a React-based fronten
 This solution will centralise organisational knowledge, streamline content discovery, and enhance collaboration.
 
 # Getting Started
-Here’s a **starter scaffold** for your knowledge management app with **pnpm** instructions:
+Here’s a **starter scaffold** for your knowledge management app with **npm** instructions:
 
 ## **Directory Structure**
 
     knowledge-centre/
     ├── README.md
     ├── package.json
-    ├── pnpm-lock.yaml
+    ├── package-lock.json
     ├── tsconfig.json
     ├── vite.config.ts
     ├── public/
@@ -38,32 +38,33 @@ Here’s a **starter scaffold** for your knowledge management app with **pnpm** 
 *   **Vite** (fast build tool)
 *   **Fluent UI** (Microsoft design system)
 *   **MSAL.js** (Azure AD authentication)
-*   **pnpm** (package manager)
+*   **npm** (package manager)
 
 ***
 
-## **Setup Instructions (with pnpm)**
+## **Setup Instructions (with npm)**
 
-1.  **Install pnpm globally** (if not already):
-    ```bash
-    npm install -g pnpm
-    ```
+1.  **Install Node.js (18+)** — npm is included with Node.js. Verify with:
+  ```bash
+  node -v
+  npm -v
+  ```
 
 2.  **Create the project folder and initialise**:
     ```bash
     mkdir knowledge-centre && cd knowledge-centre
-    pnpm init
+    npm init -y
     ```
 
 3.  **Install dependencies**:
     ```bash
-    pnpm add react react-dom @fluentui/react msal-browser
-    pnpm add -D typescript vite @vitejs/plugin-react eslint
+    npm install react react-dom @fluentui/react msal-browser
+    npm install --save-dev typescript vite @vitejs/plugin-react eslint
     ```
 
 4.  **Generate TypeScript config**:
     ```bash
-    pnpm exec tsc --init
+    npx tsc --init
     ```
 
 5.  **Add scripts to `package.json`**:
@@ -78,9 +79,9 @@ Here’s a **starter scaffold** for your knowledge management app with **pnpm** 
     ```
 
 6.  **Run the development server**:
-    ```bash
-    pnpm dev
-    ```
+  ```bash
+  npm run dev
+  ```
 
 ***
 
@@ -478,7 +479,7 @@ Push to main branch.
 
 **Trigger Deployment:**
 
-Every push to main will build with pnpm and deploy to Azure SWA.
+Every push to main will build with npm and deploy to Azure SWA.
 
 ### Github actions workflow
 
@@ -501,16 +502,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
 
       - name: Install dependencies
-        run: pnpm install
+        run: npm ci
 
       - name: Build project
-        run: pnpm build
+        run: npm run build
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
