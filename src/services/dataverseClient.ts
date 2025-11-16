@@ -573,6 +573,49 @@ export const getKnowledgeArticlesByFunction = async (fn: string, q?: string): Pr
   }
 };
 
+// Get a count of knowledge articles for a given function (by name/slug).
+export const getKnowledgeArticlesCountByFunction = async (fn: string): Promise<number> => {
+  try {
+    const logical = 'e365_knowledgearticle';
+    let entitySet = 'KnowledgeArticles';
+    try {
+      entitySet = await resolveEntitySetForLogicalName(logical);
+    } catch (e) {
+      // ignore and use fallback entity set name
+    }
+
+    // Convert slug-like function (e.g. 'customer-service') to a human Name ('Customer Service')
+    const fnName = (fn || '')
+      .replace(/-/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase())
+      .replace(/'/g, "''");
+
+    // Build filter trying navigation property and common attribute names
+    const filterParts: string[] = [];
+    filterParts.push(`e365_businessfunction/Name eq '${fnName}'`);
+    filterParts.push(`e365_businessfunctionname eq '${fnName}'`);
+    filterParts.push(`contains(tagsText,'${fnName}') or contains(title,'${fnName}')`);
+
+    const filter = `${encodeURIComponent(filterParts.join(' or '))}`;
+    const resourcePath = `${entitySet}/$count?$filter=${filter}`;
+    const accessToken = await getDataverseAccessToken();
+    const data = await fetchDataverseResource(resourcePath, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    // fetchDataverseResource returns parsed body; for $count it should be a number/string
+    if (typeof data === 'number') return data;
+    const parsed = parseInt(String(data || '0'), 10);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  } catch (error) {
+    console.error('Error fetching article count by function:', error);
+    return 0;
+  }
+};
+
 // Fetch the most recently created knowledge articles (ordered by createdon desc)
 export const getRecentKnowledgeArticles = async (top = 10): Promise<any[]> => {
   try {

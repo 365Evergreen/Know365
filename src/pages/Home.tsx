@@ -3,7 +3,7 @@ import Hero from '../components/Hero';
 import { Stack, Spinner, SpinnerSize, Text, DetailsList, IColumn } from '@fluentui/react';
 import GridCards from '../components/GridCards';
 import RecentDocuments from '../components/RecentDocuments';
-import { getEntityRecords, getRecentKnowledgeArticles } from '../services/dataverseClient';
+import { getEntityRecords, getRecentKnowledgeArticles, getKnowledgeArticlesCountByFunction } from '../services/dataverseClient';
 import { useNavigate } from 'react-router-dom';
 import ConfigurableCarousel from '../components/ConfigurableCarousel';
 
@@ -41,6 +41,25 @@ const Home: React.FC = () => {
         const items = await getEntityRecords(BUSINESS_FUNCTION_ENTITY, 200);
         if (!mounted) return;
         setFunctions(items || []);
+
+        // fetch article counts in parallel (best-effort)
+        try {
+          const counts = await Promise.all((items || []).map(async (it: any) => {
+            const title = it.e365_name || it.name || it.title || it.displayname || it.subject || '';
+            const slug = (title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            const cnt = await getKnowledgeArticlesCountByFunction(slug);
+            return { id: it.e365_businessfunctionid || it.id || '', slug, count: cnt };
+          }));
+          // attach counts to functions in place
+          const byId: Record<string, number> = {};
+          for (const c of counts) {
+            byId[c.slug] = c.count || 0;
+          }
+          // map functions to include count property
+          setFunctions((items || []).map((it: any) => ({ ...it, _count: byId[((it.e365_name || it.name || it.title || it.displayname || it.subject || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')) || ''] || 0 })));
+        } catch (e) {
+          console.warn('Failed to fetch function article counts', e);
+        }
       } catch (err: any) {
         console.error('Failed to load business functions', err);
         if (mounted) setFunctions([]);
@@ -67,10 +86,14 @@ const Home: React.FC = () => {
         id: safeId,
         title,
         description,
+        count: s._count || 0,
         // navigate to Functions page which will filter by function slug
         onClick: () => navigate(`/functions/${encodeURIComponent(slug)}`, { state: { title, id: safeId } }),
       };
   });
+
+  // sort alphabetically by title
+  cards.sort((a: any, b: any) => (a.title || '').localeCompare(b.title || ''));
 
   // Recent articles datagrid
   const [recent, setRecent] = useState<any[] | null>(null);
