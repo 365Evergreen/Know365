@@ -36,6 +36,8 @@ import {
 import { getCarouselConfig, saveCarouselConfig, createCarouselConfig } from '../services/dataverseClient';
 import ConfigurableCarousel from '../components/ConfigurableCarousel';
 import FormBuilder from '../components/FormBuilder';
+import ComponentLibrary from '../components/ComponentLibrary';
+import PageCanvas, { PageComponent } from '../components/PageCanvas';
 import collectAdminSettings, { AdminSettingFinding } from '../utils/collectAdminSettings';
 
 const AdminConfig: React.FC = () => {
@@ -93,6 +95,30 @@ const AdminConfig: React.FC = () => {
 
   // pages state (for Pages tab) - derive from app config items that start with "page:" or create demo pages
   const [pages, setPages] = useState<any[]>([]);
+  const [pageDialogOpen, setPageDialogOpen] = useState(false);
+  const [pageEditingItem, setPageEditingItem] = useState<any | null>(null);
+  const [pageSlug, setPageSlug] = useState('');
+  const [pageTitle, setPageTitle] = useState('');
+  const [pageSummary, setPageSummary] = useState('');
+  const [pageContent, setPageContent] = useState('');
+  const [pageComponents, setPageComponents] = useState<PageComponent[]>([]);
+
+  const handleAddComponent = (c: PageComponent) => setPageComponents((s) => [...s, c]);
+  const handleRemoveComponent = (index: number) => setPageComponents((s) => s.filter((_, i) => i !== index));
+  const handleMoveUp = (index: number) => setPageComponents((s) => {
+    const copy = [...s];
+    if (index > 0) {
+      [copy[index - 1], copy[index]] = [copy[index], copy[index - 1]];
+    }
+    return copy;
+  });
+  const handleMoveDown = (index: number) => setPageComponents((s) => {
+    const copy = [...s];
+    if (index < copy.length - 1) {
+      [copy[index + 1], copy[index]] = [copy[index], copy[index + 1]];
+    }
+    return copy;
+  });
   useEffect(() => {
     // derive simple pages list from loaded items; fallback to sample pages
     if (items && items.length > 0) {
@@ -323,6 +349,44 @@ const AdminConfig: React.FC = () => {
     }
   };
 
+  const handleSavePage = async () => {
+    if (!pageSlug) {
+      showMessage('Provide a page slug', MessageBarType.warning);
+      return;
+    }
+    const name = `page:${pageSlug}`;
+    // try to parse content as JSON, otherwise keep as string
+    let parsedContent: any = pageContent;
+    try {
+      parsedContent = pageContent && pageContent.trim() !== '' ? JSON.parse(pageContent) : pageContent;
+    } catch {
+      parsedContent = pageContent;
+    }
+    const contentObj = typeof parsedContent === 'string' ? (parsedContent ? { body: parsedContent } : {}) : parsedContent || {};
+    if (pageComponents && pageComponents.length > 0) contentObj.components = pageComponents;
+    const valueObj = { title: pageTitle, summary: pageSummary, content: contentObj };
+    const valueStr = JSON.stringify(valueObj);
+    try {
+      if (pageEditingItem) {
+        const id = pageEditingItem.id || pageEditingItem['$id'] || pageEditingItem['appconfigid'] || pageEditingItem['configid'] || pageEditingItem['id'];
+        if (!id) {
+          showMessage('Unable to determine page record id for update', MessageBarType.error);
+          return;
+        }
+        await updateAppConfigItem(id, { name, value: valueStr });
+        showMessage('Page updated', MessageBarType.success);
+      } else {
+        await createAppConfigItem({ name, value: valueStr });
+        showMessage('Page created', MessageBarType.success);
+      }
+      await loadItems();
+      setPageDialogOpen(false);
+    } catch (e) {
+      console.error('Failed to save page', e);
+      showMessage('Failed to save page: see console', MessageBarType.error);
+    }
+  };
+
   return (
     <div style={{ padding: 20 }}>
       <h2>Administration</h2>
@@ -335,7 +399,14 @@ const AdminConfig: React.FC = () => {
         <PivotItem headerText="Pages">
           <Stack tokens={{ childrenGap: 12 }}>
             <Stack horizontal tokens={{ childrenGap: 8 }} verticalAlign="center">
-              <PrimaryButton text="Create new page" onClick={() => showMessage('Create page - template flow (placeholder)', MessageBarType.info)} />
+              <PrimaryButton text="Create new page" onClick={() => {
+                setPageEditingItem(null);
+                setPageSlug('');
+                setPageTitle('');
+                setPageSummary('');
+                setPageContent('');
+                setPageDialogOpen(true);
+              }} />
               <Text styles={{ root: { marginLeft: 8, color: theme.palette.neutralSecondary } }}>Create and edit pages using templates and drag & drop components.</Text>
             </Stack>
 
@@ -349,8 +420,30 @@ const AdminConfig: React.FC = () => {
                     </DocumentCardDetails>
                     <DocumentCardActions
                       actions={[
-                        { iconProps: { iconName: 'Edit' }, title: 'Edit', onClick: () => showMessage(`Edit page ${p.title} (placeholder)`, MessageBarType.info) },
-                        { iconProps: { iconName: 'Delete' }, title: 'Delete', onClick: () => showMessage(`Delete page ${p.title} (confirm modal placeholder)`, MessageBarType.warning) },
+                        {
+                          iconProps: { iconName: 'Edit' },
+                          title: 'Edit',
+                          onClick: () => {
+                            const raw = p.raw || {};
+                            let parsed: any = null;
+                            try {
+                              parsed = typeof raw.value === 'string' ? JSON.parse(raw.value || '{}') : raw.value || {};
+                            } catch {
+                              parsed = raw.value || {};
+                            }
+                            setPageEditingItem(raw);
+                            const key = raw.key || raw.name || '';
+                            setPageSlug(String(key).replace(/^page:/, ''));
+                            setPageTitle(parsed.title || parsed.name || p.title || '');
+                            setPageSummary(parsed.summary || p.description || '');
+                            const contentVal = parsed.content || parsed.body || (typeof parsed === 'object' ? parsed : parsed || {});
+                            setPageContent(typeof contentVal === 'object' ? JSON.stringify(contentVal, null, 2) : String(contentVal || ''));
+                            const comps = (parsed && parsed.components) || (contentVal && (contentVal as any).components) || [];
+                            setPageComponents(Array.isArray(comps) ? comps : []);
+                            setPageDialogOpen(true);
+                          },
+                        },
+                        { iconProps: { iconName: 'Delete' }, title: 'Delete', onClick: () => setConfirmDelete(p.raw) },
                       ]}
                     />
                   </DocumentCard>
@@ -707,6 +800,47 @@ const AdminConfig: React.FC = () => {
           </Stack>
         </PivotItem>
       </Pivot>
+
+      <Dialog
+        hidden={!pageDialogOpen}
+        onDismiss={() => setPageDialogOpen(false)}
+        dialogContentProps={{ type: DialogType.normal, title: pageEditingItem ? 'Edit Page' : 'Create Page' }}
+      >
+        <div style={{ minWidth: 960, maxWidth: '95vw', maxHeight: '85vh', overflow: 'auto', padding: 12 }}>
+          <Stack tokens={{ childrenGap: 8 }}>
+            <Stack horizontal tokens={{ childrenGap: 8 }} styles={{ root: { alignItems: 'flex-start' } }}>
+              <TextField label="Slug (used as page id)" value={pageSlug} onChange={(_, v) => setPageSlug(v || '')} styles={{ root: { minWidth: 260, maxWidth: 320 } }} />
+              <TextField label="Title" value={pageTitle} onChange={(_, v) => setPageTitle(v || '')} styles={{ root: { flex: 1 } }} />
+              <TextField label="Summary" value={pageSummary} onChange={(_, v) => setPageSummary(v || '')} styles={{ root: { minWidth: 320, maxWidth: 420 } }} />
+            </Stack>
+
+            <Stack horizontal tokens={{ childrenGap: 12 }} styles={{ root: { marginTop: 8 } }}>
+              <div style={{ width: 260, padding: 8, background: '#fff', borderRadius: 6, border: '1px solid #eee' }}>
+                <Text variant="mediumPlus" styles={{ root: { marginBottom: 8 } }}>Components</Text>
+                <ComponentLibrary />
+              </div>
+
+              <div style={{ flex: 1 }}>
+                <PageCanvas
+                  components={pageComponents}
+                  onAdd={(c: PageComponent) => handleAddComponent(c)}
+                  onRemove={(i: number) => handleRemoveComponent(i)}
+                  onMoveUp={(i: number) => handleMoveUp(i)}
+                  onMoveDown={(i: number) => handleMoveDown(i)}
+                />
+              </div>
+
+              <div style={{ width: 360 }}>
+                <TextField label="Content (JSON or free text)" multiline rows={16} value={pageContent} onChange={(_, v) => setPageContent(v || '')} />
+              </div>
+            </Stack>
+          </Stack>
+        </div>
+        <DialogFooter>
+          <PrimaryButton onClick={handleSavePage} text={pageEditingItem ? 'Save' : 'Create'} />
+          <DefaultButton onClick={() => setPageDialogOpen(false)} text="Cancel" />
+        </DialogFooter>
+      </Dialog>
 
       <Dialog hidden={!confirmDelete} onDismiss={() => setConfirmDelete(null)} dialogContentProps={{ type: DialogType.normal, title: 'Confirm delete', subText: 'Delete this configuration item?' }}>
         <DialogFooter>
