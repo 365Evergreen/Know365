@@ -66,8 +66,17 @@ export const getDocuments = async (
       .top(top)
       .select('id,name,webUrl,lastModifiedDateTime,createdBy,size')
       .get();
-    
-    return response.value;
+    // Filter returned items to only include file (document) items — exclude drive/list container objects
+    const docs = (response.value || []).filter((it: any) => {
+      // drive items representing files have a `file` facet or a `size` property
+      if (it.file) return true;
+      if (typeof it.size === 'number' && it.size > 0) return true;
+      // sometimes items representing list items are returned; include when they have a webUrl and no folder facet
+      if (!it.folder && it.webUrl) return true;
+      return false;
+    });
+
+    return docs;
   } catch (error) {
     console.error('Failed to fetch documents:', error);
     return [];
@@ -87,8 +96,15 @@ export const searchDocuments = async (
       .api(`/sites/${siteId}/drives/${driveId}/root/search(q='${query}')`)
       .select('id,name,webUrl,lastModifiedDateTime,createdBy,size')
       .get();
-    
-    return response.value;
+    // Filter search results to return only documents/list items (exclude drive or library objects)
+    const docs = (response.value || []).filter((it: any) => {
+      if (it.file) return true;
+      if (typeof it.size === 'number' && it.size > 0) return true;
+      if (!it.folder && it.webUrl) return true;
+      return false;
+    });
+
+    return docs;
   } catch (error) {
     console.error('Search failed:', error);
     return [];

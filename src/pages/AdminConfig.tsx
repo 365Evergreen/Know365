@@ -806,10 +806,20 @@ const AdminConfig: React.FC = () => {
         onDismiss={() => setPageDialogOpen(false)}
         dialogContentProps={{ type: DialogType.normal, title: pageEditingItem ? 'Edit Page' : 'Create Page' }}
         modalProps={{
-          styles: { main: { maxWidth: '95vw', width: '95vw', margin: '0 auto' } },
+          styles: {
+            main: {
+              maxWidth: '95vw',
+              width: '95vw',
+              margin: '0 auto',
+              selectors: {
+                '.ms-Dialog-inner': { width: '100%', maxWidth: '95vw' },
+                '.ms-Dialog-content': { width: '100%', maxWidth: '95vw' },
+              },
+            },
+          },
         }}
       >
-        <div style={{ minWidth: 960, maxWidth: '95vw', maxHeight: '85vh', overflow: 'auto', padding: 12 }}>
+        <div style={{ width: '95vw', maxWidth: '95vw', maxHeight: '85vh', overflow: 'auto', padding: 12 }}>
           <Stack tokens={{ childrenGap: 8 }}>
             <Stack horizontal tokens={{ childrenGap: 8 }} styles={{ root: { alignItems: 'flex-start' } }}>
               <TextField label="Slug (used as page id)" value={pageSlug} onChange={(_, v) => setPageSlug(v || '')} styles={{ root: { minWidth: 260, maxWidth: 320 } }} />
