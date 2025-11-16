@@ -6,15 +6,14 @@ This project is now fully scaffolded and ready to run! Follow these steps to get
 
 ### Prerequisites
 
-- **Node.js** 18+ installed
-- **pnpm** installed globally: `npm install -g pnpm`
+- **Node.js** 18+ installed (npm included)
 - **Azure AD App Registration** (for authentication)
 - **Azure Static Web App** (for deployment)
 
 ### 1. Install Dependencies
 
 ```bash
-pnpm install
+npm ci
 ```
 
 ### 2. Configure Environment
@@ -37,7 +36,7 @@ VITE_GRAPH_SCOPES=Sites.Read.All,User.Read
 ### 3. Run Development Server
 
 ```bash
-pnpm dev
+npm run dev
 ```
 
 The app will be available at `http://localhost:3000`
@@ -45,7 +44,7 @@ The app will be available at `http://localhost:3000`
 ### 4. Build for Production
 
 ```bash
-pnpm build
+npm run build
 ```
 
 The production build will be in the `dist/` folder.
@@ -143,7 +142,7 @@ Create a table in Dataverse named `KnowledgeSources` with these columns:
 
 ## 📚 Next Steps
 
-1. **Test locally** - Run `pnpm dev` and verify authentication works
+1. **Test locally** - Run `npm run dev` and verify authentication works
 2. **Add Dataverse sources** - Configure knowledge sources in Dataverse
 3. **Customize UI** - Modify components to match your branding
 4. **Add features** - Implement search, filtering, favorites, etc.
@@ -152,10 +151,10 @@ Create a table in Dataverse named `KnowledgeSources` with these columns:
 ## 🛠️ Development Commands
 
 ```bash
-pnpm dev          # Start dev server
-pnpm build        # Build for production
-pnpm preview      # Preview production build
-pnpm lint         # Run ESLint
+npm run dev          # Start dev server
+npm run build        # Build for production
+npm run preview      # Preview production build
+npm run lint         # Run ESLint
 ```
 
 ## 📖 Documentation

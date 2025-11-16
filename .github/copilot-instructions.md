@@ -9,23 +9,23 @@ This is a Microsoft 365-integrated knowledge management application with a React
 - **Frontend**: React + TypeScript, Vite build system
 - **UI Framework**: Fluent UI (Microsoft design system)
 - **Authentication**: MSAL.js (Azure AD integration)
-- **Package Manager**: **pnpm** (not npm/yarn - always use `pnpm` commands)
+- **Package Manager**: **npm** (use `npm` commands)
 - **Backend Integration**: Microsoft Graph API, Dataverse Web API
 - **Deployment**: Azure Static Web Apps with GitHub Actions
 
 ## Development Commands
 
 ```bash
-pnpm install          # Install dependencies
-pnpm dev              # Start dev server (Vite)
-pnpm build            # Production build (outputs to dist/)
+npm ci                # Install dependencies (clean install in CI)
+npm run dev           # Start dev server (Vite)
+npm run build         # Production build (outputs to dist/)
 # Copilot / AI Agent Instructions — Know365 (concise)
 
 Purpose: give an AI coding agent the minimal, high‑value facts to be productive in this repo.
 
 Quick facts
 - **Stack:** React + TypeScript, Vite, Fluent UI, MSAL.js for auth.
-- **Package manager:** `pnpm` (use `pnpm install`, `pnpm dev`, `pnpm build`, `pnpm preview`).
+- **Package manager:** `npm` (use `npm ci`, `npm run dev`, `npm run build`, `npm run preview`).
 - **Deployment:** Azure Static Web Apps via `.github/workflows/azure-static-web-apps.yml` (build outputs to `dist/`).
 
 What matters here (high‑value patterns)
@@ -36,12 +36,12 @@ What matters here (high‑value patterns)
 - **Data caching:** document fetch code assumes caching (localStorage / IndexedDB) to limit Graph calls — check `RecentDocuments.tsx` and related components for examples.
 
 Developer workflows (explicit)
-- Local dev: `pnpm install` → `pnpm dev` (Vite dev server). Use `pnpm preview` to preview production build.
-- Build: `pnpm build` produces `dist/` used by GitHub Actions for SWA deployment.
+- Local dev: `npm ci` → `npm run dev` (Vite dev server). Use `npm run preview` to preview production build.
+- Build: `npm run build` produces `dist/` used by GitHub Actions for SWA deployment.
 - Useful dev proxies and helpers: see `server/dev-proxy/` (proxying and token tests) and `scripts/` (blob/dataverse migration and icon upload helpers).
 
-Repository conventions to follow
-- Always use `pnpm` commands (lockfile is `pnpm-lock.yaml`).
+- Repository conventions to follow
+- Prefer `npm` commands; commit `package-lock.json` for reproducible installs.
 - Keep API integration in `src/services/` — agents should add or update helpers there rather than scattering Graph logic into components.
 - Environment variables are `VITE_` prefixed and read via `import.meta.env` (e.g. `VITE_CLIENT_ID`, `VITE_DATAVERSE_API`). Do not add secrets in source.
 - Frontend-only changes go under `src/`. Small backend/dev tooling lives under `server/` and `scripts/`.
@@ -54,8 +54,8 @@ Key files to inspect when coding or modifying features
 - Primary UI examples: `src/components/Header.tsx`, `src/components/ContentTabs.tsx`, `src/pages/SearchPage.tsx`
 - Dev helpers: `server/dev-proxy/index.js`, `scripts/migrateBlobsToDataverse.js`
 
-Testing & verification notes
-- This repo does not include a formal test harness. Verify changes locally with `pnpm dev` and use `pnpm build` + `pnpm preview` before pushing to CI.
+- Testing & verification notes
+- This repo does not include a formal test harness. Verify changes locally with `npm run dev` and use `npm run build` + `npm run preview` before pushing to CI.
 - GitHub Actions will build and deploy the SWA; check logs in the `.github/workflows/azure-static-web-apps.yml` run if CI fails.
 
 Safety and scope
