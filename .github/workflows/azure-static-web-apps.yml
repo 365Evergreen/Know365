@@ -27,72 +27,34 @@ jobs:
         with:
           node-version: '20.x'
           cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Enable Corepack and prepare pnpm
         run: |
           echo "Enabling Corepack and preparing pnpm"
           corepack enable
           corepack prepare pnpm@10 --activate
-          if ! command -v pnpm >/dev/null 2>&1; then
-            echo "pnpm not found after corepack prepare, installing globally"
-            npm i -g pnpm@10
-          fi
           echo "pnpm version: $(pnpm -v || echo 'not available')"
 
-      - name: Install pnpm on runner
-        uses: pnpm/action-setup@v2
+      - name: Cache pnpm store (optional)
+        uses: actions/cache@v4
         with:
-          version: '10'
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
 
-      - name: Install pnpm globally (fallback)
-        run: |
-          echo "Installing pnpm globally as a fallback"
-          npm i -g pnpm@latest
-
-      - name: Install dependencies (pnpm)
+      - name: Install dependencies
         run: |
           echo "Checking pnpm availability..."
-          if ! command -v pnpm >/dev/null 2>&1; then
-            echo "pnpm not found; attempting to enable Corepack and install pnpm"
-            corepack enable || true
-            corepack prepare pnpm@10 --activate || true
-            npm i -g pnpm@10 || true
-            export PATH="$(npm bin -g):$PATH"
-            hash -r || true
-          fi
-          echo "pnpm version: $(pnpm -v || echo 'not available')"
-          echo "Attempting install with frozen lockfile..."
-          if pnpm install --frozen-lockfile; then
-            echo "Installed dependencies using --frozen-lockfile"
+          if command -v pnpm >/dev/null 2>&1; then
+            echo "Using pnpm to install dependencies"
+            pnpm install --frozen-lockfile
             echo "PM=pnpm" >> $GITHUB_ENV
           else
-            echo "Warning: --frozen-lockfile install failed. Showing diagnostics:" >&2
-            echo "pnpm version: $(pnpm -v || echo 'not available')"
-            echo "Lockfile status:"; ls -la pnpm-lock.yaml || true
-            echo "Listing package.json and lockfile headers:"; head -n 5 package.json || true; head -n 5 pnpm-lock.yaml || true
-            echo "Falling back: trying pnpm install, then npm ci if pnpm unavailable or fails."
-            if command -v pnpm >/dev/null 2>&1; then
-              if pnpm install; then
-                echo "Installed dependencies using pnpm"
-                echo "PM=pnpm" >> $GITHUB_ENV
-              else
-                echo "pnpm install failed; attempting npm ci fallback"
-                if npm ci --prefer-offline --no-audit --progress=false; then
-                  echo "Installed dependencies using npm ci"
-                  echo "PM=npm" >> $GITHUB_ENV
-                else
-                  echo "npm ci fallback also failed" && exit 1
-                fi
-              fi
-            else
-              echo "pnpm not available; attempting npm ci as fallback"
-              if npm ci --prefer-offline --no-audit --progress=false; then
-                echo "Installed dependencies using npm ci"
-                echo "PM=npm" >> $GITHUB_ENV
-              else
-                echo "npm ci fallback failed" && exit 1
-              fi
-            fi
+            echo "pnpm not available; falling back to npm ci"
+            npm ci --prefer-offline --no-audit --progress=false
+            echo "PM=npm" >> $GITHUB_ENV
           fi
 
       - name: Ensure Vite plugins installed
@@ -171,4 +133,3 @@ jobs:
           action: "close"
           app_location: "dist"
           skip_app_build: true
-          
