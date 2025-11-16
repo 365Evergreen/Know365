@@ -805,6 +805,9 @@ const AdminConfig: React.FC = () => {
         hidden={!pageDialogOpen}
         onDismiss={() => setPageDialogOpen(false)}
         dialogContentProps={{ type: DialogType.normal, title: pageEditingItem ? 'Edit Page' : 'Create Page' }}
+        modalProps={{
+          styles: { main: { maxWidth: '95vw', width: '95vw', margin: '0 auto' } },
+        }}
       >
         <div style={{ minWidth: 960, maxWidth: '95vw', maxHeight: '85vh', overflow: 'auto', padding: 12 }}>
           <Stack tokens={{ childrenGap: 8 }}>
