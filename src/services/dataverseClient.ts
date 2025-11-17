@@ -115,6 +115,41 @@ function isValidUrl(u?: string): boolean {
   }
 }
 
+// Try to derive a usable SharePoint site URL and library/list name from a
+// KnowledgeSource record by inspecting common fields and raw payloads.
+function deriveSiteAndLibrary(s: any): { siteUrl: string | null; libraryName: string | null } {
+  try {
+    const raw = s && s.raw ? s.raw : {};
+
+    // Candidate site/url fields (many orgs use slightly different attribute names)
+    let siteUrl = s.SharePointSiteUrl || raw.SharePointSiteUrl || raw.sharepointsiteurl || raw.e365_sharepointsiteurl || raw.siteurl || raw.SiteUrl || raw.WebUrl || raw.webUrl || '';
+
+    // If we received an item/webUrl that contains a Lists segment, try to trim to the site root.
+    try {
+      if (siteUrl && typeof siteUrl === 'string' && siteUrl.toLowerCase().includes('/lists/')) {
+        const u = new URL(siteUrl);
+        const idx = u.pathname.toLowerCase().indexOf('/lists/');
+        if (idx > -1) {
+          u.pathname = u.pathname.substring(0, idx);
+          siteUrl = u.toString().replace(/\/+$/, '');
+        }
+      }
+    } catch (e) {
+      // ignore URL parsing errors and keep original value
+    }
+
+    // Candidate library/list name fields. Fall back to internal/source name when explicit name missing.
+    let libraryName = s.LibraryName || raw.LibraryName || raw.libraryname || raw.e365_libraryname || raw.listname || s.SourceName || raw.e365_sourceinternalname || raw.e365_sourceinternalname || '';
+
+    siteUrl = siteUrl ? String(siteUrl).trim() : '';
+    libraryName = libraryName ? String(libraryName).trim() : '';
+
+    return { siteUrl: siteUrl || null, libraryName: libraryName || null };
+  } catch (e) {
+    return { siteUrl: null, libraryName: null };
+  }
+}
+
 // Expose helpers to read/clear the persisted mapping for UI/debug purposes
 export const getEntitySetMappings = (): Array<[string, string]> => {
   return Array.from(entitySetMap.entries());
@@ -522,16 +557,15 @@ export const getArticlesFromKnowledgeSources = async (q?: string): Promise<any[]
 
         // If GraphEndpoint didn't produce items, fall back to the editable site+library fields.
         if (!items || items.length === 0) {
-          // Validate configured site & library before calling Graph helper. If the
-          // SharePointSiteUrl is missing or malformed, listLibraryItems will throw
-          // when constructing a URL; detect that early and skip the source.
-          if (!isValidUrl(s.SharePointSiteUrl) || !s.LibraryName) {
+          // Try to derive site + library values from common raw fields before skipping.
+          const { siteUrl, libraryName } = deriveSiteAndLibrary(s);
+          if (!isValidUrl(siteUrl || undefined) || !libraryName) {
             console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName', s);
             continue;
           }
 
           // listLibraryItems resolves site & drive and returns documents
-          items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, 50);
+          items = await listLibraryItems(siteUrl!, libraryName!, 50);
         }
         for (const it of items) {
           // simple text match if query provided
@@ -807,11 +841,12 @@ export const getKnowledgeArticlesByFunction = async (fn: string, q?: string): Pr
               }
 
               if (!items || items.length === 0) {
-                if (!isValidUrl(s.SharePointSiteUrl) || !s.LibraryName) {
+                const { siteUrl, libraryName } = deriveSiteAndLibrary(s);
+                if (!isValidUrl(siteUrl || undefined) || !libraryName) {
                   console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName (by function)', s);
                   continue;
                 }
-                items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, 50);
+                items = await listLibraryItems(siteUrl!, libraryName!, 50);
               }
               for (const it of items) {
                 if (q && q.trim()) {
@@ -879,11 +914,12 @@ export const getKnowledgeArticlesCountByFunction = async (fn: string): Promise<n
                 }
 
                 if (!items || items.length === 0) {
-                  if (!isValidUrl(s.SharePointSiteUrl) || !s.LibraryName) {
+                  const { siteUrl, libraryName } = deriveSiteAndLibrary(s);
+                  if (!isValidUrl(siteUrl || undefined) || !libraryName) {
                     console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName (count)', s);
                     continue;
                   }
-                  items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, 1000);
+                  items = await listLibraryItems(siteUrl!, libraryName!, 1000);
                 }
 
                 total += Array.isArray(items) ? items.length : 0;
@@ -941,7 +977,12 @@ export const getRecentKnowledgeArticles = async (top = 10): Promise<any[]> => {
         }
 
         if (!items || items.length === 0) {
-          const itemsFallback = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, Math.max(top, 50));
+          const { siteUrl, libraryName } = deriveSiteAndLibrary(s);
+          if (!isValidUrl(siteUrl || undefined) || !libraryName) {
+            console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName (recent)', s);
+            continue;
+          }
+          const itemsFallback = await listLibraryItems(siteUrl!, libraryName!, Math.max(top, 50));
           items = itemsFallback;
         }
 
@@ -1005,7 +1046,12 @@ export const getKnowledgeArticlesBySubject = async (subjectId: string, top = 50)
         }
 
         if (!items || items.length === 0) {
-          items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, top);
+          const { siteUrl, libraryName } = deriveSiteAndLibrary(s);
+          if (!isValidUrl(siteUrl || undefined) || !libraryName) {
+            console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName (subject search)', s);
+            continue;
+          }
+          items = await listLibraryItems(siteUrl!, libraryName!, top);
         }
 
         for (const it of items) {
