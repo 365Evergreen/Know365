@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { PrimaryButton, DefaultButton, TextField } from '@fluentui/react'
 import { listEntitySets, getEntityRecords, getKnowledgeArticlesBySubject } from '../services/dataverseClient'
+import { getSiteListsByUrl, getSiteDrivesByUrl, listLibraryItems, getSiteIdByUrl } from '../services/sharePointGraph'
 
 export default function DataverseDebug(): JSX.Element {
   const [entitySets, setEntitySets] = useState<string[] | null>(null)
@@ -9,6 +10,9 @@ export default function DataverseDebug(): JSX.Element {
   const [error, setError] = useState<string | null>(null)
   const [subject, setSubject] = useState('')
   const [articleResults, setArticleResults] = useState<any[] | null>(null)
+  const [siteUrl, setSiteUrl] = useState('')
+  const [libraryName, setLibraryName] = useState('')
+  const [spResult, setSpResult] = useState<any | null>(null)
 
   const loadEntitySets = async () => {
     setError(null)
@@ -44,6 +48,55 @@ export default function DataverseDebug(): JSX.Element {
     }
   }
 
+  const fetchSiteLists = async () => {
+    setError(null)
+    setSpResult(null)
+    try {
+      if (!siteUrl) throw new Error('Please enter a site URL')
+      const res = await getSiteListsByUrl(siteUrl)
+      setSpResult({ type: 'lists', value: res })
+    } catch (err: any) {
+      setError(err?.message || String(err))
+    }
+  }
+
+  const fetchSiteDrives = async () => {
+    setError(null)
+    setSpResult(null)
+    try {
+      if (!siteUrl) throw new Error('Please enter a site URL')
+      const res = await getSiteDrivesByUrl(siteUrl)
+      setSpResult({ type: 'drives', value: res })
+    } catch (err: any) {
+      setError(err?.message || String(err))
+    }
+  }
+
+  const fetchLibraryItems = async () => {
+    setError(null)
+    setSpResult(null)
+    try {
+      if (!siteUrl) throw new Error('Please enter a site URL')
+      if (!libraryName) throw new Error('Please enter a library or list name')
+      const res = await listLibraryItems(siteUrl, libraryName)
+      setSpResult({ type: 'libraryItems', value: res })
+    } catch (err: any) {
+      setError(err?.message || String(err))
+    }
+  }
+
+  const fetchSiteId = async () => {
+    setError(null)
+    setSpResult(null)
+    try {
+      if (!siteUrl) throw new Error('Please enter a site URL')
+      const res = await getSiteIdByUrl(siteUrl)
+      setSpResult({ type: 'siteId', value: res })
+    } catch (err: any) {
+      setError(err?.message || String(err))
+    }
+  }
+
   return (
     <div style={{ padding: 20 }}>
       <h2>Dataverse Debug</h2>
@@ -72,6 +125,23 @@ export default function DataverseDebug(): JSX.Element {
         <PrimaryButton text="Fetch records" onClick={fetchRecords} style={{ marginTop: 8 }} />
       </div>
 
+      <hr />
+
+      <div style={{ marginTop: 16 }}>
+        <h3>SharePoint Graph Diagnostics</h3>
+        <TextField label="Site URL" placeholder="https://contoso.sharepoint.com/sites/YourSite" value={siteUrl} onChange={(_, v) => setSiteUrl(v || '')} />
+        <div style={{ marginTop: 8 }}>
+          <PrimaryButton text="Get site ID" onClick={fetchSiteId} />
+          <PrimaryButton text="Get site lists" onClick={fetchSiteLists} style={{ marginLeft: 8 }} />
+          <PrimaryButton text="Get site drives" onClick={fetchSiteDrives} style={{ marginLeft: 8 }} />
+        </div>
+
+        <div style={{ marginTop: 12 }}>
+          <TextField label="Library / List name" placeholder="KnowledgeBase or Documents" value={libraryName} onChange={(_, v) => setLibraryName(v || '')} />
+          <PrimaryButton text="List library items" onClick={fetchLibraryItems} style={{ marginTop: 8 }} />
+        </div>
+      </div>
+
       {records && (
         <div style={{ marginBottom: 16 }}>
           <strong>Records (first 50):</strong>
@@ -93,6 +163,15 @@ export default function DataverseDebug(): JSX.Element {
           <strong>Article results (first 50):</strong>
           <pre style={{ whiteSpace: 'pre-wrap', maxHeight: 260, overflow: 'auto', border: '1px solid #eee', padding: 8 }}>
             {JSON.stringify(articleResults.slice(0, 50), null, 2)}
+          </pre>
+        </div>
+      )}
+
+      {spResult && (
+        <div style={{ marginTop: 12 }}>
+          <strong>SharePoint result ({spResult.type}):</strong>
+          <pre style={{ whiteSpace: 'pre-wrap', maxHeight: 400, overflow: 'auto', border: '1px solid #eee', padding: 8 }}>
+            {JSON.stringify(spResult.value, null, 2)}
           </pre>
         </div>
       )}
