@@ -106,9 +106,20 @@ jobs:
 
       - name: Build project (vite)
         run: |
-          if [ "${PM}" = "pnpm" ]; then
-            pnpm build
+          set -e
+          echo "PM=${PM}"
+          if [ "${PM}" = "pnpm" ] && command -v pnpm >/dev/null 2>&1; then
+            echo "Running pnpm build..."
+            if pnpm build; then
+              echo "pnpm build succeeded"
+            else
+              echo "pnpm build failed — attempting npm fallback (npm ci && npm run build)" >&2
+              npm ci --prefer-offline --no-audit --progress=false
+              npm run build
+            fi
           else
+            echo "Running npm ci && npm run build"
+            npm ci --prefer-offline --no-audit --progress=false
             npm run build
           fi
         env:
