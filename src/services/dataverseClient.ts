@@ -411,6 +411,20 @@ export const getKnowledgeSources = async (): Promise<KnowledgeSource[]> => {
   }
 };
 
+// Force-read the org-specific e365_knowledgesources entity set (used by admin UI)
+export const getKnowledgeSourcesFromOrg = async (top = 10): Promise<any[]> => {
+  try {
+    const apiRoot = buildDataverseApiRoot();
+    const resourcePath = `e365_knowledgesources?$top=${top}`;
+    const accessToken = await getDataverseAccessToken();
+    const data = await fetchDataverseResource(resourcePath, { headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' } });
+    return data?.value || [];
+  } catch (e) {
+    console.error('Error fetching fixed e365_knowledgesources:', e);
+    return [];
+  }
+};
+
 // Fetch articles from configured KnowledgeSources (SharePoint libraries). Returns
 // an array of normalized items with at least `id`, `title`, `webUrl`, and `source`.
 export const getArticlesFromKnowledgeSources = async (q?: string): Promise<any[]> => {

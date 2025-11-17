@@ -9,6 +9,7 @@ import {
   listEntitySets,
   getEntityMetadata,
   getKnowledgeSources,
+  getKnowledgeSourcesFromOrg,
   createKnowledgeSource,
   updateKnowledgeSource,
   deleteKnowledgeSource,
@@ -208,7 +209,8 @@ const AdminConfig: React.FC = () => {
   const loadSources = async () => {
     setLoadingSources(true);
     try {
-      const list = await getKnowledgeSources();
+      // Use the org-specific e365_knowledgesources table to ensure admin sees the exact records
+      const list = await getKnowledgeSourcesFromOrg(200).catch(() => getKnowledgeSources());
       setSources(list || []);
     } catch (e) {
       console.error('Failed to load knowledge sources', e);
