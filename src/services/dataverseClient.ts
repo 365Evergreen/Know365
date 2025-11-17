@@ -1,4 +1,5 @@
 import { msalInstance } from './authConfig';
+import schemaOverrides from '../config/dataverse-schema-overrides';
 
 interface KnowledgeSource {
   SourceName: string;
@@ -253,6 +254,15 @@ async function getDataverseAccessToken(): Promise<string> {
   }
 }
 
+function getSchemaOverride(logicalName: string): any | null {
+  try {
+    const o = (schemaOverrides as any)[logicalName];
+    return o || null;
+  } catch {
+    return null;
+  }
+}
+
 // Resolve an EntitySetName from a logical entity name (LogicalName). This helps avoid
 // hardcoded OData paths like 'KnowledgeSources' which may not match the target org's
 // EntitySetName (publisher prefixes / pluralization differ). The resolved mapping is
@@ -260,6 +270,18 @@ async function getDataverseAccessToken(): Promise<string> {
 async function resolveEntitySetForLogicalName(logicalName: string): Promise<string> {
   const key = logicalName.toLowerCase();
   if (entitySetMap.has(key)) return entitySetMap.get(key)!;
+
+  // Check local overrides first
+  try {
+    const override = (schemaOverrides as any)[logicalName];
+    if (override && override.entitySetName) {
+      entitySetMap.set(key, override.entitySetName);
+      try { persistEntitySetMap(); } catch {}
+      return override.entitySetName;
+    }
+  } catch (e) {
+    // ignore if overrides not present
+  }
 
   try {
     const accessToken = await getDataverseAccessToken();
@@ -482,12 +504,12 @@ export const getKnowledgeArticles = async (q?: string): Promise<any[]> => {
     } catch (e) {
       // fallback to legacy guess 'KnowledgeArticles'
     }
-    // Resolve a reasonable display property (e.g. title/name) for this entity set so we don't
-    // hardcode a field name that might not exist in some orgs. Fall back to 'title'.
-    let displayProp = 'title';
+    // Resolve display property: prefer schema override primaryName, else metadata discovery, then 'title'.
+    const override = getSchemaOverride(logical);
+    let displayProp = (override && override.primaryName) || 'title';
     try {
       const meta = await getEntitySetMetadata(entitySet);
-      if (meta && meta.displayName) displayProp = meta.displayName;
+      if ((!displayProp || displayProp === 'title') && meta && meta.displayName) displayProp = meta.displayName;
     } catch (e) {
       // ignore and keep default
     }
@@ -531,10 +553,11 @@ export const getKnowledgeArticlesByFunction = async (fn: string, q?: string): Pr
       // ignore and use fallback entity set name
     }
 
-    let displayProp = 'title';
+    const override = getSchemaOverride(logical);
+    let displayProp = (override && override.primaryName) || 'title';
     try {
       const meta = await getEntitySetMetadata(entitySet);
-      if (meta && meta.displayName) displayProp = meta.displayName;
+      if ((!displayProp || displayProp === 'title') && meta && meta.displayName) displayProp = meta.displayName;
     } catch (e) {
       // ignore
     }
@@ -547,13 +570,16 @@ export const getKnowledgeArticlesByFunction = async (fn: string, q?: string): Pr
 
     // Build filter parts trying to match common lookup/navigation property names
     const filterParts: string[] = [];
+    const businessFuncNav = (override && override.navigationProperties && override.navigationProperties.businessFunction) || 'e365_businessfunction';
+    const businessFuncField = (override && override.fields && override.fields.businessFunction) || 'e365_businessfunctionname';
+    const tagsField = (override && override.fields && override.fields.tagsText) || 'tagsText';
 
     // Try navigation property for business function
-    filterParts.push(`e365_businessfunction/Name eq '${fnName}'`);
+    filterParts.push(`${businessFuncNav}/Name eq '${fnName}'`);
     // fallback to common attribute name
-    filterParts.push(`e365_businessfunctionname eq '${fnName}'`);
+    filterParts.push(`${businessFuncField} eq '${fnName}'`);
     // also allow matching in tagsText or displayProp
-    filterParts.push(`contains(tagsText,'${fnName}') or contains(${displayProp},'${fnName}')`);
+    filterParts.push(`contains(${tagsField},'${fnName}') or contains(${displayProp},'${fnName}')`);
 
     // If a free-text query is provided, also restrict by displayProp or tagsText
     if (q && q.trim()) {
@@ -562,7 +588,8 @@ export const getKnowledgeArticlesByFunction = async (fn: string, q?: string): Pr
     }
 
     const filter = `${encodeURIComponent(filterParts.join(' or '))}`;
-    const resourcePath = `${entitySet}?$expand=e365_knowledgearticlesubject&$filter=${filter}&$top=50`;
+    const subjectNav = (override && override.navigationProperties && override.navigationProperties.subject) || 'e365_knowledgearticlesubject';
+    const resourcePath = `${entitySet}?$expand=${encodeURIComponent(subjectNav)}&$filter=${filter}&$top=50`;
     const accessToken = await getDataverseAccessToken();
     const data = await fetchDataverseResource(resourcePath, {
       headers: {
@@ -596,11 +623,16 @@ export const getKnowledgeArticlesCountByFunction = async (fn: string): Promise<n
       .replace(/\b\w/g, (c) => c.toUpperCase())
       .replace(/'/g, "''");
 
+    const override = getSchemaOverride(logical);
+    const businessFuncNav = (override && override.navigationProperties && override.navigationProperties.businessFunction) || 'e365_businessfunction';
+    const businessFuncField = (override && override.fields && override.fields.businessFunction) || 'e365_businessfunctionname';
+    const tagsField = (override && override.fields && override.fields.tagsText) || 'tagsText';
+
     // Build filter trying navigation property and common attribute names
     const filterParts: string[] = [];
-    filterParts.push(`e365_businessfunction/Name eq '${fnName}'`);
-    filterParts.push(`e365_businessfunctionname eq '${fnName}'`);
-    filterParts.push(`contains(tagsText,'${fnName}') or contains(title,'${fnName}')`);
+    filterParts.push(`${businessFuncNav}/Name eq '${fnName}'`);
+    filterParts.push(`${businessFuncField} eq '${fnName}'`);
+    filterParts.push(`contains(${tagsField},'${fnName}') or contains(title,'${fnName}')`);
 
     const filter = `${encodeURIComponent(filterParts.join(' or '))}`;
     const resourcePath = `${entitySet}/$count?$filter=${filter}`;
@@ -635,10 +667,11 @@ export const getRecentKnowledgeArticles = async (top = 10): Promise<any[]> => {
 
     // determine a sensible display property (title/name) for the entity so fallback mapping
     // can reference a field that exists in the target org
-    let displayProp = 'title';
+    const override = getSchemaOverride(logical);
+    let displayProp = (override && override.primaryName) || 'title';
     try {
       const meta = await getEntitySetMetadata(entitySet);
-      if (meta && meta.displayName) displayProp = meta.displayName;
+      if ((!displayProp || displayProp === 'title') && meta && meta.displayName) displayProp = meta.displayName;
     } catch (e) {
       // ignore and keep default
     }
@@ -676,9 +709,11 @@ export const getKnowledgeArticlesBySubject = async (subjectId: string, top = 50)
     const accessToken = await getDataverseAccessToken();
 
     // Try several plausible lookup attribute names until one returns results
+    const override = getSchemaOverride(logical);
+    const subjectNav = (override && override.navigationProperties && override.navigationProperties.subject) || 'e365_knowledgearticlesubject';
     const candidates = [
-      `_e365_knowledgearticlesubjectid_value eq guid'${subjectId}'`,
-      `e365_knowledgearticlesubjectid eq guid'${subjectId}'`,
+      `_${subjectNav}id_value eq guid'${subjectId}'`,
+      `${subjectNav}id eq guid'${subjectId}'`,
       `_subjectid_value eq guid'${subjectId}'`,
       `subjectid eq guid'${subjectId}'`,
     ];
