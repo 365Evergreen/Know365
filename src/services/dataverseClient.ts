@@ -263,6 +263,12 @@ async function resolveEntitySetForLogicalName(logicalName: string): Promise<stri
 
   try {
     const accessToken = await getDataverseAccessToken();
+
+    
+
+    
+
+    
     // Query the EntityDefinitions for the logical name
     const resourcePath = `EntityDefinitions(LogicalName='${logicalName}')?$select=EntitySetName,LogicalName`;
     const data = await fetchDataverseResource(resourcePath, {
@@ -627,15 +633,18 @@ export const getRecentKnowledgeArticles = async (top = 10): Promise<any[]> => {
       // fallback to legacy name
     }
 
-    const accessToken = await getDataverseAccessToken();
-    // request createdon and a sensible display property (title/name) for the entity
+    // determine a sensible display property (title/name) for the entity so fallback mapping
+    // can reference a field that exists in the target org
     let displayProp = 'title';
     try {
       const meta = await getEntitySetMetadata(entitySet);
       if (meta && meta.displayName) displayProp = meta.displayName;
     } catch (e) {
-      // ignore and fall back to 'title'
+      // ignore and keep default
     }
+
+    const accessToken = await getDataverseAccessToken();
+    // request createdon and a sensible display property (title/name) for the entity
     const resourcePath = `${entitySet}?$select=*,createdon,${displayProp}&$orderby=createdon desc&$top=${top}`;
     const data = await fetchDataverseResource(resourcePath, {
       headers: {
@@ -656,7 +665,6 @@ export const getRecentKnowledgeArticles = async (top = 10): Promise<any[]> => {
 // Attempt to fetch knowledge articles filtered by a subject id.
 export const getKnowledgeArticlesBySubject = async (subjectId: string, top = 50): Promise<any[]> => {
   try {
-    // Resolve the entity set to use for knowledge articles (fallback to 'KnowledgeArticles')
     const logical = 'e365_knowledgearticle';
     let entitySet = 'KnowledgeArticles';
     try {
@@ -687,21 +695,13 @@ export const getKnowledgeArticlesBySubject = async (subjectId: string, top = 50)
         const list = data?.value || [];
         if (Array.isArray(list) && list.length > 0) return list;
       } catch (e) {
-        // log candidate failure to help diagnose 400/404 responses
         try {
-          // include filter in the warning to make debugging easier
-          // eslint-disable-next-line no-console
           console.warn(`Dataverse: candidate filter failed: ${filter}`, e);
-        } catch (logErr) {
-          /* ignore logging errors */
-        }
-        // try next candidate
+        } catch { /* ignore logging errors */ }
       }
     }
 
-    // If the above guessed filter attributes failed, attempt discovery of lookup attributes
-    // on the article entity and try filters of the form `_<attr>_value eq guid'...'` for each
-    // discovered lookup attribute.
+    // Try discovery of lookup attributes and test them
     try {
       const lookupAttrs = await findLookupAttributesForEntity(logical);
       for (const attr of lookupAttrs) {
@@ -716,36 +716,31 @@ export const getKnowledgeArticlesBySubject = async (subjectId: string, top = 50)
           });
           const list2 = data2?.value || [];
           if (Array.isArray(list2) && list2.length > 0) {
-            // persist mapping of attribute to speed up future queries
-            try {
-              const mapKey = `${logical}::lookup::subject`;
-              entitySetMap.set(mapKey.toLowerCase(), attr);
-              persistEntitySetMap();
-            } catch (e) { /* ignore */ }
+            try { const mapKey = `${logical}::lookup::subject`; entitySetMap.set(mapKey.toLowerCase(), attr); persistEntitySetMap(); } catch {}
             return list2;
           }
         } catch (e) {
           console.warn(`Dataverse: lookup attribute filter failed for ${attr}`, e);
-          // try next attribute
         }
       }
     } catch (e) {
       console.warn('Error discovering lookup attributes for articles', e);
     }
 
-    // fallback: return empty
-    // If we reach here, the filtered queries returned no results — as a best-effort
-    // return a small set of recent articles so the UI can show content for the function.
+    // Fallback: return a small set of recent articles so the UI shows something
     try {
       const fallbackPath = `${entitySet}?$top=${top}`;
       const fallbackData = await fetchDataverseResource(fallbackPath, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
       });
       const fallbackList = fallbackData?.value || [];
       if (Array.isArray(fallbackList) && fallbackList.length > 0) {
+        // determine display property for the target entitySet
+        let displayProp = 'title';
+        try {
+          const meta = await getEntitySetMetadata(entitySet);
+          if (meta && meta.displayName) displayProp = meta.displayName;
+        } catch {}
         return (fallbackList || []).map((it: any) => ({ ...it, displayName: it[displayProp] || it.title || it.name || it.e365_name || '' }));
       }
     } catch (e) {
