@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Stack, Text, DefaultButton, Spinner, SpinnerSize } from '@fluentui/react';
-import { getKnowledgeArticlesByFunction } from '../services/dataverseClient';
+import { getKnowledgeArticlesByFunction, getKnowledgeSources } from '../services/dataverseClient';
 import DocumentsDisplay from '../components/DocumentsDisplay';
 
 const readable = (s?: string) => (s || '').replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -15,6 +15,7 @@ const FunctionsPage: React.FC = () => {
   const [articles, setArticles] = useState<any[] | null>(null);
   const [loadingArticles, setLoadingArticles] = useState(false);
   const [articlesError, setArticlesError] = useState<string | null>(null);
+  const [ksDebug, setKsDebug] = useState<any[] | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -22,6 +23,13 @@ const FunctionsPage: React.FC = () => {
       if (!fn) {
         setArticles([]);
         return;
+      }
+      // fetch KnowledgeSources for debugging/inspection
+      try {
+        const debugKs = await getKnowledgeSources();
+        setKsDebug(debugKs || []);
+      } catch (e) {
+        setKsDebug([]);
       }
       setLoadingArticles(true);
       setArticlesError(null);
@@ -99,6 +107,15 @@ const FunctionsPage: React.FC = () => {
           />
         )}
       </div>
+      {/* Debug: show KnowledgeSources count and a small preview when available */}
+      {ksDebug !== null && (
+        <div style={{ marginTop: 18, padding: 12, border: '1px dashed #ddd', borderRadius: 6 }}>
+          <Text variant="small">KnowledgeSources found: {ksDebug.length}</Text>
+          <pre style={{ marginTop: 8, maxHeight: 160, overflow: 'auto', fontSize: 12 }}>
+            {JSON.stringify((ksDebug || []).slice(0, 5).map((s: any) => ({ SourceName: s.SourceName || s.SourceName, SharePointSiteUrl: s.SharePointSiteUrl, LibraryName: s.LibraryName, businessFunction: s.businessFunction || s.raw?.e365_businessfunctionname || '' })), null, 2)}
+          </pre>
+        </div>
+      )}
     </Stack>
   );
 };
