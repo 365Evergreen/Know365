@@ -39,6 +39,7 @@ import {
   MessageBarType,
   getTheme,
 } from '@fluentui/react';
+import DocumentsDisplay from '../components/DocumentsDisplay';
 import { getCarouselConfig, saveCarouselConfig, createCarouselConfig } from '../services/dataverseClient';
 import ConfigurableCarousel from '../components/ConfigurableCarousel';
 import FormBuilder from '../components/FormBuilder';
@@ -72,6 +73,7 @@ const AdminConfig: React.FC = () => {
   const [carouselRecordId, setCarouselRecordId] = useState<string | null>(null);
   const [adminFindings, setAdminFindings] = useState<AdminSettingFinding[]>([]);
   const [scanningAdminKeys, setScanningAdminKeys] = useState(false);
+  const [previewArticles, setPreviewArticles] = useState<any[]>([]);
   // Knowledge sources admin state
   const [sources, setSources] = useState<any[]>([]);
   const [loadingSources, setLoadingSources] = useState(false);
@@ -703,6 +705,27 @@ const AdminConfig: React.FC = () => {
                 ]}
                 selectionMode={0}
               />
+
+              <div style={{ marginTop: 16 }}>
+                <h4>Preview articles from configured KnowledgeSources (lists only)</h4>
+                <PrimaryButton text="Preview articles" onClick={async () => {
+                  try {
+                    const { getArticlesFromKnowledgeSources } = await import('../services/dataverseClient');
+                    const arts = await getArticlesFromKnowledgeSources();
+                    // only show list-backed items
+                    const listOnly = (arts || []).filter((a: any) => a._raw && String(a._raw.e365_sourcetype || '').toLowerCase() === 'list' || true);
+                    // show using DocumentsDisplay
+                    setPreviewArticles(listOnly || []);
+                  } catch (e) {
+                    console.error('Preview failed', e);
+                    showMessage('Preview failed: see console', MessageBarType.error);
+                  }
+                }} />
+
+                <div style={{ marginTop: 12 }}>
+                  <DocumentsDisplay items={previewArticles || []} view="list" onItemClick={(it) => { if (it.webUrl) window.open(it.webUrl, '_blank', 'noopener'); }} />
+                </div>
+              </div>
             </div>
           </Stack>
         </PivotItem>

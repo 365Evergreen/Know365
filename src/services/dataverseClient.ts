@@ -657,7 +657,15 @@ export const getKnowledgeArticlesByFunction = async (fn: string, q?: string): Pr
     // content in SharePoint. We normalized `businessFunction` on KnowledgeSource
     // records in `getKnowledgeSources` so comparison is reliable.
     try {
-      const ks = await getKnowledgeSources();
+      const ksAll = await getKnowledgeSources();
+      // Only use KnowledgeSources that are of type 'list' (SharePoint lists)
+      const ks = (ksAll || []).filter((s: any) => {
+        const rawType = (s && s.raw && (s.raw.e365_sourcetype || s.raw.SourceType)) || s.e365_sourcetype || s.e365_sourcetype || s.SourceType || s.e365_sourcetype;
+        return String(rawType || '').toLowerCase() === 'list';
+      });
+      if (!ks || ks.length === 0) {
+        return [];
+      }
       if (Array.isArray(ks) && ks.length > 0) {
         const fnName = (fn || '')
           .replace(/-/g, ' ')
