@@ -414,10 +414,41 @@ export const getKnowledgeSources = async (): Promise<KnowledgeSource[]> => {
 // Force-read the org-specific e365_knowledgesources entity set (used by admin UI)
 export const getKnowledgeSourcesFromOrg = async (top = 10): Promise<any[]> => {
   try {
-    const resourcePath = `e365_knowledgesources?$top=${top}`;
+    // Resolve the org-specific entity set name for the logical e365_knowledgesource
+    const logical = 'e365_knowledgesource';
+    const entitySet = await resolveEntitySetForLogicalName(logical).catch(() => 'e365_knowledgesources');
     const accessToken = await getDataverseAccessToken();
+    const resourcePath = `${entitySet}?$top=${top}`;
     const data = await fetchDataverseResource(resourcePath, { headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' } });
-    return data?.value || [];
+
+    const rawList = data?.value || [];
+    // Normalize to a consistent shape expected by the admin UI
+    const normalized = rawList.map((r: any) => {
+      const id = (() => {
+        if (r['@odata.id']) {
+          const m = String(r['@odata.id']).match(/\(([0-9a-fA-F\-]{36})\)/);
+          if (m) return m[1];
+        }
+        if (r[Object.keys(r).find((k) => /id$/i.test(k)) || 'id']) return r[Object.keys(r).find((k) => /id$/i.test(k)) || 'id'];
+        return r.id || null;
+      })();
+
+      const sourceName = r.SourceName || r.sourcename || r.e365_sourcename || r.name || r.displayname || r['e365_name'] || '';
+      const siteUrl = r.SharePointSiteUrl || r.sharepointsiteurl || r.e365_sharepointsiteurl || r.siteurl || '';
+      const libName = r.LibraryName || r.libraryname || r.e365_libraryname || r.listname || '';
+      const graph = r.GraphEndpoint || r.graphendpoint || r.e365_graphendpoint || null;
+
+      return {
+        id,
+        SourceName: sourceName,
+        SharePointSiteUrl: siteUrl,
+        LibraryName: libName,
+        GraphEndpoint: graph,
+        raw: r,
+      };
+    });
+
+    return normalized;
   } catch (e) {
     console.error('Error fetching fixed e365_knowledgesources:', e);
     return [];
@@ -589,16 +620,15 @@ export const getEntityRecords = async (entitySetName: string, top = 200): Promis
 };
 
 export const createKnowledgeSource = async (source: KnowledgeSource): Promise<void> => {
-  const accessToken = await getDataverseAccessToken();
-
-  await fetchDataverseResource('KnowledgeSources', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(source),
-  });
+  try {
+    const logical = 'e365_knowledgesource';
+    const entitySet = await resolveEntitySetForLogicalName(logical).catch(() => 'e365_knowledgesources');
+    // Reuse generic create helper so entitySet mapping logic is centralized
+    await createEntityRecord(entitySet, source as any);
+  } catch (e) {
+    console.error('Error creating KnowledgeSource', e);
+    throw e;
+  }
 };
 
 export const getKnowledgeArticles = async (q?: string): Promise<any[]> => {

@@ -1,0 +1,1283 @@
+﻿2025-11-17T14:09:16.5726229Z ##[debug]Starting: Build and Deploy Job
+2025-11-17T14:09:16.5749728Z ##[debug]Cleaning runner temp folder: /home/runner/work/_temp
+2025-11-17T14:09:16.5855900Z ##[debug]Starting: Set up job
+2025-11-17T14:09:16.5857508Z Current runner version: '2.329.0'
+2025-11-17T14:09:16.5882292Z ##[group]Runner Image Provisioner
+2025-11-17T14:09:16.5883172Z Hosted Compute Agent
+2025-11-17T14:09:16.5884159Z Version: 20251016.436
+2025-11-17T14:09:16.5884847Z Commit: 8ab8ac8bfd662a3739dab9fe09456aba92132568
+2025-11-17T14:09:16.5885645Z Build Date: 2025-10-15T20:44:12Z
+2025-11-17T14:09:16.5886335Z ##[endgroup]
+2025-11-17T14:09:16.5886897Z ##[group]Operating System
+2025-11-17T14:09:16.5887556Z Ubuntu
+2025-11-17T14:09:16.5888061Z 24.04.3
+2025-11-17T14:09:16.5888541Z LTS
+2025-11-17T14:09:16.5889136Z ##[endgroup]
+2025-11-17T14:09:16.5889702Z ##[group]Runner Image
+2025-11-17T14:09:16.5890873Z Image: ubuntu-24.04
+2025-11-17T14:09:16.5891453Z Version: 20251112.124.1
+2025-11-17T14:09:16.5892520Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20251112.124/images/ubuntu/Ubuntu2404-Readme.md
+2025-11-17T14:09:16.5894720Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20251112.124
+2025-11-17T14:09:16.5895815Z ##[endgroup]
+2025-11-17T14:09:16.5896968Z ##[group]GITHUB_TOKEN Permissions
+2025-11-17T14:09:16.5898983Z Contents: read
+2025-11-17T14:09:16.5899589Z Metadata: read
+2025-11-17T14:09:16.5900211Z Packages: read
+2025-11-17T14:09:16.5900795Z ##[endgroup]
+2025-11-17T14:09:16.5902898Z Secret source: Actions
+2025-11-17T14:09:16.5904366Z ##[debug]Primary repository: 365Evergreen/Know365
+2025-11-17T14:09:16.5905172Z Prepare workflow directory
+2025-11-17T14:09:16.5972101Z ##[debug]Creating pipeline directory: '/home/runner/work/Know365'
+2025-11-17T14:09:16.5975959Z ##[debug]Creating workspace directory: '/home/runner/work/Know365/Know365'
+2025-11-17T14:09:16.5977566Z ##[debug]Update context data
+2025-11-17T14:09:16.5980836Z ##[debug]Evaluating job-level environment variables
+2025-11-17T14:09:16.6203903Z ##[debug]Evaluating job container
+2025-11-17T14:09:16.6207421Z ##[debug]Evaluating job service containers
+2025-11-17T14:09:16.6209875Z ##[debug]Evaluating job defaults
+2025-11-17T14:09:16.6236601Z Prepare all required actions
+2025-11-17T14:09:16.6274840Z Getting action download info
+2025-11-17T14:09:17.0199001Z Download action repository 'actions/checkout@v3' (SHA:f43a0e5ff2bd294095638e18286ca9a3d1956744)
+2025-11-17T14:09:17.0233435Z ##[debug]Copied action archive '/opt/actionarchivecache/actions_checkout/f43a0e5ff2bd294095638e18286ca9a3d1956744.tar.gz' to '/home/runner/work/_actions/_temp_fda4e42e-40e1-412a-9f19-f71e35744399/29172a2a-389a-44ed-b0db-f231bce3a7eb.tar.gz'
+2025-11-17T14:09:17.1211653Z ##[debug]Unwrap 'actions-checkout-f43a0e5' to '/home/runner/work/_actions/actions/checkout/v3'
+2025-11-17T14:09:17.1356101Z ##[debug]Archive '/home/runner/work/_actions/_temp_fda4e42e-40e1-412a-9f19-f71e35744399/29172a2a-389a-44ed-b0db-f231bce3a7eb.tar.gz' has been unzipped into '/home/runner/work/_actions/actions/checkout/v3'.
+2025-11-17T14:09:17.1455471Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+2025-11-17T14:09:17.1883686Z ##[debug]Copied action archive '/opt/actionarchivecache/actions_setup-node/49933ea5288caeca8642d1e84afbd3f7d6820020.tar.gz' to '/home/runner/work/_actions/_temp_b0403425-2fee-4ccd-9c15-ee7efd679c0c/983ca406-8e9b-4edf-b364-00e9a003a431.tar.gz'
+2025-11-17T14:09:17.2430346Z ##[debug]Unwrap 'actions-setup-node-49933ea' to '/home/runner/work/_actions/actions/setup-node/v4'
+2025-11-17T14:09:17.2657539Z ##[debug]Archive '/home/runner/work/_actions/_temp_b0403425-2fee-4ccd-9c15-ee7efd679c0c/983ca406-8e9b-4edf-b364-00e9a003a431.tar.gz' has been unzipped into '/home/runner/work/_actions/actions/setup-node/v4'.
+2025-11-17T14:09:17.2716496Z Download action repository 'actions/cache@v4' (SHA:0057852bfaa89a56745cba8c7296529d2fc39830)
+2025-11-17T14:09:17.2763633Z ##[debug]Copied action archive '/opt/actionarchivecache/actions_cache/0057852bfaa89a56745cba8c7296529d2fc39830.tar.gz' to '/home/runner/work/_actions/_temp_52b7a926-d3c6-4399-b886-098e111ab223/17197233-d6bc-4463-9870-41a73124a3b5.tar.gz'
+2025-11-17T14:09:17.3517268Z ##[debug]Unwrap 'actions-cache-0057852' to '/home/runner/work/_actions/actions/cache/v4'
+2025-11-17T14:09:17.3751096Z ##[debug]Archive '/home/runner/work/_actions/_temp_52b7a926-d3c6-4399-b886-098e111ab223/17197233-d6bc-4463-9870-41a73124a3b5.tar.gz' has been unzipped into '/home/runner/work/_actions/actions/cache/v4'.
+2025-11-17T14:09:17.3822478Z Download action repository 'Azure/static-web-apps-deploy@v1' (SHA:4d27395796ac319302594769cfe812bd207490b1)
+2025-11-17T14:09:17.5946621Z ##[debug]Download 'https://api.github.com/repos/Azure/static-web-apps-deploy/tarball/4d27395796ac319302594769cfe812bd207490b1' to '/home/runner/work/_actions/_temp_900026a4-84d2-44c4-847a-e18daa65c1a1/c5f77cf3-06a1-47e2-b704-68384aa3bd6c.tar.gz'
+2025-11-17T14:09:17.6103445Z ##[debug]Unwrap 'Azure-static-web-apps-deploy-4d27395' to '/home/runner/work/_actions/Azure/static-web-apps-deploy/v1'
+2025-11-17T14:09:17.6118553Z ##[debug]Archive '/home/runner/work/_actions/_temp_900026a4-84d2-44c4-847a-e18daa65c1a1/c5f77cf3-06a1-47e2-b704-68384aa3bd6c.tar.gz' has been unzipped into '/home/runner/work/_actions/Azure/static-web-apps-deploy/v1'.
+2025-11-17T14:09:17.7296546Z ##[debug]action.yml for action: '/home/runner/work/_actions/actions/checkout/v3/action.yml'.
+2025-11-17T14:09:17.8028449Z ##[debug]action.yml for action: '/home/runner/work/_actions/actions/setup-node/v4/action.yml'.
+2025-11-17T14:09:17.8129459Z ##[debug]action.yml for action: '/home/runner/work/_actions/actions/cache/v4/action.yml'.
+2025-11-17T14:09:17.8215239Z ##[debug]action.yml for action: '/home/runner/work/_actions/Azure/static-web-apps-deploy/v1/action.yml'.
+2025-11-17T14:09:17.8289862Z ##[debug]Dockerfile for action: '/home/runner/work/_actions/Azure/static-web-apps-deploy/v1/Dockerfile'.
+2025-11-17T14:09:17.8430571Z ##[debug]Set step '__actions_checkout' display name to: 'Checkout repository'
+2025-11-17T14:09:17.8435823Z ##[debug]Set step '__actions_setup-node' display name to: 'Setup Node.js (20.x)'
+2025-11-17T14:09:17.8439572Z ##[debug]Set step '__run' display name to: 'Enable Corepack and prepare pnpm'
+2025-11-17T14:09:17.8443001Z ##[debug]Set step '__actions_cache' display name to: 'Cache pnpm store'
+2025-11-17T14:09:17.8446757Z ##[debug]Set step '__run_2' display name to: 'Install dependencies (pnpm)'
+2025-11-17T14:09:17.8450164Z ##[debug]Set step '__run_3' display name to: 'Ensure Vite plugins installed'
+2025-11-17T14:09:17.8453572Z ##[debug]Set step '__run_4' display name to: 'Build project (vite)'
+2025-11-17T14:09:17.8456840Z ##[debug]Set step '__run_5' display name to: 'Inspect build output'
+2025-11-17T14:09:17.8460309Z ##[debug]Set step '__run_6' display name to: 'Copy Static Web Apps config into artifact'
+2025-11-17T14:09:17.8464406Z ##[debug]Set step '__run_7' display name to: 'Sanity check SWA secret and build artifact'
+2025-11-17T14:09:17.8468444Z ##[debug]Set step '__Azure_static-web-apps-deploy' display name to: 'Deploy to Azure Static Web Apps'
+2025-11-17T14:09:17.8470498Z Complete job name: Build and Deploy Job
+2025-11-17T14:09:17.8574595Z ##[debug]Collect running processes for tracking orphan processes.
+2025-11-17T14:09:17.8791361Z ##[debug]Finishing: Set up job
+2025-11-17T14:09:17.8920622Z ##[debug]Evaluating condition for step: 'Build Azure/static-web-apps-deploy@v1'
+2025-11-17T14:09:17.8959029Z ##[debug]Evaluating: success()
+2025-11-17T14:09:17.8965222Z ##[debug]Evaluating success:
+2025-11-17T14:09:17.8981910Z ##[debug]=> true
+2025-11-17T14:09:17.8988504Z ##[debug]Result: true
+2025-11-17T14:09:17.9012831Z ##[debug]Starting: Build Azure/static-web-apps-deploy@v1
+2025-11-17T14:09:17.9035279Z ##[group]Build container for action use: '/home/runner/work/_actions/Azure/static-web-apps-deploy/v1/Dockerfile'.
+2025-11-17T14:09:17.9090639Z ##[command]/usr/bin/docker build -t dbb754:ed7c45c223c24130bd517e59b62edcdb -f "/home/runner/work/_actions/Azure/static-web-apps-deploy/v1/Dockerfile" "/home/runner/work/_actions/Azure/static-web-apps-deploy/v1"
+2025-11-17T14:09:18.5345249Z #0 building with "default" instance using docker driver
+2025-11-17T14:09:18.5346186Z 
+2025-11-17T14:09:18.5346528Z #1 [internal] load build definition from Dockerfile
+2025-11-17T14:09:18.5347325Z #1 transferring dockerfile: 160B done
+2025-11-17T14:09:18.5347753Z #1 DONE 0.0s
+2025-11-17T14:09:18.5347915Z 
+2025-11-17T14:09:18.5348185Z #2 [internal] load metadata for mcr.microsoft.com/appsvc/staticappsclient:stable
+2025-11-17T14:09:18.5348713Z #2 DONE 0.1s
+2025-11-17T14:09:18.6543698Z 
+2025-11-17T14:09:18.6545505Z #3 [internal] load .dockerignore
+2025-11-17T14:09:18.6546239Z #3 transferring context: 2B done
+2025-11-17T14:09:18.6546793Z #3 DONE 0.0s
+2025-11-17T14:09:18.6547067Z 
+2025-11-17T14:09:18.6547311Z #4 [internal] load build context
+2025-11-17T14:09:18.6547953Z #4 transferring context: 107B done
+2025-11-17T14:09:18.6548514Z #4 DONE 0.0s
+2025-11-17T14:09:18.6548800Z 
+2025-11-17T14:09:18.6549632Z #5 [1/2] FROM mcr.microsoft.com/appsvc/staticappsclient:stable@sha256:3178a283e885dc45a0c7b4c6e9f728f0331ae7fb93de75db4181fa38651170f2
+2025-11-17T14:09:18.6551517Z #5 resolve mcr.microsoft.com/appsvc/staticappsclient:stable@sha256:3178a283e885dc45a0c7b4c6e9f728f0331ae7fb93de75db4181fa38651170f2 done
+2025-11-17T14:09:18.6553041Z #5 sha256:5ee26b7a209f9a26720207792b237af3e19c0efeed8695e1e630fcd0feef9230 4.19MB / 54.75MB 0.1s
+2025-11-17T14:09:18.6554400Z #5 sha256:3178a283e885dc45a0c7b4c6e9f728f0331ae7fb93de75db4181fa38651170f2 2.88kB / 2.88kB done
+2025-11-17T14:09:18.6555559Z #5 sha256:5d6e107a26c2ffb6e234f04132358dea70a691a64c1152f984d2f2ba0e218c58 16.78MB / 53.74MB 0.1s
+2025-11-17T14:09:18.6556761Z #5 sha256:2377065f3b700cf1b5e391d26c572c8b91892dd44acd75deebdab5e403b23175 8.39MB / 15.56MB 0.1s
+2025-11-17T14:09:18.6557959Z #5 sha256:1df8e0748f30e89b0c0477edfc706fc39242e1d6008433c0494113de267e7ca8 15.34kB / 15.34kB done
+2025-11-17T14:09:18.8160901Z #5 sha256:5ee26b7a209f9a26720207792b237af3e19c0efeed8695e1e630fcd0feef9230 25.17MB / 54.75MB 0.2s
+2025-11-17T14:09:18.8162665Z #5 sha256:5d6e107a26c2ffb6e234f04132358dea70a691a64c1152f984d2f2ba0e218c58 44.04MB / 53.74MB 0.2s
+2025-11-17T14:09:18.8164280Z #5 sha256:2377065f3b700cf1b5e391d26c572c8b91892dd44acd75deebdab5e403b23175 15.56MB / 15.56MB 0.2s done
+2025-11-17T14:09:18.8165713Z #5 sha256:41c7cd6fb37363fd1ec16dad3463ecc5820eda12c418a82b4849604252d29b88 1.93MB / 197.07MB 0.2s
+2025-11-17T14:09:18.8166996Z #5 extracting sha256:5d6e107a26c2ffb6e234f04132358dea70a691a64c1152f984d2f2ba0e218c58
+2025-11-17T14:09:18.9250559Z #5 sha256:5ee26b7a209f9a26720207792b237af3e19c0efeed8695e1e630fcd0feef9230 41.94MB / 54.75MB 0.3s
+2025-11-17T14:09:18.9252257Z #5 sha256:5d6e107a26c2ffb6e234f04132358dea70a691a64c1152f984d2f2ba0e218c58 53.74MB / 53.74MB 0.3s done
+2025-11-17T14:09:18.9253991Z #5 sha256:41c7cd6fb37363fd1ec16dad3463ecc5820eda12c418a82b4849604252d29b88 19.92MB / 197.07MB 0.3s
+2025-11-17T14:09:18.9255386Z #5 sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 32B / 32B 0.3s done
+2025-11-17T14:09:18.9256793Z #5 sha256:aede74d79976f9d1be608a1286cdb2ca61aad25185440263691db6a0880adadd 0B / 24.46MB 0.3s
+2025-11-17T14:09:19.0298316Z #5 sha256:5ee26b7a209f9a26720207792b237af3e19c0efeed8695e1e630fcd0feef9230 54.75MB / 54.75MB 0.4s done
+2025-11-17T14:09:19.0306628Z #5 sha256:41c7cd6fb37363fd1ec16dad3463ecc5820eda12c418a82b4849604252d29b88 39.85MB / 197.07MB 0.4s
+2025-11-17T14:09:19.0308109Z #5 sha256:aede74d79976f9d1be608a1286cdb2ca61aad25185440263691db6a0880adadd 20.97MB / 24.46MB 0.4s
+2025-11-17T14:09:19.0310677Z #5 sha256:c279a6399750ee20e802fb2c47da034ccee5eb4f3b89087f32618f10e8af074a 0B / 1.56MB 0.4s
+2025-11-17T14:09:19.1319507Z #5 sha256:41c7cd6fb37363fd1ec16dad3463ecc5820eda12c418a82b4849604252d29b88 66.06MB / 197.07MB 0.5s
+2025-11-17T14:09:19.1326755Z #5 sha256:aede74d79976f9d1be608a1286cdb2ca61aad25185440263691db6a0880adadd 24.46MB / 24.46MB 0.4s done
+2025-11-17T14:09:19.1328104Z #5 sha256:c279a6399750ee20e802fb2c47da034ccee5eb4f3b89087f32618f10e8af074a 1.56MB / 1.56MB 0.4s done
+2025-11-17T14:09:19.1329804Z #5 sha256:ec0af1da0a0576de654092a28624c0565c6d854216944f18159460338af43293 10.15MB / 72.99MB 0.5s
+2025-11-17T14:09:19.1330958Z #5 sha256:351447e6e3829fac25a761f87d07dc5bfc289f38908901d05fa53aaab54dbdcd 0B / 115.52kB 0.5s
+2025-11-17T14:09:19.2401078Z #5 sha256:41c7cd6fb37363fd1ec16dad3463ecc5820eda12c418a82b4849604252d29b88 93.90MB / 197.07MB 0.6s
+2025-11-17T14:09:19.2402551Z #5 sha256:ec0af1da0a0576de654092a28624c0565c6d854216944f18159460338af43293 35.73MB / 72.99MB 0.6s
+2025-11-17T14:09:19.3546353Z #5 sha256:41c7cd6fb37363fd1ec16dad3463ecc5820eda12c418a82b4849604252d29b88 143.65MB / 197.07MB 0.8s
+2025-11-17T14:09:19.3549773Z #5 sha256:ec0af1da0a0576de654092a28624c0565c6d854216944f18159460338af43293 72.99MB / 72.99MB 0.8s done
+2025-11-17T14:09:19.3551067Z #5 sha256:351447e6e3829fac25a761f87d07dc5bfc289f38908901d05fa53aaab54dbdcd 115.52kB / 115.52kB 0.8s done
+2025-11-17T14:09:19.3552269Z #5 sha256:eec8099d3f58ba87e25216a07db18b5a0de40b6921ee61ea8ab9b4c29b53a12f 0B / 1.16MB 0.8s
+2025-11-17T14:09:19.3553622Z #5 sha256:cddc70a1cccef26d55fcf9242759c41404c305acea0b4c3a30961c99846a0a55 0B / 637.94kB 0.8s
+2025-11-17T14:09:19.4550852Z #5 sha256:41c7cd6fb37363fd1ec16dad3463ecc5820eda12c418a82b4849604252d29b88 173.02MB / 197.07MB 0.9s
+2025-11-17T14:09:19.4557400Z #5 sha256:eec8099d3f58ba87e25216a07db18b5a0de40b6921ee61ea8ab9b4c29b53a12f 1.16MB / 1.16MB 0.8s done
+2025-11-17T14:09:19.4558945Z #5 sha256:cddc70a1cccef26d55fcf9242759c41404c305acea0b4c3a30961c99846a0a55 637.94kB / 637.94kB 0.8s done
+2025-11-17T14:09:19.4560378Z #5 sha256:4836a863d60df9ca0cedad0eb5e729c4a7f755449fbfbd6d4ea6443e64c990e0 0B / 118.65MB 0.9s
+2025-11-17T14:09:19.4561828Z #5 sha256:4a1fde1690fe113870084a3224c66554fc9cbd2310abb9593b0244ec21f4b76d 168B / 168B 0.8s done
+2025-11-17T14:09:19.4563468Z #5 sha256:8023cb51985fccd3faa4be6340cdc75b72240277850569aa974767dda5176159 168B / 168B 0.9s done
+2025-11-17T14:09:19.4564796Z #5 sha256:36312d7930e0666f8cfc7940823ac101235e873b7cbb8b20d9481fd404095767 11.53MB / 35.20MB 0.9s
+2025-11-17T14:09:19.5707396Z #5 sha256:41c7cd6fb37363fd1ec16dad3463ecc5820eda12c418a82b4849604252d29b88 190.84MB / 197.07MB 1.0s
+2025-11-17T14:09:19.5709244Z #5 sha256:4836a863d60df9ca0cedad0eb5e729c4a7f755449fbfbd6d4ea6443e64c990e0 12.58MB / 118.65MB 1.0s
+2025-11-17T14:09:19.7543725Z #5 sha256:4836a863d60df9ca0cedad0eb5e729c4a7f755449fbfbd6d4ea6443e64c990e0 59.77MB / 118.65MB 1.2s
+2025-11-17T14:09:19.7545006Z #5 sha256:36312d7930e0666f8cfc7940823ac101235e873b7cbb8b20d9481fd404095767 35.20MB / 35.20MB 1.0s done
+2025-11-17T14:09:19.9458623Z #5 sha256:41c7cd6fb37363fd1ec16dad3463ecc5820eda12c418a82b4849604252d29b88 197.07MB / 197.07MB 1.3s done
+2025-11-17T14:09:19.9466825Z #5 sha256:4836a863d60df9ca0cedad0eb5e729c4a7f755449fbfbd6d4ea6443e64c990e0 85.98MB / 118.65MB 1.3s
+2025-11-17T14:09:20.0522122Z #5 sha256:4836a863d60df9ca0cedad0eb5e729c4a7f755449fbfbd6d4ea6443e64c990e0 111.45MB / 118.65MB 1.4s
+2025-11-17T14:09:20.1539105Z #5 sha256:4836a863d60df9ca0cedad0eb5e729c4a7f755449fbfbd6d4ea6443e64c990e0 118.65MB / 118.65MB 1.6s done
+2025-11-17T14:09:21.1373833Z #5 extracting sha256:5d6e107a26c2ffb6e234f04132358dea70a691a64c1152f984d2f2ba0e218c58 2.3s done
+2025-11-17T14:09:21.2626385Z #5 extracting sha256:2377065f3b700cf1b5e391d26c572c8b91892dd44acd75deebdab5e403b23175 0.1s
+2025-11-17T14:09:21.6864253Z #5 extracting sha256:2377065f3b700cf1b5e391d26c572c8b91892dd44acd75deebdab5e403b23175 0.4s done
+2025-11-17T14:09:22.5655735Z #5 extracting sha256:5ee26b7a209f9a26720207792b237af3e19c0efeed8695e1e630fcd0feef9230
+2025-11-17T14:09:24.5925780Z #5 extracting sha256:5ee26b7a209f9a26720207792b237af3e19c0efeed8695e1e630fcd0feef9230 1.9s done
+2025-11-17T14:09:24.7029129Z #5 extracting sha256:41c7cd6fb37363fd1ec16dad3463ecc5820eda12c418a82b4849604252d29b88
+2025-11-17T14:09:29.3323956Z #5 extracting sha256:41c7cd6fb37363fd1ec16dad3463ecc5820eda12c418a82b4849604252d29b88 4.6s done
+2025-11-17T14:09:30.4945133Z #5 extracting sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1
+2025-11-17T14:09:30.6307288Z #5 extracting sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 done
+2025-11-17T14:09:30.6308781Z #5 extracting sha256:aede74d79976f9d1be608a1286cdb2ca61aad25185440263691db6a0880adadd 0.1s
+2025-11-17T14:09:31.3772080Z #5 extracting sha256:aede74d79976f9d1be608a1286cdb2ca61aad25185440263691db6a0880adadd 0.7s done
+2025-11-17T14:09:31.3772825Z #5 extracting sha256:c279a6399750ee20e802fb2c47da034ccee5eb4f3b89087f32618f10e8af074a 0.1s
+2025-11-17T14:09:31.5101228Z #5 extracting sha256:c279a6399750ee20e802fb2c47da034ccee5eb4f3b89087f32618f10e8af074a 0.1s done
+2025-11-17T14:09:31.5102431Z #5 extracting sha256:ec0af1da0a0576de654092a28624c0565c6d854216944f18159460338af43293 0.1s
+2025-11-17T14:09:32.4751700Z #5 extracting sha256:ec0af1da0a0576de654092a28624c0565c6d854216944f18159460338af43293 0.9s done
+2025-11-17T14:09:32.5429655Z #5 extracting sha256:351447e6e3829fac25a761f87d07dc5bfc289f38908901d05fa53aaab54dbdcd
+2025-11-17T14:09:32.6676127Z #5 extracting sha256:351447e6e3829fac25a761f87d07dc5bfc289f38908901d05fa53aaab54dbdcd done
+2025-11-17T14:09:32.6677330Z #5 extracting sha256:eec8099d3f58ba87e25216a07db18b5a0de40b6921ee61ea8ab9b4c29b53a12f 0.0s done
+2025-11-17T14:09:32.6678445Z #5 extracting sha256:cddc70a1cccef26d55fcf9242759c41404c305acea0b4c3a30961c99846a0a55 0.0s done
+2025-11-17T14:09:32.7893840Z #5 extracting sha256:36312d7930e0666f8cfc7940823ac101235e873b7cbb8b20d9481fd404095767 0.1s
+2025-11-17T14:09:33.1006529Z #5 extracting sha256:36312d7930e0666f8cfc7940823ac101235e873b7cbb8b20d9481fd404095767 0.4s done
+2025-11-17T14:09:33.1009228Z #5 extracting sha256:4a1fde1690fe113870084a3224c66554fc9cbd2310abb9593b0244ec21f4b76d
+2025-11-17T14:09:33.2473704Z #5 extracting sha256:4a1fde1690fe113870084a3224c66554fc9cbd2310abb9593b0244ec21f4b76d done
+2025-11-17T14:09:33.2475195Z #5 extracting sha256:8023cb51985fccd3faa4be6340cdc75b72240277850569aa974767dda5176159 done
+2025-11-17T14:09:33.2477222Z #5 extracting sha256:4836a863d60df9ca0cedad0eb5e729c4a7f755449fbfbd6d4ea6443e64c990e0 0.1s
+2025-11-17T14:09:36.5010984Z #5 extracting sha256:4836a863d60df9ca0cedad0eb5e729c4a7f755449fbfbd6d4ea6443e64c990e0 3.2s done
+2025-11-17T14:09:36.9714180Z #5 DONE 18.4s
+2025-11-17T14:09:37.1355029Z 
+2025-11-17T14:09:37.1356707Z #6 [2/2] COPY entrypoint.sh /entrypoint.sh
+2025-11-17T14:09:37.1358810Z #6 DONE 0.0s
+2025-11-17T14:09:37.1359051Z 
+2025-11-17T14:09:37.1359187Z #7 exporting to image
+2025-11-17T14:09:37.1359571Z #7 exporting layers
+2025-11-17T14:09:38.1809125Z #7 exporting layers 1.2s done
+2025-11-17T14:09:38.2006839Z #7 writing image sha256:49fa0c609e40ce7105795145e4eed22c9820ea5a619951a4a4406e7dc584cdf9 done
+2025-11-17T14:09:38.2007884Z #7 naming to docker.io/library/dbb754:ed7c45c223c24130bd517e59b62edcdb done
+2025-11-17T14:09:38.2008769Z #7 DONE 1.2s
+2025-11-17T14:09:38.2052928Z ##[endgroup]
+2025-11-17T14:09:38.2063171Z ##[debug]Finishing: Build Azure/static-web-apps-deploy@v1
+2025-11-17T14:09:38.2080290Z ##[debug]Evaluating condition for step: 'Checkout repository'
+2025-11-17T14:09:38.2086344Z ##[debug]Evaluating: success()
+2025-11-17T14:09:38.2086751Z ##[debug]Evaluating success:
+2025-11-17T14:09:38.2087236Z ##[debug]=> true
+2025-11-17T14:09:38.2087684Z ##[debug]Result: true
+2025-11-17T14:09:38.2088663Z ##[debug]Starting: Checkout repository
+2025-11-17T14:09:38.2145831Z ##[debug]Register post job cleanup for action: actions/checkout@v3
+2025-11-17T14:09:38.2217083Z ##[debug]Loading inputs
+2025-11-17T14:09:38.2236758Z ##[debug]Evaluating: github.repository
+2025-11-17T14:09:38.2237899Z ##[debug]Evaluating Index:
+2025-11-17T14:09:38.2239753Z ##[debug]..Evaluating github:
+2025-11-17T14:09:38.2240616Z ##[debug]..=> Object
+2025-11-17T14:09:38.2245923Z ##[debug]..Evaluating String:
+2025-11-17T14:09:38.2246503Z ##[debug]..=> 'repository'
+2025-11-17T14:09:38.2250156Z ##[debug]=> '365Evergreen/Know365'
+2025-11-17T14:09:38.2251794Z ##[debug]Result: '365Evergreen/Know365'
+2025-11-17T14:09:38.2254315Z ##[debug]Evaluating: github.token
+2025-11-17T14:09:38.2254602Z ##[debug]Evaluating Index:
+2025-11-17T14:09:38.2254846Z ##[debug]..Evaluating github:
+2025-11-17T14:09:38.2255298Z ##[debug]..=> Object
+2025-11-17T14:09:38.2255524Z ##[debug]..Evaluating String:
+2025-11-17T14:09:38.2255751Z ##[debug]..=> 'token'
+2025-11-17T14:09:38.2256415Z ##[debug]=> '***'
+2025-11-17T14:09:38.2256749Z ##[debug]Result: '***'
+2025-11-17T14:09:38.2264695Z ##[debug]Loading env
+2025-11-17T14:09:38.2322432Z ##[group]Run actions/checkout@v3
+2025-11-17T14:09:38.2322855Z with:
+2025-11-17T14:09:38.2323046Z   submodules: true
+2025-11-17T14:09:38.2323464Z   repository: 365Evergreen/Know365
+2025-11-17T14:09:38.2323865Z   token: ***
+2025-11-17T14:09:38.2324061Z   ssh-strict: true
+2025-11-17T14:09:38.2324282Z   persist-credentials: true
+2025-11-17T14:09:38.2383559Z   clean: true
+2025-11-17T14:09:38.2383799Z   sparse-checkout-cone-mode: true
+2025-11-17T14:09:38.2384059Z   fetch-depth: 1
+2025-11-17T14:09:38.2384258Z   fetch-tags: false
+2025-11-17T14:09:38.2384491Z   lfs: false
+2025-11-17T14:09:38.2384728Z   set-safe-directory: true
+2025-11-17T14:09:38.2386272Z ##[endgroup]
+2025-11-17T14:09:38.3127940Z ##[debug]GITHUB_WORKSPACE = '/home/runner/work/Know365/Know365'
+2025-11-17T14:09:38.3129337Z ##[debug]qualified repository = '365Evergreen/Know365'
+2025-11-17T14:09:38.3130117Z ##[debug]ref = 'refs/heads/main'
+2025-11-17T14:09:38.3130904Z ##[debug]commit = '3a0ace476731a43aca374314252ecabd0370ba95'
+2025-11-17T14:09:38.3131696Z ##[debug]clean = true
+2025-11-17T14:09:38.3132289Z ##[debug]fetch depth = 1
+2025-11-17T14:09:38.3132902Z ##[debug]fetch tags = false
+2025-11-17T14:09:38.3133733Z ##[debug]lfs = false
+2025-11-17T14:09:38.3134362Z ##[debug]submodules = true
+2025-11-17T14:09:38.3135001Z ##[debug]recursive submodules = false
+2025-11-17T14:09:38.3142785Z ##[debug]GitHub Host URL = 
+2025-11-17T14:09:38.3144988Z ::add-matcher::/home/runner/work/_actions/actions/checkout/v3/dist/problem-matcher.json
+2025-11-17T14:09:38.3225387Z ##[debug]Added matchers: 'checkout-git'. Problem matchers scan action output for known warning or error strings and report these inline.
+2025-11-17T14:09:38.3229334Z Syncing repository: 365Evergreen/Know365
+2025-11-17T14:09:38.3230331Z ::group::Getting Git version info
+2025-11-17T14:09:38.3231644Z ##[group]Getting Git version info
+2025-11-17T14:09:38.3232088Z Working directory is '/home/runner/work/Know365/Know365'
+2025-11-17T14:09:38.3232635Z ##[debug]Getting git version
+2025-11-17T14:09:38.3232899Z [command]/usr/bin/git version
+2025-11-17T14:09:38.3233177Z git version 2.51.2
+2025-11-17T14:09:38.3252770Z ##[debug]0
+2025-11-17T14:09:38.3254053Z ##[debug]git version 2.51.2
+2025-11-17T14:09:38.3254454Z ##[debug]
+2025-11-17T14:09:38.3256516Z ##[debug]Set git useragent to: git/2.51.2 (github-actions-checkout)
+2025-11-17T14:09:38.3257520Z ::endgroup::
+2025-11-17T14:09:38.3257915Z ##[endgroup]
+2025-11-17T14:09:38.3263783Z ::add-mask::***
+2025-11-17T14:09:38.3273665Z Temporarily overriding HOME='/home/runner/work/_temp/ebad6ca7-603b-4947-a310-567029e2c55d' before making global git config changes
+2025-11-17T14:09:38.3275078Z Adding repository directory to the temporary git global config as a safe directory
+2025-11-17T14:09:38.3277996Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Know365/Know365
+2025-11-17T14:09:38.3304784Z ##[debug]0
+2025-11-17T14:09:38.3305419Z ##[debug]
+2025-11-17T14:09:38.3310867Z Deleting the contents of '/home/runner/work/Know365/Know365'
+2025-11-17T14:09:38.3314665Z ::group::Initializing the repository
+2025-11-17T14:09:38.3315083Z ##[group]Initializing the repository
+2025-11-17T14:09:38.3317371Z [command]/usr/bin/git init /home/runner/work/Know365/Know365
+2025-11-17T14:09:38.3418569Z hint: Using 'master' as the name for the initial branch. This default branch name
+2025-11-17T14:09:38.3419524Z hint: is subject to change. To configure the initial branch name to use in all
+2025-11-17T14:09:38.3420429Z hint: of your new repositories, which will suppress this warning, call:
+2025-11-17T14:09:38.3421133Z hint:
+2025-11-17T14:09:38.3421610Z hint: 	git config --global init.defaultBranch <name>
+2025-11-17T14:09:38.3422240Z hint:
+2025-11-17T14:09:38.3423088Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2025-11-17T14:09:38.3424330Z hint: 'development'. The just-created branch can be renamed via this command:
+2025-11-17T14:09:38.3425024Z hint:
+2025-11-17T14:09:38.3425389Z hint: 	git branch -m <name>
+2025-11-17T14:09:38.3425801Z hint:
+2025-11-17T14:09:38.3426232Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2025-11-17T14:09:38.3426783Z Initialized empty Git repository in /home/runner/work/Know365/Know365/.git/
+2025-11-17T14:09:38.3429459Z ##[debug]0
+2025-11-17T14:09:38.3430169Z ##[debug]Initialized empty Git repository in /home/runner/work/Know365/Know365/.git/
+2025-11-17T14:09:38.3430586Z ##[debug]
+2025-11-17T14:09:38.3432703Z [command]/usr/bin/git remote add origin https://github.com/365Evergreen/Know365
+2025-11-17T14:09:38.3462610Z ##[debug]0
+2025-11-17T14:09:38.3463140Z ##[debug]
+2025-11-17T14:09:38.3463994Z ::endgroup::
+2025-11-17T14:09:38.3464192Z ##[endgroup]
+2025-11-17T14:09:38.3464574Z ::group::Disabling automatic garbage collection
+2025-11-17T14:09:38.3464893Z ##[group]Disabling automatic garbage collection
+2025-11-17T14:09:38.3465944Z [command]/usr/bin/git config --local gc.auto 0
+2025-11-17T14:09:38.3489874Z ##[debug]0
+2025-11-17T14:09:38.3490413Z ##[debug]
+2025-11-17T14:09:38.3490745Z ::endgroup::
+2025-11-17T14:09:38.3490940Z ##[endgroup]
+2025-11-17T14:09:38.3491327Z ::group::Setting up auth
+2025-11-17T14:09:38.3491559Z ##[group]Setting up auth
+2025-11-17T14:09:38.3495871Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-11-17T14:09:38.3517136Z ##[debug]1
+2025-11-17T14:09:38.3517684Z ##[debug]
+2025-11-17T14:09:38.3520852Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-11-17T14:09:38.3840171Z ##[debug]0
+2025-11-17T14:09:38.3840558Z ##[debug]
+2025-11-17T14:09:38.3844258Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-11-17T14:09:38.3866621Z ##[debug]1
+2025-11-17T14:09:38.3867149Z ##[debug]
+2025-11-17T14:09:38.3869906Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-11-17T14:09:38.4078541Z ##[debug]0
+2025-11-17T14:09:38.4079244Z ##[debug]
+2025-11-17T14:09:38.4086933Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2025-11-17T14:09:38.4111563Z ##[debug]0
+2025-11-17T14:09:38.4112214Z ##[debug]
+2025-11-17T14:09:38.4119682Z ::endgroup::
+2025-11-17T14:09:38.4120048Z ##[endgroup]
+2025-11-17T14:09:38.4120753Z ::group::Fetching the repository
+2025-11-17T14:09:38.4121538Z ##[group]Fetching the repository
+2025-11-17T14:09:38.4129076Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --progress --no-recurse-submodules --depth=1 origin +3a0ace476731a43aca374314252ecabd0370ba95:refs/remotes/origin/main
+2025-11-17T14:09:38.5645586Z remote: Enumerating objects: 126, done.        
+2025-11-17T14:09:38.5646197Z remote: Counting objects:   0% (1/126)        
+2025-11-17T14:09:38.5646736Z remote: Counting objects:   1% (2/126)        
+2025-11-17T14:09:38.5647271Z remote: Counting objects:   2% (3/126)        
+2025-11-17T14:09:38.5647874Z remote: Counting objects:   3% (4/126)        
+2025-11-17T14:09:38.5648407Z remote: Counting objects:   4% (6/126)        
+2025-11-17T14:09:38.5648936Z remote: Counting objects:   5% (7/126)        
+2025-11-17T14:09:38.5649467Z remote: Counting objects:   6% (8/126)        
+2025-11-17T14:09:38.5650004Z remote: Counting objects:   7% (9/126)        
+2025-11-17T14:09:38.5650547Z remote: Counting objects:   8% (11/126)        
+2025-11-17T14:09:38.5651115Z remote: Counting objects:   9% (12/126)        
+2025-11-17T14:09:38.5651656Z remote: Counting objects:  10% (13/126)        
+2025-11-17T14:09:38.5652195Z remote: Counting objects:  11% (14/126)        
+2025-11-17T14:09:38.5653007Z remote: Counting objects:  12% (16/126)        
+2025-11-17T14:09:38.5653743Z remote: Counting objects:  13% (17/126)        
+2025-11-17T14:09:38.5654282Z remote: Counting objects:  14% (18/126)        
+2025-11-17T14:09:38.5654817Z remote: Counting objects:  15% (19/126)        
+2025-11-17T14:09:38.5655367Z remote: Counting objects:  16% (21/126)        
+2025-11-17T14:09:38.5655912Z remote: Counting objects:  17% (22/126)        
+2025-11-17T14:09:38.5656455Z remote: Counting objects:  18% (23/126)        
+2025-11-17T14:09:38.5656988Z remote: Counting objects:  19% (24/126)        
+2025-11-17T14:09:38.5657524Z remote: Counting objects:  20% (26/126)        
+2025-11-17T14:09:38.5658063Z remote: Counting objects:  21% (27/126)        
+2025-11-17T14:09:38.5658603Z remote: Counting objects:  22% (28/126)        
+2025-11-17T14:09:38.5659147Z remote: Counting objects:  23% (29/126)        
+2025-11-17T14:09:38.5659686Z remote: Counting objects:  24% (31/126)        
+2025-11-17T14:09:38.5660230Z remote: Counting objects:  25% (32/126)        
+2025-11-17T14:09:38.5660736Z remote: Counting objects:  26% (33/126)        
+2025-11-17T14:09:38.5661213Z remote: Counting objects:  27% (35/126)        
+2025-11-17T14:09:38.5661739Z remote: Counting objects:  28% (36/126)        
+2025-11-17T14:09:38.5662255Z remote: Counting objects:  29% (37/126)        
+2025-11-17T14:09:38.5662592Z remote: Counting objects:  30% (38/126)        
+2025-11-17T14:09:38.5662881Z remote: Counting objects:  31% (40/126)        
+2025-11-17T14:09:38.5663177Z remote: Counting objects:  32% (41/126)        
+2025-11-17T14:09:38.5663744Z remote: Counting objects:  33% (42/126)        
+2025-11-17T14:09:38.5664025Z remote: Counting objects:  34% (43/126)        
+2025-11-17T14:09:38.5664307Z remote: Counting objects:  35% (45/126)        
+2025-11-17T14:09:38.5664585Z remote: Counting objects:  36% (46/126)        
+2025-11-17T14:09:38.5664863Z remote: Counting objects:  37% (47/126)        
+2025-11-17T14:09:38.5665147Z remote: Counting objects:  38% (48/126)        
+2025-11-17T14:09:38.5665423Z remote: Counting objects:  39% (50/126)        
+2025-11-17T14:09:38.5665701Z remote: Counting objects:  40% (51/126)        
+2025-11-17T14:09:38.5665982Z remote: Counting objects:  41% (52/126)        
+2025-11-17T14:09:38.5666260Z remote: Counting objects:  42% (53/126)        
+2025-11-17T14:09:38.5666537Z remote: Counting objects:  43% (55/126)        
+2025-11-17T14:09:38.5666816Z remote: Counting objects:  44% (56/126)        
+2025-11-17T14:09:38.5667095Z remote: Counting objects:  45% (57/126)        
+2025-11-17T14:09:38.5667370Z remote: Counting objects:  46% (58/126)        
+2025-11-17T14:09:38.5667646Z remote: Counting objects:  47% (60/126)        
+2025-11-17T14:09:38.5667920Z remote: Counting objects:  48% (61/126)        
+2025-11-17T14:09:38.5668370Z remote: Counting objects:  49% (62/126)        
+2025-11-17T14:09:38.5668662Z remote: Counting objects:  50% (63/126)        
+2025-11-17T14:09:38.5668941Z remote: Counting objects:  51% (65/126)        
+2025-11-17T14:09:38.5669215Z remote: Counting objects:  52% (66/126)        
+2025-11-17T14:09:38.5669490Z remote: Counting objects:  53% (67/126)        
+2025-11-17T14:09:38.5669777Z remote: Counting objects:  54% (69/126)        
+2025-11-17T14:09:38.5670055Z remote: Counting objects:  55% (70/126)        
+2025-11-17T14:09:38.5670329Z remote: Counting objects:  56% (71/126)        
+2025-11-17T14:09:38.5670609Z remote: Counting objects:  57% (72/126)        
+2025-11-17T14:09:38.5670886Z remote: Counting objects:  58% (74/126)        
+2025-11-17T14:09:38.5671163Z remote: Counting objects:  59% (75/126)        
+2025-11-17T14:09:38.5671445Z remote: Counting objects:  60% (76/126)        
+2025-11-17T14:09:38.5671723Z remote: Counting objects:  61% (77/126)        
+2025-11-17T14:09:38.5672006Z remote: Counting objects:  62% (79/126)        
+2025-11-17T14:09:38.5672282Z remote: Counting objects:  63% (80/126)        
+2025-11-17T14:09:38.5672560Z remote: Counting objects:  64% (81/126)        
+2025-11-17T14:09:38.5672964Z remote: Counting objects:  65% (82/126)        
+2025-11-17T14:09:38.5673414Z remote: Counting objects:  66% (84/126)        
+2025-11-17T14:09:38.5673698Z remote: Counting objects:  67% (85/126)        
+2025-11-17T14:09:38.5673973Z remote: Counting objects:  68% (86/126)        
+2025-11-17T14:09:38.5674254Z remote: Counting objects:  69% (87/126)        
+2025-11-17T14:09:38.5674532Z remote: Counting objects:  70% (89/126)        
+2025-11-17T14:09:38.5674806Z remote: Counting objects:  71% (90/126)        
+2025-11-17T14:09:38.5675086Z remote: Counting objects:  72% (91/126)        
+2025-11-17T14:09:38.5675361Z remote: Counting objects:  73% (92/126)        
+2025-11-17T14:09:38.5675638Z remote: Counting objects:  74% (94/126)        
+2025-11-17T14:09:38.5675918Z remote: Counting objects:  75% (95/126)        
+2025-11-17T14:09:38.5676194Z remote: Counting objects:  76% (96/126)        
+2025-11-17T14:09:38.5676475Z remote: Counting objects:  77% (98/126)        
+2025-11-17T14:09:38.5676757Z remote: Counting objects:  78% (99/126)        
+2025-11-17T14:09:38.5677046Z remote: Counting objects:  79% (100/126)        
+2025-11-17T14:09:38.5677333Z remote: Counting objects:  80% (101/126)        
+2025-11-17T14:09:38.5677653Z remote: Counting objects:  81% (103/126)        
+2025-11-17T14:09:38.5677936Z remote: Counting objects:  82% (104/126)        
+2025-11-17T14:09:38.5678220Z remote: Counting objects:  83% (105/126)        
+2025-11-17T14:09:38.5678503Z remote: Counting objects:  84% (106/126)        
+2025-11-17T14:09:38.5678783Z remote: Counting objects:  85% (108/126)        
+2025-11-17T14:09:38.5679065Z remote: Counting objects:  86% (109/126)        
+2025-11-17T14:09:38.5679365Z remote: Counting objects:  87% (110/126)        
+2025-11-17T14:09:38.5679648Z remote: Counting objects:  88% (111/126)        
+2025-11-17T14:09:38.5679932Z remote: Counting objects:  89% (113/126)        
+2025-11-17T14:09:38.5680209Z remote: Counting objects:  90% (114/126)        
+2025-11-17T14:09:38.5680496Z remote: Counting objects:  91% (115/126)        
+2025-11-17T14:09:38.5680775Z remote: Counting objects:  92% (116/126)        
+2025-11-17T14:09:38.5681056Z remote: Counting objects:  93% (118/126)        
+2025-11-17T14:09:38.5681339Z remote: Counting objects:  94% (119/126)        
+2025-11-17T14:09:38.5681619Z remote: Counting objects:  95% (120/126)        
+2025-11-17T14:09:38.5681899Z remote: Counting objects:  96% (121/126)        
+2025-11-17T14:09:38.5682176Z remote: Counting objects:  97% (123/126)        
+2025-11-17T14:09:38.5682458Z remote: Counting objects:  98% (124/126)        
+2025-11-17T14:09:38.5682741Z remote: Counting objects:  99% (125/126)        
+2025-11-17T14:09:38.5683024Z remote: Counting objects: 100% (126/126)        
+2025-11-17T14:09:38.5683504Z remote: Counting objects: 100% (126/126), done.        
+2025-11-17T14:09:38.5683965Z remote: Compressing objects:   0% (1/107)        
+2025-11-17T14:09:38.5684302Z remote: Compressing objects:   1% (2/107)        
+2025-11-17T14:09:38.5684598Z remote: Compressing objects:   2% (3/107)        
+2025-11-17T14:09:38.5684887Z remote: Compressing objects:   3% (4/107)        
+2025-11-17T14:09:38.5685176Z remote: Compressing objects:   4% (5/107)        
+2025-11-17T14:09:38.5685463Z remote: Compressing objects:   5% (6/107)        
+2025-11-17T14:09:38.5685748Z remote: Compressing objects:   6% (7/107)        
+2025-11-17T14:09:38.5686035Z remote: Compressing objects:   7% (8/107)        
+2025-11-17T14:09:38.5686320Z remote: Compressing objects:   8% (9/107)        
+2025-11-17T14:09:38.5686619Z remote: Compressing objects:   9% (10/107)        
+2025-11-17T14:09:38.5686923Z remote: Compressing objects:  10% (11/107)        
+2025-11-17T14:09:38.5687217Z remote: Compressing objects:  11% (12/107)        
+2025-11-17T14:09:38.5687510Z remote: Compressing objects:  12% (13/107)        
+2025-11-17T14:09:38.5687802Z remote: Compressing objects:  13% (14/107)        
+2025-11-17T14:09:38.5688093Z remote: Compressing objects:  14% (15/107)        
+2025-11-17T14:09:38.5688517Z remote: Compressing objects:  15% (17/107)        
+2025-11-17T14:09:38.5688807Z remote: Compressing objects:  16% (18/107)        
+2025-11-17T14:09:38.5689102Z remote: Compressing objects:  17% (19/107)        
+2025-11-17T14:09:38.5689390Z remote: Compressing objects:  18% (20/107)        
+2025-11-17T14:09:38.5689682Z remote: Compressing objects:  19% (21/107)        
+2025-11-17T14:09:38.5689969Z remote: Compressing objects:  20% (22/107)        
+2025-11-17T14:09:38.5690256Z remote: Compressing objects:  21% (23/107)        
+2025-11-17T14:09:38.5698803Z remote: Compressing objects:  22% (24/107)        
+2025-11-17T14:09:38.5699603Z remote: Compressing objects:  23% (25/107)        
+2025-11-17T14:09:38.5700172Z remote: Compressing objects:  24% (26/107)        
+2025-11-17T14:09:38.5700759Z remote: Compressing objects:  25% (27/107)        
+2025-11-17T14:09:38.5701378Z remote: Compressing objects:  26% (28/107)        
+2025-11-17T14:09:38.5701915Z remote: Compressing objects:  27% (29/107)        
+2025-11-17T14:09:38.5702445Z remote: Compressing objects:  28% (30/107)        
+2025-11-17T14:09:38.5703015Z remote: Compressing objects:  29% (32/107)        
+2025-11-17T14:09:38.5703714Z remote: Compressing objects:  30% (33/107)        
+2025-11-17T14:09:38.5704293Z remote: Compressing objects:  31% (34/107)        
+2025-11-17T14:09:38.5704835Z remote: Compressing objects:  32% (35/107)        
+2025-11-17T14:09:38.5705355Z remote: Compressing objects:  33% (36/107)        
+2025-11-17T14:09:38.5705870Z remote: Compressing objects:  34% (37/107)        
+2025-11-17T14:09:38.5706423Z remote: Compressing objects:  35% (38/107)        
+2025-11-17T14:09:38.5706941Z remote: Compressing objects:  36% (39/107)        
+2025-11-17T14:09:38.5707452Z remote: Compressing objects:  37% (40/107)        
+2025-11-17T14:09:38.5707971Z remote: Compressing objects:  38% (41/107)        
+2025-11-17T14:09:38.5708485Z remote: Compressing objects:  39% (42/107)        
+2025-11-17T14:09:38.5709024Z remote: Compressing objects:  40% (43/107)        
+2025-11-17T14:09:38.5709605Z remote: Compressing objects:  41% (44/107)        
+2025-11-17T14:09:38.5710080Z remote: Compressing objects:  42% (45/107)        
+2025-11-17T14:09:38.5710616Z remote: Compressing objects:  43% (47/107)        
+2025-11-17T14:09:38.5711199Z remote: Compressing objects:  44% (48/107)        
+2025-11-17T14:09:38.5711808Z remote: Compressing objects:  45% (49/107)        
+2025-11-17T14:09:38.5712392Z remote: Compressing objects:  46% (50/107)        
+2025-11-17T14:09:38.5712944Z remote: Compressing objects:  47% (51/107)        
+2025-11-17T14:09:38.5713720Z remote: Compressing objects:  48% (52/107)        
+2025-11-17T14:09:38.5714354Z remote: Compressing objects:  49% (53/107)        
+2025-11-17T14:09:38.5714772Z remote: Compressing objects:  50% (54/107)        
+2025-11-17T14:09:38.5715252Z remote: Compressing objects:  51% (55/107)        
+2025-11-17T14:09:38.5715557Z remote: Compressing objects:  52% (56/107)        
+2025-11-17T14:09:38.5715847Z remote: Compressing objects:  53% (57/107)        
+2025-11-17T14:09:38.5716198Z remote: Compressing objects:  54% (58/107)        
+2025-11-17T14:09:38.5716747Z remote: Compressing objects:  55% (59/107)        
+2025-11-17T14:09:38.5717333Z remote: Compressing objects:  56% (60/107)        
+2025-11-17T14:09:38.5718179Z remote: Compressing objects:  57% (61/107)        
+2025-11-17T14:09:38.5718495Z remote: Compressing objects:  58% (63/107)        
+2025-11-17T14:09:38.5718791Z remote: Compressing objects:  59% (64/107)        
+2025-11-17T14:09:38.5719082Z remote: Compressing objects:  60% (65/107)        
+2025-11-17T14:09:38.5719375Z remote: Compressing objects:  61% (66/107)        
+2025-11-17T14:09:38.5719667Z remote: Compressing objects:  62% (67/107)        
+2025-11-17T14:09:38.5719972Z remote: Compressing objects:  63% (68/107)        
+2025-11-17T14:09:38.5722067Z remote: Compressing objects:  64% (69/107)        
+2025-11-17T14:09:38.5722697Z remote: Compressing objects:  65% (70/107)        
+2025-11-17T14:09:38.5723718Z remote: Compressing objects:  66% (71/107)        
+2025-11-17T14:09:38.5732940Z remote: Compressing objects:  67% (72/107)        
+2025-11-17T14:09:38.5734137Z remote: Compressing objects:  68% (73/107)        
+2025-11-17T14:09:38.5734962Z remote: Compressing objects:  69% (74/107)        
+2025-11-17T14:09:38.5735546Z remote: Compressing objects:  70% (75/107)        
+2025-11-17T14:09:38.5736336Z remote: Compressing objects:  71% (76/107)        
+2025-11-17T14:09:38.5737381Z remote: Compressing objects:  72% (78/107)        
+2025-11-17T14:09:38.5738202Z remote: Compressing objects:  73% (79/107)        
+2025-11-17T14:09:38.5738835Z remote: Compressing objects:  74% (80/107)        
+2025-11-17T14:09:38.5739443Z remote: Compressing objects:  75% (81/107)        
+2025-11-17T14:09:38.5740068Z remote: Compressing objects:  76% (82/107)        
+2025-11-17T14:09:38.5740668Z remote: Compressing objects:  77% (83/107)        
+2025-11-17T14:09:38.5748180Z remote: Compressing objects:  78% (84/107)        
+2025-11-17T14:09:38.5748808Z remote: Compressing objects:  79% (85/107)        
+2025-11-17T14:09:38.5755261Z remote: Compressing objects:  80% (86/107)        
+2025-11-17T14:09:38.5756166Z remote: Compressing objects:  81% (87/107)        
+2025-11-17T14:09:38.5756910Z remote: Compressing objects:  82% (88/107)        
+2025-11-17T14:09:38.5757605Z remote: Compressing objects:  83% (89/107)        
+2025-11-17T14:09:38.5758189Z remote: Compressing objects:  84% (90/107)        
+2025-11-17T14:09:38.5758744Z remote: Compressing objects:  85% (91/107)        
+2025-11-17T14:09:38.5759291Z remote: Compressing objects:  86% (93/107)        
+2025-11-17T14:09:38.5759842Z remote: Compressing objects:  87% (94/107)        
+2025-11-17T14:09:38.5760410Z remote: Compressing objects:  88% (95/107)        
+2025-11-17T14:09:38.5760958Z remote: Compressing objects:  89% (96/107)        
+2025-11-17T14:09:38.5761501Z remote: Compressing objects:  90% (97/107)        
+2025-11-17T14:09:38.5762042Z remote: Compressing objects:  91% (98/107)        
+2025-11-17T14:09:38.5762960Z remote: Compressing objects:  92% (99/107)        
+2025-11-17T14:09:38.5763691Z remote: Compressing objects:  93% (100/107)        
+2025-11-17T14:09:38.5764272Z remote: Compressing objects:  94% (101/107)        
+2025-11-17T14:09:38.5764892Z remote: Compressing objects:  95% (102/107)        
+2025-11-17T14:09:38.5765455Z remote: Compressing objects:  96% (103/107)        
+2025-11-17T14:09:38.5766003Z remote: Compressing objects:  97% (104/107)        
+2025-11-17T14:09:38.5766559Z remote: Compressing objects:  98% (105/107)        
+2025-11-17T14:09:38.5767485Z remote: Compressing objects:  99% (106/107)        
+2025-11-17T14:09:38.5768087Z remote: Compressing objects: 100% (107/107)        
+2025-11-17T14:09:38.5768705Z remote: Compressing objects: 100% (107/107), done.        
+2025-11-17T14:09:38.5796940Z Receiving objects:   0% (1/126)
+2025-11-17T14:09:38.5798374Z Receiving objects:   1% (2/126)
+2025-11-17T14:09:38.5798821Z Receiving objects:   2% (3/126)
+2025-11-17T14:09:38.5799961Z Receiving objects:   3% (4/126)
+2025-11-17T14:09:38.5800675Z Receiving objects:   4% (6/126)
+2025-11-17T14:09:38.5801195Z Receiving objects:   5% (7/126)
+2025-11-17T14:09:38.5801686Z Receiving objects:   6% (8/126)
+2025-11-17T14:09:38.5807900Z Receiving objects:   7% (9/126)
+2025-11-17T14:09:38.5808400Z Receiving objects:   8% (11/126)
+2025-11-17T14:09:38.5808825Z Receiving objects:   9% (12/126)
+2025-11-17T14:09:38.5809231Z Receiving objects:  10% (13/126)
+2025-11-17T14:09:38.5809626Z Receiving objects:  11% (14/126)
+2025-11-17T14:09:38.5810027Z Receiving objects:  12% (16/126)
+2025-11-17T14:09:38.5810426Z Receiving objects:  13% (17/126)
+2025-11-17T14:09:38.5810823Z Receiving objects:  14% (18/126)
+2025-11-17T14:09:38.5815092Z Receiving objects:  15% (19/126)
+2025-11-17T14:09:38.5815552Z Receiving objects:  16% (21/126)
+2025-11-17T14:09:38.5818242Z Receiving objects:  17% (22/126)
+2025-11-17T14:09:38.5819159Z Receiving objects:  18% (23/126)
+2025-11-17T14:09:38.5819857Z Receiving objects:  19% (24/126)
+2025-11-17T14:09:38.5820500Z Receiving objects:  20% (26/126)
+2025-11-17T14:09:38.5826924Z Receiving objects:  21% (27/126)
+2025-11-17T14:09:38.5827745Z Receiving objects:  22% (28/126)
+2025-11-17T14:09:38.5875009Z Receiving objects:  23% (29/126)
+2025-11-17T14:09:38.5875875Z Receiving objects:  24% (31/126)
+2025-11-17T14:09:38.5877374Z Receiving objects:  25% (32/126)
+2025-11-17T14:09:38.5881748Z Receiving objects:  26% (33/126)
+2025-11-17T14:09:38.5883631Z Receiving objects:  27% (35/126)
+2025-11-17T14:09:38.5884112Z Receiving objects:  28% (36/126)
+2025-11-17T14:09:38.5884569Z Receiving objects:  29% (37/126)
+2025-11-17T14:09:38.5885018Z Receiving objects:  30% (38/126)
+2025-11-17T14:09:38.5885477Z Receiving objects:  31% (40/126)
+2025-11-17T14:09:38.5885930Z Receiving objects:  32% (41/126)
+2025-11-17T14:09:38.5886659Z Receiving objects:  33% (42/126)
+2025-11-17T14:09:38.5887386Z Receiving objects:  34% (43/126)
+2025-11-17T14:09:38.5888313Z Receiving objects:  35% (45/126)
+2025-11-17T14:09:38.5888786Z Receiving objects:  36% (46/126)
+2025-11-17T14:09:38.5889215Z Receiving objects:  37% (47/126)
+2025-11-17T14:09:38.5889649Z Receiving objects:  38% (48/126)
+2025-11-17T14:09:38.5890059Z Receiving objects:  39% (50/126)
+2025-11-17T14:09:38.5892929Z Receiving objects:  40% (51/126)
+2025-11-17T14:09:38.5893639Z Receiving objects:  41% (52/126)
+2025-11-17T14:09:38.5894153Z Receiving objects:  42% (53/126)
+2025-11-17T14:09:38.5896168Z Receiving objects:  43% (55/126)
+2025-11-17T14:09:38.5896650Z Receiving objects:  44% (56/126)
+2025-11-17T14:09:38.5897103Z Receiving objects:  45% (57/126)
+2025-11-17T14:09:38.5897559Z Receiving objects:  46% (58/126)
+2025-11-17T14:09:38.5898030Z Receiving objects:  47% (60/126)
+2025-11-17T14:09:38.5898467Z Receiving objects:  48% (61/126)
+2025-11-17T14:09:38.5898893Z Receiving objects:  49% (62/126)
+2025-11-17T14:09:38.5899323Z Receiving objects:  50% (63/126)
+2025-11-17T14:09:38.5918204Z Receiving objects:  51% (65/126)
+2025-11-17T14:09:38.5919713Z Receiving objects:  52% (66/126)
+2025-11-17T14:09:38.5920160Z Receiving objects:  53% (67/126)
+2025-11-17T14:09:38.5920581Z Receiving objects:  54% (69/126)
+2025-11-17T14:09:38.5920996Z Receiving objects:  55% (70/126)
+2025-11-17T14:09:38.5921406Z Receiving objects:  56% (71/126)
+2025-11-17T14:09:38.5921833Z Receiving objects:  57% (72/126)
+2025-11-17T14:09:38.5922234Z Receiving objects:  58% (74/126)
+2025-11-17T14:09:38.5922625Z Receiving objects:  59% (75/126)
+2025-11-17T14:09:38.5923024Z Receiving objects:  60% (76/126)
+2025-11-17T14:09:38.5925521Z Receiving objects:  61% (77/126)
+2025-11-17T14:09:38.5926603Z Receiving objects:  62% (79/126)
+2025-11-17T14:09:38.5927118Z Receiving objects:  63% (80/126)
+2025-11-17T14:09:38.5928325Z Receiving objects:  64% (81/126)
+2025-11-17T14:09:38.5929531Z Receiving objects:  65% (82/126)
+2025-11-17T14:09:38.5932149Z Receiving objects:  66% (84/126)
+2025-11-17T14:09:38.5933031Z Receiving objects:  67% (85/126)
+2025-11-17T14:09:38.5934299Z Receiving objects:  68% (86/126)
+2025-11-17T14:09:38.5935134Z Receiving objects:  69% (87/126)
+2025-11-17T14:09:38.5935887Z Receiving objects:  70% (89/126)
+2025-11-17T14:09:38.5937905Z Receiving objects:  71% (90/126)
+2025-11-17T14:09:38.5938384Z Receiving objects:  72% (91/126)
+2025-11-17T14:09:38.5938845Z Receiving objects:  73% (92/126)
+2025-11-17T14:09:38.5939291Z Receiving objects:  74% (94/126)
+2025-11-17T14:09:38.5939737Z Receiving objects:  75% (95/126)
+2025-11-17T14:09:38.5940182Z Receiving objects:  76% (96/126)
+2025-11-17T14:09:38.5940627Z Receiving objects:  77% (98/126)
+2025-11-17T14:09:38.5941063Z Receiving objects:  78% (99/126)
+2025-11-17T14:09:38.5941497Z Receiving objects:  79% (100/126)
+2025-11-17T14:09:38.5942043Z Receiving objects:  80% (101/126)
+2025-11-17T14:09:38.5942484Z Receiving objects:  81% (103/126)
+2025-11-17T14:09:38.5942914Z Receiving objects:  82% (104/126)
+2025-11-17T14:09:38.5943789Z Receiving objects:  83% (105/126)
+2025-11-17T14:09:38.5944243Z Receiving objects:  84% (106/126)
+2025-11-17T14:09:38.5944997Z Receiving objects:  85% (108/126)
+2025-11-17T14:09:38.5946024Z Receiving objects:  86% (109/126)
+2025-11-17T14:09:38.5946811Z Receiving objects:  87% (110/126)
+2025-11-17T14:09:38.5947817Z remote: Total 126 (delta 16), reused 74 (delta 14), pack-reused 0 (from 0)        
+2025-11-17T14:09:38.5948763Z Receiving objects:  88% (111/126)
+2025-11-17T14:09:38.5949825Z Receiving objects:  89% (113/126)
+2025-11-17T14:09:38.5950637Z Receiving objects:  90% (114/126)
+2025-11-17T14:09:38.5951462Z Receiving objects:  91% (115/126)
+2025-11-17T14:09:38.5952329Z Receiving objects:  92% (116/126)
+2025-11-17T14:09:38.5952790Z Receiving objects:  93% (118/126)
+2025-11-17T14:09:38.5953381Z Receiving objects:  94% (119/126)
+2025-11-17T14:09:38.5953798Z Receiving objects:  95% (120/126)
+2025-11-17T14:09:38.5957739Z Receiving objects:  96% (121/126)
+2025-11-17T14:09:38.5958560Z Receiving objects:  97% (123/126)
+2025-11-17T14:09:38.5959330Z Receiving objects:  98% (124/126)
+2025-11-17T14:09:38.5960013Z Receiving objects:  99% (125/126)
+2025-11-17T14:09:38.5960762Z Receiving objects: 100% (126/126)
+2025-11-17T14:09:38.5961705Z Receiving objects: 100% (126/126), 209.32 KiB | 12.31 MiB/s, done.
+2025-11-17T14:09:38.5963640Z Resolving deltas:   0% (0/16)
+2025-11-17T14:09:38.5964337Z Resolving deltas:   6% (1/16)
+2025-11-17T14:09:38.5964764Z Resolving deltas:  12% (2/16)
+2025-11-17T14:09:38.5965175Z Resolving deltas:  18% (3/16)
+2025-11-17T14:09:38.5965657Z Resolving deltas:  25% (4/16)
+2025-11-17T14:09:38.5966065Z Resolving deltas:  31% (5/16)
+2025-11-17T14:09:38.5966473Z Resolving deltas:  37% (6/16)
+2025-11-17T14:09:38.5966884Z Resolving deltas:  43% (7/16)
+2025-11-17T14:09:38.5967325Z Resolving deltas:  50% (8/16)
+2025-11-17T14:09:38.5967765Z Resolving deltas:  56% (9/16)
+2025-11-17T14:09:38.5968177Z Resolving deltas:  62% (10/16)
+2025-11-17T14:09:38.5968557Z Resolving deltas:  68% (11/16)
+2025-11-17T14:09:38.5968935Z Resolving deltas:  75% (12/16)
+2025-11-17T14:09:38.5969302Z Resolving deltas:  81% (13/16)
+2025-11-17T14:09:38.5969658Z Resolving deltas:  87% (14/16)
+2025-11-17T14:09:38.5970344Z Resolving deltas:  93% (15/16)
+2025-11-17T14:09:38.5970766Z Resolving deltas: 100% (16/16)
+2025-11-17T14:09:38.5971173Z Resolving deltas: 100% (16/16), done.
+2025-11-17T14:09:38.6028737Z From https://github.com/365Evergreen/Know365
+2025-11-17T14:09:38.6029704Z  * [new ref]         3a0ace476731a43aca374314252ecabd0370ba95 -> origin/main
+2025-11-17T14:09:38.6063478Z ##[debug]0
+2025-11-17T14:09:38.6064111Z ##[debug]
+2025-11-17T14:09:38.6064689Z ::endgroup::
+2025-11-17T14:09:38.6065019Z ##[endgroup]
+2025-11-17T14:09:38.6065625Z ::group::Determining the checkout info
+2025-11-17T14:09:38.6066131Z ##[group]Determining the checkout info
+2025-11-17T14:09:38.6066910Z ::endgroup::
+2025-11-17T14:09:38.6067252Z ##[endgroup]
+2025-11-17T14:09:38.6067880Z ::group::Checking out the ref
+2025-11-17T14:09:38.6068523Z ##[group]Checking out the ref
+2025-11-17T14:09:38.6072465Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2025-11-17T14:09:38.6176247Z Switched to a new branch 'main'
+2025-11-17T14:09:38.6178391Z branch 'main' set up to track 'origin/main'.
+2025-11-17T14:09:38.6184227Z ##[debug]0
+2025-11-17T14:09:38.6184973Z ##[debug]branch 'main' set up to track 'origin/main'.
+2025-11-17T14:09:38.6185477Z ##[debug]
+2025-11-17T14:09:38.6186086Z ::endgroup::
+2025-11-17T14:09:38.6186405Z ##[endgroup]
+2025-11-17T14:09:38.6187046Z ::group::Setting up auth for fetching submodules
+2025-11-17T14:09:38.6187600Z ##[group]Setting up auth for fetching submodules
+2025-11-17T14:09:38.6195426Z [command]/usr/bin/git config --global http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2025-11-17T14:09:38.6215927Z ##[debug]0
+2025-11-17T14:09:38.6216563Z ##[debug]
+2025-11-17T14:09:38.6225155Z [command]/usr/bin/git config --global --unset-all url.https://github.com/.insteadOf
+2025-11-17T14:09:38.6248889Z ##[debug]5
+2025-11-17T14:09:38.6249528Z ##[debug]
+2025-11-17T14:09:38.6252361Z [command]/usr/bin/git config --global --add url.https://github.com/.insteadOf git@github.com:
+2025-11-17T14:09:38.6276866Z ##[debug]0
+2025-11-17T14:09:38.6277695Z ##[debug]
+2025-11-17T14:09:38.6280318Z [command]/usr/bin/git config --global --add url.https://github.com/.insteadOf org-55726264@github.com:
+2025-11-17T14:09:38.6303998Z ##[debug]0
+2025-11-17T14:09:38.6305641Z ##[debug]
+2025-11-17T14:09:38.6306198Z ::endgroup::
+2025-11-17T14:09:38.6306564Z ##[endgroup]
+2025-11-17T14:09:38.6307192Z ::group::Fetching submodules
+2025-11-17T14:09:38.6307609Z ##[group]Fetching submodules
+2025-11-17T14:09:38.6308382Z [command]/usr/bin/git submodule sync
+2025-11-17T14:09:38.6540302Z ##[debug]0
+2025-11-17T14:09:38.6540981Z ##[debug]
+2025-11-17T14:09:38.6544633Z [command]/usr/bin/git -c protocol.version=2 submodule update --init --force --depth=1
+2025-11-17T14:09:38.6774976Z ##[debug]0
+2025-11-17T14:09:38.6775369Z ##[debug]
+2025-11-17T14:09:38.6784509Z [command]/usr/bin/git submodule foreach git config --local gc.auto 0
+2025-11-17T14:09:38.7005955Z ##[debug]0
+2025-11-17T14:09:38.7006839Z ##[debug]
+2025-11-17T14:09:38.7008498Z ::endgroup::
+2025-11-17T14:09:38.7008813Z ##[endgroup]
+2025-11-17T14:09:38.7009384Z ::group::Persisting credentials for submodules
+2025-11-17T14:09:38.7009874Z ##[group]Persisting credentials for submodules
+2025-11-17T14:09:38.7014805Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'url\.https\:\/\/github\.com\/\.insteadOf' && git config --local --unset-all 'url.https://github.com/.insteadOf' || :"
+2025-11-17T14:09:38.7225776Z ##[debug]0
+2025-11-17T14:09:38.7226408Z ##[debug]
+2025-11-17T14:09:38.7230056Z [command]/usr/bin/git submodule foreach sh -c "git config --local 'http.https://github.com/.extraheader' 'AUTHORIZATION: basic ***' && git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2025-11-17T14:09:38.7439128Z ##[debug]0
+2025-11-17T14:09:38.7439792Z ##[debug]
+2025-11-17T14:09:38.7443719Z [command]/usr/bin/git submodule foreach git config --local --add 'url.https://github.com/.insteadOf' 'git@github.com:'
+2025-11-17T14:09:38.7652485Z ##[debug]0
+2025-11-17T14:09:38.7652996Z ##[debug]
+2025-11-17T14:09:38.7655619Z [command]/usr/bin/git submodule foreach git config --local --add 'url.https://github.com/.insteadOf' 'org-55726264@github.com:'
+2025-11-17T14:09:38.7863376Z ##[debug]0
+2025-11-17T14:09:38.7863901Z ##[debug]
+2025-11-17T14:09:38.7864242Z ::endgroup::
+2025-11-17T14:09:38.7864444Z ##[endgroup]
+2025-11-17T14:09:38.7898306Z ##[debug]0
+2025-11-17T14:09:38.7898925Z ##[debug]commit 3a0ace476731a43aca374314252ecabd0370ba95
+2025-11-17T14:09:38.7899299Z ##[debug]Author: Pauli Devbot <pauli-automation@local>
+2025-11-17T14:09:38.7899623Z ##[debug]Date:   Tue Nov 18 00:09:11 2025 +1000
+2025-11-17T14:09:38.7899880Z ##[debug]
+2025-11-17T14:09:38.7900156Z ##[debug]    chore(git): add Husky pre-commit hook to run build before commit
+2025-11-17T14:09:38.7901037Z ##[debug]
+2025-11-17T14:09:38.7901462Z [command]/usr/bin/git log -1 --format='%H'
+2025-11-17T14:09:38.7920797Z '3a0ace476731a43aca374314252ecabd0370ba95'
+2025-11-17T14:09:38.7925396Z ##[debug]0
+2025-11-17T14:09:38.7925988Z ##[debug]'3a0ace476731a43aca374314252ecabd0370ba95'
+2025-11-17T14:09:38.7926284Z ##[debug]
+2025-11-17T14:09:38.7928976Z ##[debug]Unsetting HOME override
+2025-11-17T14:09:38.7935594Z ::remove-matcher owner=checkout-git::
+2025-11-17T14:09:38.7947112Z ##[debug]Removed matchers: 'checkout-git'
+2025-11-17T14:09:38.7998464Z ##[debug]Node Action run completed with exit code 0
+2025-11-17T14:09:38.8033917Z ##[debug]Save intra-action state isPost = true
+2025-11-17T14:09:38.8034449Z ##[debug]Save intra-action state setSafeDirectory = true
+2025-11-17T14:09:38.8034919Z ##[debug]Save intra-action state repositoryPath = /home/runner/work/Know365/Know365
+2025-11-17T14:09:38.8038746Z ##[debug]Finishing: Checkout repository
+2025-11-17T14:09:38.8046844Z ##[debug]Evaluating condition for step: 'Setup Node.js (20.x)'
+2025-11-17T14:09:38.8048547Z ##[debug]Evaluating: success()
+2025-11-17T14:09:38.8048904Z ##[debug]Evaluating success:
+2025-11-17T14:09:38.8049407Z ##[debug]=> true
+2025-11-17T14:09:38.8049927Z ##[debug]Result: true
+2025-11-17T14:09:38.8050471Z ##[debug]Starting: Setup Node.js (20.x)
+2025-11-17T14:09:38.8078855Z ##[debug]Register post job cleanup for action: actions/setup-node@v4
+2025-11-17T14:09:38.8089625Z ##[debug]Loading inputs
+2025-11-17T14:09:38.8119382Z ##[debug]Evaluating: (((github.server_url == 'https://github.com') && github.token) || '')
+2025-11-17T14:09:38.8119947Z ##[debug]Evaluating Or:
+2025-11-17T14:09:38.8121838Z ##[debug]..Evaluating And:
+2025-11-17T14:09:38.8123971Z ##[debug]....Evaluating Equal:
+2025-11-17T14:09:38.8125041Z ##[debug]......Evaluating Index:
+2025-11-17T14:09:38.8125320Z ##[debug]........Evaluating github:
+2025-11-17T14:09:38.8125696Z ##[debug]........=> Object
+2025-11-17T14:09:38.8126014Z ##[debug]........Evaluating String:
+2025-11-17T14:09:38.8126291Z ##[debug]........=> 'server_url'
+2025-11-17T14:09:38.8126626Z ##[debug]......=> 'https://github.com'
+2025-11-17T14:09:38.8126926Z ##[debug]......Evaluating String:
+2025-11-17T14:09:38.8127363Z ##[debug]......=> 'https://github.com'
+2025-11-17T14:09:38.8130918Z ##[debug]....=> true
+2025-11-17T14:09:38.8131353Z ##[debug]....Evaluating Index:
+2025-11-17T14:09:38.8131646Z ##[debug]......Evaluating github:
+2025-11-17T14:09:38.8132015Z ##[debug]......=> Object
+2025-11-17T14:09:38.8132339Z ##[debug]......Evaluating String:
+2025-11-17T14:09:38.8132597Z ##[debug]......=> 'token'
+2025-11-17T14:09:38.8133074Z ##[debug]....=> '***'
+2025-11-17T14:09:38.8133750Z ##[debug]..=> '***'
+2025-11-17T14:09:38.8134341Z ##[debug]=> '***'
+2025-11-17T14:09:38.8139046Z ##[debug]Expanded: ((('https://github.com' == 'https://github.com') && '***') || '')
+2025-11-17T14:09:38.8139564Z ##[debug]Result: '***'
+2025-11-17T14:09:38.8141830Z ##[debug]Loading env
+2025-11-17T14:09:38.8147434Z ##[group]Run actions/setup-node@v4
+2025-11-17T14:09:38.8147690Z with:
+2025-11-17T14:09:38.8147866Z   node-version: 20.x
+2025-11-17T14:09:38.8148079Z   always-auth: false
+2025-11-17T14:09:38.8148271Z   check-latest: false
+2025-11-17T14:09:38.8148602Z   token: ***
+2025-11-17T14:09:38.8148783Z ##[endgroup]
+2025-11-17T14:09:38.9811055Z ##[debug]isExplicit: 
+2025-11-17T14:09:38.9812113Z ##[debug]explicit? false
+2025-11-17T14:09:38.9907589Z ##[debug]isExplicit: 20.19.5
+2025-11-17T14:09:38.9908153Z ##[debug]explicit? true
+2025-11-17T14:09:38.9958661Z ##[debug]isExplicit: 22.21.1
+2025-11-17T14:09:38.9959118Z ##[debug]explicit? true
+2025-11-17T14:09:39.0051746Z ##[debug]isExplicit: 24.11.1
+2025-11-17T14:09:39.0052545Z ##[debug]explicit? true
+2025-11-17T14:09:39.0139967Z ##[debug]evaluating 3 versions
+2025-11-17T14:09:39.0163626Z ##[debug]matched: 20.19.5
+2025-11-17T14:09:39.0164454Z ##[debug]checking cache: /opt/hostedtoolcache/node/20.19.5/x64
+2025-11-17T14:09:39.0165354Z ##[debug]Found tool in cache node 20.19.5 x64
+2025-11-17T14:09:39.0165947Z Found in cache @ /opt/hostedtoolcache/node/20.19.5/x64
+2025-11-17T14:09:39.0171575Z ::group::Environment details
+2025-11-17T14:09:39.0171997Z ##[group]Environment details
+2025-11-17T14:09:41.2125210Z node: v20.19.5
+2025-11-17T14:09:41.2125617Z npm: 10.8.2
+2025-11-17T14:09:41.2125917Z yarn: 1.22.22
+2025-11-17T14:09:41.2127231Z ::endgroup::
+2025-11-17T14:09:41.2127622Z ##[endgroup]
+2025-11-17T14:09:41.2134326Z ##[add-matcher]/home/runner/work/_actions/actions/setup-node/v4/.github/tsc.json
+2025-11-17T14:09:41.2152194Z ##[debug]Added matchers: 'tsc'. Problem matchers scan action output for known warning or error strings and report these inline.
+2025-11-17T14:09:41.2153101Z ##[add-matcher]/home/runner/work/_actions/actions/setup-node/v4/.github/eslint-stylish.json
+2025-11-17T14:09:41.2161171Z ##[debug]Added matchers: 'eslint-stylish'. Problem matchers scan action output for known warning or error strings and report these inline.
+2025-11-17T14:09:41.2162389Z ##[add-matcher]/home/runner/work/_actions/actions/setup-node/v4/.github/eslint-compact.json
+2025-11-17T14:09:41.2165056Z ##[debug]Added matchers: 'eslint-compact'. Problem matchers scan action output for known warning or error strings and report these inline.
+2025-11-17T14:09:41.2186849Z ##[debug]Node Action run completed with exit code 0
+2025-11-17T14:09:41.2190559Z ##[debug]Set output node-version = v20.19.5
+2025-11-17T14:09:41.2191184Z ##[debug]Finishing: Setup Node.js (20.x)
+2025-11-17T14:09:41.2197969Z ##[debug]Evaluating condition for step: 'Enable Corepack and prepare pnpm'
+2025-11-17T14:09:41.2199632Z ##[debug]Evaluating: success()
+2025-11-17T14:09:41.2200021Z ##[debug]Evaluating success:
+2025-11-17T14:09:41.2200524Z ##[debug]=> true
+2025-11-17T14:09:41.2200845Z ##[debug]Result: true
+2025-11-17T14:09:41.2201402Z ##[debug]Starting: Enable Corepack and prepare pnpm
+2025-11-17T14:09:41.2210573Z ##[debug]Loading inputs
+2025-11-17T14:09:41.2211384Z ##[debug]Loading env
+2025-11-17T14:09:41.2226026Z ##[group]Run echo "Enabling Corepack and preparing pnpm"
+2025-11-17T14:09:41.2226454Z [36;1mecho "Enabling Corepack and preparing pnpm"[0m
+2025-11-17T14:09:41.2226760Z [36;1mcorepack enable[0m
+2025-11-17T14:09:41.2227026Z [36;1mcorepack prepare pnpm@10 --activate[0m
+2025-11-17T14:09:41.2227365Z [36;1mif ! command -v pnpm >/dev/null 2>&1; then[0m
+2025-11-17T14:09:41.2227750Z [36;1m  echo "pnpm not found after corepack prepare, installing globally"[0m
+2025-11-17T14:09:41.2228154Z [36;1m  npm i -g pnpm@10[0m
+2025-11-17T14:09:41.2228387Z [36;1mfi[0m
+2025-11-17T14:09:41.2228652Z [36;1mecho "pnpm version: $(pnpm -v || echo 'not available')"[0m
+2025-11-17T14:09:41.2271577Z shell: /usr/bin/bash -e {0}
+2025-11-17T14:09:41.2271838Z ##[endgroup]
+2025-11-17T14:09:41.2324835Z ##[debug]/usr/bin/bash -e /home/runner/work/_temp/3400486c-7e14-42a8-8a4b-c8a13d30ee7d.sh
+2025-11-17T14:09:41.2350310Z Enabling Corepack and preparing pnpm
+2025-11-17T14:09:41.7358926Z Preparing pnpm@10 for immediate activation...
+2025-11-17T14:09:42.7835936Z pnpm version: 10.22.0
+2025-11-17T14:09:42.7846991Z ##[debug]Finishing: Enable Corepack and prepare pnpm
+2025-11-17T14:09:42.7856904Z ##[debug]Evaluating condition for step: 'Cache pnpm store'
+2025-11-17T14:09:42.7858279Z ##[debug]Evaluating: success()
+2025-11-17T14:09:42.7858654Z ##[debug]Evaluating success:
+2025-11-17T14:09:42.7859022Z ##[debug]=> true
+2025-11-17T14:09:42.7859354Z ##[debug]Result: true
+2025-11-17T14:09:42.7859858Z ##[debug]Starting: Cache pnpm store
+2025-11-17T14:09:42.7873526Z ##[debug]Register post job cleanup for action: actions/cache@v4
+2025-11-17T14:09:42.7882658Z ##[debug]Loading inputs
+2025-11-17T14:09:42.7887983Z ##[debug]Evaluating: format('{0}-pnpm-store-{1}', runner.os, hashFiles('**/pnpm-lock.yaml'))
+2025-11-17T14:09:42.7888425Z ##[debug]Evaluating format:
+2025-11-17T14:09:42.7891948Z ##[debug]..Evaluating String:
+2025-11-17T14:09:42.7892287Z ##[debug]..=> '{0}-pnpm-store-{1}'
+2025-11-17T14:09:42.7904737Z ##[debug]..Evaluating Index:
+2025-11-17T14:09:42.7905006Z ##[debug]....Evaluating runner:
+2025-11-17T14:09:42.7905282Z ##[debug]....=> Object
+2025-11-17T14:09:42.7905561Z ##[debug]....Evaluating String:
+2025-11-17T14:09:42.7905815Z ##[debug]....=> 'os'
+2025-11-17T14:09:42.7906128Z ##[debug]..=> 'Linux'
+2025-11-17T14:09:42.7907002Z ##[debug]..Evaluating hashFiles:
+2025-11-17T14:09:42.7916012Z ##[debug]....Evaluating String:
+2025-11-17T14:09:42.7916335Z ##[debug]....=> '**/pnpm-lock.yaml'
+2025-11-17T14:09:42.7916717Z ##[debug]Search root directory: '/home/runner/work/Know365/Know365'
+2025-11-17T14:09:42.7917220Z ##[debug]Search pattern: '**/pnpm-lock.yaml'
+2025-11-17T14:09:42.7920459Z ##[debug]Starting process:
+2025-11-17T14:09:42.7920893Z ##[debug]  File name: '/home/runner/actions-runner/cached/externals/node20/bin/node'
+2025-11-17T14:09:42.7921383Z ##[debug]  Arguments: '"/home/runner/actions-runner/cached/bin/hashFiles"'
+2025-11-17T14:09:42.7921822Z ##[debug]  Working directory: '/home/runner/work/Know365/Know365'
+2025-11-17T14:09:42.7922171Z ##[debug]  Require exit code zero: 'False'
+2025-11-17T14:09:42.7922476Z ##[debug]  Encoding web name:  ; code page: ''
+2025-11-17T14:09:42.7922817Z ##[debug]  Force kill process on cancellation: 'False'
+2025-11-17T14:09:42.7923127Z ##[debug]  Redirected STDIN: 'False'
+2025-11-17T14:09:42.7923954Z ##[debug]  Persist current code page: 'False'
+2025-11-17T14:09:42.7924258Z ##[debug]  Keep redirected STDIN open: 'False'
+2025-11-17T14:09:42.7924553Z ##[debug]  High priority process: 'False'
+2025-11-17T14:09:42.7929730Z ##[debug]Updated oom_score_adj to 500 for PID: 2516.
+2025-11-17T14:09:42.7930379Z ##[debug]Process started with process id 2516, waiting for process exit.
+2025-11-17T14:09:42.8285890Z ##[debug]Match Pattern: **/pnpm-lock.yaml
+2025-11-17T14:09:42.8296025Z ##[debug]::debug::followSymbolicLinks 'false'
+2025-11-17T14:09:42.8319320Z ##[debug]::debug::followSymbolicLinks 'false'
+2025-11-17T14:09:42.8319917Z ##[debug]::debug::implicitDescendants 'true'
+2025-11-17T14:09:42.8320459Z ##[debug]::debug::matchDirectories 'true'
+2025-11-17T14:09:42.8321012Z ##[debug]::debug::omitBrokenSymbolicLinks 'true'
+2025-11-17T14:09:42.8326064Z ##[debug]::debug::Search path '/home/runner/work/Know365/Know365'
+2025-11-17T14:09:42.8427439Z ##[debug]/home/runner/work/Know365/Know365/pnpm-lock.yaml
+2025-11-17T14:09:42.8564664Z ##[debug]Found 1 files to hash.
+2025-11-17T14:09:42.8569208Z ##[debug]Hash result: '997ab2832448d17c24efd67fbdbe92d1a61f57d4deff9f3f76fee6471bd76a3c'
+2025-11-17T14:09:42.8571334Z ##[debug]undefined
+2025-11-17T14:09:42.8604999Z ##[debug]STDOUT/STDERR stream read finished.
+2025-11-17T14:09:42.8605028Z ##[debug]STDOUT/STDERR stream read finished.
+2025-11-17T14:09:42.8606560Z ##[debug]Finished process 2516 with exit code 0, and elapsed time 00:00:00.0681127.
+2025-11-17T14:09:42.8607519Z ##[debug]..=> '997ab2832448d17c24efd67fbdbe92d1a61f57d4deff9f3f76fee6471bd76a3c'
+2025-11-17T14:09:42.8608393Z ##[debug]=> 'Linux-pnpm-store-997ab2832448d17c24efd67fbdbe92d1a61f57d4deff9f3f76fee6471bd76a3c'
+2025-11-17T14:09:42.8609125Z ##[debug]Result: 'Linux-pnpm-store-997ab2832448d17c24efd67fbdbe92d1a61f57d4deff9f3f76fee6471bd76a3c'
+2025-11-17T14:09:42.8611040Z ##[debug]Evaluating: format('{0}-pnpm-store-
+2025-11-17T14:09:42.8611331Z ##[debug]', runner.os)
+2025-11-17T14:09:42.8611565Z ##[debug]Evaluating format:
+2025-11-17T14:09:42.8611810Z ##[debug]..Evaluating String:
+2025-11-17T14:09:42.8612086Z ##[debug]..=> '{0}-pnpm-store-
+2025-11-17T14:09:42.8612298Z ##[debug]'
+2025-11-17T14:09:42.8612587Z ##[debug]..Evaluating Index:
+2025-11-17T14:09:42.8612828Z ##[debug]....Evaluating runner:
+2025-11-17T14:09:42.8613088Z ##[debug]....=> Object
+2025-11-17T14:09:42.8613545Z ##[debug]....Evaluating String:
+2025-11-17T14:09:42.8613819Z ##[debug]....=> 'os'
+2025-11-17T14:09:42.8614155Z ##[debug]..=> 'Linux'
+2025-11-17T14:09:42.8614404Z ##[debug]=> 'Linux-pnpm-store-
+2025-11-17T14:09:42.8614627Z ##[debug]'
+2025-11-17T14:09:42.8614845Z ##[debug]Result: 'Linux-pnpm-store-
+2025-11-17T14:09:42.8615083Z ##[debug]'
+2025-11-17T14:09:42.8617878Z ##[debug]Loading env
+2025-11-17T14:09:42.8621882Z ##[group]Run actions/cache@v4
+2025-11-17T14:09:42.8622112Z with:
+2025-11-17T14:09:42.8622303Z   path: ~/.pnpm-store
+2025-11-17T14:09:42.8622697Z   key: Linux-pnpm-store-997ab2832448d17c24efd67fbdbe92d1a61f57d4deff9f3f76fee6471bd76a3c
+2025-11-17T14:09:42.8623158Z   restore-keys: Linux-pnpm-store-
+
+2025-11-17T14:09:42.8623696Z   enableCrossOsArchive: false
+2025-11-17T14:09:42.8623941Z   fail-on-cache-miss: false
+2025-11-17T14:09:42.8624166Z   lookup-only: false
+2025-11-17T14:09:42.8624366Z   save-always: false
+2025-11-17T14:09:42.8624562Z ##[endgroup]
+2025-11-17T14:09:42.9834948Z ##[debug]Cache service version: v2
+2025-11-17T14:09:42.9838127Z ##[debug]Resolved Keys:
+2025-11-17T14:09:42.9838997Z ##[debug]["Linux-pnpm-store-997ab2832448d17c24efd67fbdbe92d1a61f57d4deff9f3f76fee6471bd76a3c","Linux-pnpm-store-"]
+2025-11-17T14:09:42.9842883Z ##[debug]Checking zstd --quiet --version
+2025-11-17T14:09:42.9958848Z ##[debug]1.5.7
+2025-11-17T14:09:42.9964056Z ##[debug]zstd version: 1.5.7
+2025-11-17T14:09:42.9976569Z ##[debug][Request] GetCacheEntryDownloadURL https://results-receiver.actions.githubusercontent.com/twirp/github.actions.results.api.v1.CacheService/GetCacheEntryDownloadURL
+2025-11-17T14:09:43.1064009Z ##[debug][Response] - 200
+2025-11-17T14:09:43.1065166Z ##[debug]Headers: {
+2025-11-17T14:09:43.1065554Z ##[debug]  "content-length": "54",
+2025-11-17T14:09:43.1066056Z ##[debug]  "content-type": "application/json",
+2025-11-17T14:09:43.1066601Z ##[debug]  "date": "Mon, 17 Nov 2025 14:09:43 GMT",
+2025-11-17T14:09:43.1067124Z ##[debug]  "x-github-backend": "Kubernetes",
+2025-11-17T14:09:43.1067742Z ##[debug]  "x-github-request-id": "6802:C889:B8C9EE:D11033:691B2CA7"
+2025-11-17T14:09:43.1068292Z ##[debug]}
+2025-11-17T14:09:43.1068914Z ##[debug]Body: {
+2025-11-17T14:09:43.1069257Z ##[debug]  "ok": false,
+2025-11-17T14:09:43.1069655Z ##[debug]  "signed_download_url": "",
+2025-11-17T14:09:43.1070184Z ##[debug]  "matched_key": ""
+2025-11-17T14:09:43.1070560Z ##[debug]}
+2025-11-17T14:09:43.1075149Z ##[debug]Cache not found for version c4465f0399e1d52e5d0e932d2c1091c964a3f65afb28f374c89a4d0b41abedf7 of keys: Linux-pnpm-store-997ab2832448d17c24efd67fbdbe92d1a61f57d4deff9f3f76fee6471bd76a3c, Linux-pnpm-store-
+2025-11-17T14:09:43.1077316Z Cache not found for input keys: Linux-pnpm-store-997ab2832448d17c24efd67fbdbe92d1a61f57d4deff9f3f76fee6471bd76a3c, Linux-pnpm-store-
+2025-11-17T14:09:43.1120286Z ##[debug]Node Action run completed with exit code 0
+2025-11-17T14:09:43.1124247Z ##[debug]Save intra-action state CACHE_KEY = Linux-pnpm-store-997ab2832448d17c24efd67fbdbe92d1a61f57d4deff9f3f76fee6471bd76a3c
+2025-11-17T14:09:43.1126025Z ##[debug]Finishing: Cache pnpm store
+2025-11-17T14:09:43.1137165Z ##[debug]Evaluating condition for step: 'Install dependencies (pnpm)'
+2025-11-17T14:09:43.1139334Z ##[debug]Evaluating: success()
+2025-11-17T14:09:43.1139992Z ##[debug]Evaluating success:
+2025-11-17T14:09:43.1140663Z ##[debug]=> true
+2025-11-17T14:09:43.1141262Z ##[debug]Result: true
+2025-11-17T14:09:43.1142137Z ##[debug]Starting: Install dependencies (pnpm)
+2025-11-17T14:09:43.1153183Z ##[debug]Loading inputs
+2025-11-17T14:09:43.1154611Z ##[debug]Loading env
+2025-11-17T14:09:43.1162124Z ##[group]Run echo "Checking pnpm availability..."
+2025-11-17T14:09:43.1162565Z [36;1mecho "Checking pnpm availability..."[0m
+2025-11-17T14:09:43.1162915Z [36;1mif ! command -v pnpm >/dev/null 2>&1; then[0m
+2025-11-17T14:09:43.1163542Z [36;1m  echo "pnpm not found; attempting to enable Corepack and install pnpm"[0m
+2025-11-17T14:09:43.1163936Z [36;1m  corepack enable || true[0m
+2025-11-17T14:09:43.1164230Z [36;1m  corepack prepare pnpm@10 --activate || true[0m
+2025-11-17T14:09:43.1164551Z [36;1m  npm i -g pnpm@10 || true[0m
+2025-11-17T14:09:43.1164820Z [36;1m  export PATH="$(npm bin -g):$PATH"[0m
+2025-11-17T14:09:43.1165104Z [36;1m  hash -r || true[0m
+2025-11-17T14:09:43.1165314Z [36;1mfi[0m
+2025-11-17T14:09:43.1165576Z [36;1mecho "pnpm version: $(pnpm -v || echo 'not available')"[0m
+2025-11-17T14:09:43.1165955Z [36;1mecho "Attempting install with frozen lockfile..."[0m
+2025-11-17T14:09:43.1166295Z [36;1mif pnpm install --frozen-lockfile; then[0m
+2025-11-17T14:09:43.1166640Z [36;1m  echo "Installed dependencies using --frozen-lockfile"[0m
+2025-11-17T14:09:43.1166968Z [36;1m  echo "PM=pnpm" >> $GITHUB_ENV[0m
+2025-11-17T14:09:43.1167231Z [36;1melse[0m
+2025-11-17T14:09:43.1167563Z [36;1m  echo "Warning: --frozen-lockfile install failed. Showing diagnostics:" >&2[0m
+2025-11-17T14:09:43.1168044Z [36;1m  echo "pnpm version: $(pnpm -v || echo 'not available')"[0m
+2025-11-17T14:09:43.1168430Z [36;1m  echo "Lockfile status:"; ls -la pnpm-lock.yaml || true[0m
+2025-11-17T14:09:43.1168987Z [36;1m  echo "Listing package.json and lockfile headers:"; head -n 5 package.json || true; head -n 5 pnpm-lock.yaml || true[0m
+2025-11-17T14:09:43.1169607Z [36;1m  echo "Falling back: trying pnpm install, then npm ci if pnpm unavailable or fails."[0m
+2025-11-17T14:09:43.1170032Z [36;1m  if command -v pnpm >/dev/null 2>&1; then[0m
+2025-11-17T14:09:43.1170314Z [36;1m    if pnpm install; then[0m
+2025-11-17T14:09:43.1170600Z [36;1m      echo "Installed dependencies using pnpm"[0m
+2025-11-17T14:09:43.1170906Z [36;1m      echo "PM=pnpm" >> $GITHUB_ENV[0m
+2025-11-17T14:09:43.1171157Z [36;1m    else[0m
+2025-11-17T14:09:43.1171622Z [36;1m      echo "pnpm install failed; attempting npm ci fallback"[0m
+2025-11-17T14:09:43.1172019Z [36;1m      if npm ci --prefer-offline --no-audit --progress=false; then[0m
+2025-11-17T14:09:43.1172390Z [36;1m        echo "Installed dependencies using npm ci"[0m
+2025-11-17T14:09:43.1172688Z [36;1m        echo "PM=npm" >> $GITHUB_ENV[0m
+2025-11-17T14:09:43.1172945Z [36;1m      else[0m
+2025-11-17T14:09:43.1173188Z [36;1m        echo "npm ci fallback also failed" && exit 1[0m
+2025-11-17T14:09:43.1173581Z [36;1m      fi[0m
+2025-11-17T14:09:43.1173759Z [36;1m    fi[0m
+2025-11-17T14:09:43.1173936Z [36;1m  else[0m
+2025-11-17T14:09:43.1174191Z [36;1m    echo "pnpm not available; attempting npm ci as fallback"[0m
+2025-11-17T14:09:43.1174583Z [36;1m    if npm ci --prefer-offline --no-audit --progress=false; then[0m
+2025-11-17T14:09:43.1174963Z [36;1m      echo "Installed dependencies using npm ci"[0m
+2025-11-17T14:09:43.1175269Z [36;1m      echo "PM=npm" >> $GITHUB_ENV[0m
+2025-11-17T14:09:43.1175515Z [36;1m    else[0m
+2025-11-17T14:09:43.1175737Z [36;1m      echo "npm ci fallback failed" && exit 1[0m
+2025-11-17T14:09:43.1175998Z [36;1m    fi[0m
+2025-11-17T14:09:43.1176172Z [36;1m  fi[0m
+2025-11-17T14:09:43.1176347Z [36;1mfi[0m
+2025-11-17T14:09:43.1209490Z shell: /usr/bin/bash -e {0}
+2025-11-17T14:09:43.1209765Z ##[endgroup]
+2025-11-17T14:09:43.1242166Z ##[debug]/usr/bin/bash -e /home/runner/work/_temp/2edf6635-ba91-4bef-91ea-00561af68d66.sh
+2025-11-17T14:09:43.1262912Z Checking pnpm availability...
+2025-11-17T14:09:43.4173671Z pnpm version: 10.22.0
+2025-11-17T14:09:43.4174266Z Attempting install with frozen lockfile...
+2025-11-17T14:09:43.8107700Z  ERR_PNPM_OUTDATED_LOCKFILE  Cannot install with "frozen-lockfile" because pnpm-lock.yaml is not up to date with <ROOT>/package.json
+2025-11-17T14:09:43.8108698Z 
+2025-11-17T14:09:43.8109865Z Note that in CI environments this setting is true by default. If you still need to run install in such cases, use "pnpm install --no-frozen-lockfile"
+2025-11-17T14:09:43.8110840Z 
+2025-11-17T14:09:43.8111044Z   Failure reason:
+2025-11-17T14:09:43.8111714Z   specifiers in the lockfile don't match specifiers in package.json:
+2025-11-17T14:09:43.8115181Z * 19 dependencies were added: @types/node@^24.10.1, @types/react@18.3.26, @types/react-dom@^18.3.0, @typescript-eslint/eslint-plugin@^7.2.0, @typescript-eslint/parser@^7.2.0, dotenv@^17.2.3, eslint-plugin-react-hooks@^4.6.0, eslint-plugin-react-refresh@^0.4.6, express@^5.1.0, husky@^8.0.3, @azure/msal-browser@^4.26.0, @azure/msal-react@^3.0.21, @azure/storage-blob@^12.29.1, @fluentui/react@^8.119.0, @fluentui/react-icons@^2.0.239, @microsoft/microsoft-graph-client@^3.0.7, axios@^1.13.2, react@^18.3.1, react-dom@^18.3.1
+2025-11-17T14:09:43.8117615Z * 5 dependencies were removed: @microsoft/power-apps@^0.3.21, @wordpress/create-block@^4.77.0, gulp@^5.0.1, primereact@^10.9.7, tool@^1.0.1
+2025-11-17T14:09:43.8118307Z * 5 dependencies are mismatched:
+2025-11-17T14:09:43.8118710Z   - react-router-dom (lockfile: ^6.30.1, manifest: ^6.30.2)
+2025-11-17T14:09:43.8119185Z   - @vitejs/plugin-react (lockfile: ^5.1.1, manifest: ^4.2.1)
+2025-11-17T14:09:43.8119575Z   - eslint (lockfile: ^9.39.1, manifest: ^8.57.0)
+2025-11-17T14:09:43.8119925Z   - typescript (lockfile: ^5.9.3, manifest: ^5.4.5)
+2025-11-17T14:09:43.8120263Z   - vite (lockfile: ^7.2.2, manifest: ^5.2.0)
+2025-11-17T14:09:43.8120466Z 
+2025-11-17T14:09:43.8319718Z Warning: --frozen-lockfile install failed. Showing diagnostics:
+2025-11-17T14:09:44.1341366Z pnpm version: 10.22.0
+2025-11-17T14:09:44.1341912Z Lockfile status:
+2025-11-17T14:09:44.1356101Z -rw-r--r-- 1 runner runner 122559 Nov 17 14:09 pnpm-lock.yaml
+2025-11-17T14:09:44.1357540Z Listing package.json and lockfile headers:
+2025-11-17T14:09:44.1373561Z {
+2025-11-17T14:09:44.1374321Z   "name": "knowledge-centre",
+2025-11-17T14:09:44.1375202Z   "version": "1.0.0",
+2025-11-17T14:09:44.1375716Z   "type": "module",
+2025-11-17T14:09:44.1376404Z   "description": "Microsoft 365-integrated knowledge management application",
+2025-11-17T14:09:44.1387252Z lockfileVersion: '9.0'
+2025-11-17T14:09:44.1387537Z 
+2025-11-17T14:09:44.1387756Z settings:
+2025-11-17T14:09:44.1388119Z   autoInstallPeers: true
+2025-11-17T14:09:44.1388613Z   excludeLinksFromLockfile: false
+2025-11-17T14:09:44.1389445Z Falling back: trying pnpm install, then npm ci if pnpm unavailable or fails.
+2025-11-17T14:09:44.4818048Z  ERR_PNPM_OUTDATED_LOCKFILE  Cannot install with "frozen-lockfile" because pnpm-lock.yaml is not up to date with <ROOT>/package.json
+2025-11-17T14:09:44.4818721Z 
+2025-11-17T14:09:44.4819297Z Note that in CI environments this setting is true by default. If you still need to run install in such cases, use "pnpm install --no-frozen-lockfile"
+2025-11-17T14:09:44.4819796Z 
+2025-11-17T14:09:44.4819889Z   Failure reason:
+2025-11-17T14:09:44.4820262Z   specifiers in the lockfile don't match specifiers in package.json:
+2025-11-17T14:09:44.4822768Z * 19 dependencies were added: @types/node@^24.10.1, @types/react@18.3.26, @types/react-dom@^18.3.0, @typescript-eslint/eslint-plugin@^7.2.0, @typescript-eslint/parser@^7.2.0, dotenv@^17.2.3, eslint-plugin-react-hooks@^4.6.0, eslint-plugin-react-refresh@^0.4.6, express@^5.1.0, husky@^8.0.3, @azure/msal-browser@^4.26.0, @azure/msal-react@^3.0.21, @azure/storage-blob@^12.29.1, @fluentui/react@^8.119.0, @fluentui/react-icons@^2.0.239, @microsoft/microsoft-graph-client@^3.0.7, axios@^1.13.2, react@^18.3.1, react-dom@^18.3.1
+2025-11-17T14:09:44.4825147Z * 5 dependencies were removed: @microsoft/power-apps@^0.3.21, @wordpress/create-block@^4.77.0, gulp@^5.0.1, primereact@^10.9.7, tool@^1.0.1
+2025-11-17T14:09:44.4825757Z * 5 dependencies are mismatched:
+2025-11-17T14:09:44.4826116Z   - react-router-dom (lockfile: ^6.30.1, manifest: ^6.30.2)
+2025-11-17T14:09:44.4826549Z   - @vitejs/plugin-react (lockfile: ^5.1.1, manifest: ^4.2.1)
+2025-11-17T14:09:44.4826938Z   - eslint (lockfile: ^9.39.1, manifest: ^8.57.0)
+2025-11-17T14:09:44.4827285Z   - typescript (lockfile: ^5.9.3, manifest: ^5.4.5)
+2025-11-17T14:09:44.4827626Z   - vite (lockfile: ^7.2.2, manifest: ^5.2.0)
+2025-11-17T14:09:44.4827824Z 
+2025-11-17T14:09:44.5036588Z pnpm install failed; attempting npm ci fallback
+2025-11-17T14:09:49.3438924Z npm error code EUSAGE
+2025-11-17T14:09:49.3439424Z npm error
+2025-11-17T14:09:49.3441250Z npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.
+2025-11-17T14:09:49.3442619Z npm error
+2025-11-17T14:09:49.3443401Z npm error Missing: husky@8.0.3 from lock file
+2025-11-17T14:09:49.3443957Z npm error
+2025-11-17T14:09:49.3444422Z npm error Clean install a project
+2025-11-17T14:09:49.3444882Z npm error
+2025-11-17T14:09:49.3445208Z npm error Usage:
+2025-11-17T14:09:49.3445579Z npm error npm ci
+2025-11-17T14:09:49.3445951Z npm error
+2025-11-17T14:09:49.3446339Z npm error Options:
+2025-11-17T14:09:49.3447182Z npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+2025-11-17T14:09:49.3448407Z npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+2025-11-17T14:09:49.3449582Z npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+2025-11-17T14:09:49.3450765Z npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts] [--no-audit]
+2025-11-17T14:09:49.3451828Z npm error [--no-bin-links] [--no-fund] [--dry-run]
+2025-11-17T14:09:49.3452825Z npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+2025-11-17T14:09:49.3454116Z npm error [-ws|--workspaces] [--include-workspace-root] [--install-links]
+2025-11-17T14:09:49.3454798Z npm error
+2025-11-17T14:09:49.3455486Z npm error aliases: clean-install, ic, install-clean, isntall-clean
+2025-11-17T14:09:49.3456126Z npm error
+2025-11-17T14:09:49.3456571Z npm error Run "npm help ci" for more info
+2025-11-17T14:09:49.3457385Z npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2025-11-17T14_09_44_557Z-debug-0.log
+2025-11-17T14:09:49.3518127Z npm ci fallback also failed
+2025-11-17T14:09:49.3533943Z ##[error]Process completed with exit code 1.
+2025-11-17T14:09:49.3545679Z ##[debug]Finishing: Install dependencies (pnpm)
+2025-11-17T14:09:49.3563386Z ##[debug]Evaluating condition for step: 'Ensure Vite plugins installed'
+2025-11-17T14:09:49.3565028Z ##[debug]Evaluating: success()
+2025-11-17T14:09:49.3565419Z ##[debug]Evaluating success:
+2025-11-17T14:09:49.3566044Z ##[debug]=> false
+2025-11-17T14:09:49.3566542Z ##[debug]Result: false
+2025-11-17T14:09:49.3572803Z ##[debug]Evaluating: secrets.VITE_CLIENT_ID
+2025-11-17T14:09:49.3573493Z ##[debug]Evaluating Index:
+2025-11-17T14:09:49.3573884Z ##[debug]..Evaluating secrets:
+2025-11-17T14:09:49.3574309Z ##[debug]..=> Object
+2025-11-17T14:09:49.3574636Z ##[debug]..Evaluating String:
+2025-11-17T14:09:49.3574970Z ##[debug]..=> 'VITE_CLIENT_ID'
+2025-11-17T14:09:49.3588205Z ##[debug]=> '***'
+2025-11-17T14:09:49.3588534Z ##[debug]Result: '***'
+2025-11-17T14:09:49.3589386Z ##[debug]Evaluating: secrets.VITE_TENANT_ID
+2025-11-17T14:09:49.3589720Z ##[debug]Evaluating Index:
+2025-11-17T14:09:49.3589965Z ##[debug]..Evaluating secrets:
+2025-11-17T14:09:49.3590213Z ##[debug]..=> Object
+2025-11-17T14:09:49.3590438Z ##[debug]..Evaluating String:
+2025-11-17T14:09:49.3590680Z ##[debug]..=> 'VITE_TENANT_ID'
+2025-11-17T14:09:49.3590985Z ##[debug]=> '***'
+2025-11-17T14:09:49.3591268Z ##[debug]Result: '***'
+2025-11-17T14:09:49.3591724Z ##[debug]Evaluating: secrets.VITE_REDIRECT_URI
+2025-11-17T14:09:49.3592030Z ##[debug]Evaluating Index:
+2025-11-17T14:09:49.3592263Z ##[debug]..Evaluating secrets:
+2025-11-17T14:09:49.3592505Z ##[debug]..=> Object
+2025-11-17T14:09:49.3592728Z ##[debug]..Evaluating String:
+2025-11-17T14:09:49.3592982Z ##[debug]..=> 'VITE_REDIRECT_URI'
+2025-11-17T14:09:49.3593614Z ##[debug]=> '***'
+2025-11-17T14:09:49.3593965Z ##[debug]Result: '***'
+2025-11-17T14:09:49.3594469Z ##[debug]Evaluating: secrets.VITE_DATAVERSE_API
+2025-11-17T14:09:49.3594771Z ##[debug]Evaluating Index:
+2025-11-17T14:09:49.3595001Z ##[debug]..Evaluating secrets:
+2025-11-17T14:09:49.3595244Z ##[debug]..=> Object
+2025-11-17T14:09:49.3595460Z ##[debug]..Evaluating String:
+2025-11-17T14:09:49.3595702Z ##[debug]..=> 'VITE_DATAVERSE_API'
+2025-11-17T14:09:49.3596058Z ##[debug]=> '***'
+2025-11-17T14:09:49.3596377Z ##[debug]Result: '***'
+2025-11-17T14:09:49.3596811Z ##[debug]Evaluating: secrets.VITE_GRAPH_SCOPES
+2025-11-17T14:09:49.3597100Z ##[debug]Evaluating Index:
+2025-11-17T14:09:49.3597337Z ##[debug]..Evaluating secrets:
+2025-11-17T14:09:49.3597585Z ##[debug]..=> Object
+2025-11-17T14:09:49.3597806Z ##[debug]..Evaluating String:
+2025-11-17T14:09:49.3598046Z ##[debug]..=> 'VITE_GRAPH_SCOPES'
+2025-11-17T14:09:49.3598332Z ##[debug]=> '***'
+2025-11-17T14:09:49.3598568Z ##[debug]Result: '***'
+2025-11-17T14:09:49.3605786Z ##[debug]Evaluating condition for step: 'Build project (vite)'
+2025-11-17T14:09:49.3606818Z ##[debug]Evaluating: success()
+2025-11-17T14:09:49.3607167Z ##[debug]Evaluating success:
+2025-11-17T14:09:49.3607580Z ##[debug]=> false
+2025-11-17T14:09:49.3607948Z ##[debug]Result: false
+2025-11-17T14:09:49.3612319Z ##[debug]Evaluating condition for step: 'Inspect build output'
+2025-11-17T14:09:49.3613485Z ##[debug]Evaluating: success()
+2025-11-17T14:09:49.3613858Z ##[debug]Evaluating success:
+2025-11-17T14:09:49.3614193Z ##[debug]=> false
+2025-11-17T14:09:49.3614587Z ##[debug]Result: false
+2025-11-17T14:09:49.3618747Z ##[debug]Evaluating condition for step: 'Copy Static Web Apps config into artifact'
+2025-11-17T14:09:49.3620371Z ##[debug]Evaluating: always()
+2025-11-17T14:09:49.3620716Z ##[debug]Evaluating always:
+2025-11-17T14:09:49.3621412Z ##[debug]=> true
+2025-11-17T14:09:49.3621788Z ##[debug]Result: true
+2025-11-17T14:09:49.3622307Z ##[debug]Starting: Copy Static Web Apps config into artifact
+2025-11-17T14:09:49.3629417Z ##[debug]Loading inputs
+2025-11-17T14:09:49.3630139Z ##[debug]Loading env
+2025-11-17T14:09:49.3633976Z ##[group]Run if [ -f staticwebapp.config.json ]; then
+2025-11-17T14:09:49.3634506Z [36;1mif [ -f staticwebapp.config.json ]; then[0m
+2025-11-17T14:09:49.3634856Z [36;1m  echo "Copying staticwebapp.config.json into dist/"[0m
+2025-11-17T14:09:49.3635182Z [36;1m  mkdir -p dist[0m
+2025-11-17T14:09:49.3635524Z [36;1m  cp staticwebapp.config.json dist/staticwebapp.config.json || true[0m
+2025-11-17T14:09:49.3635959Z [36;1m  ls -la dist/staticwebapp.config.json || true[0m
+2025-11-17T14:09:49.3636243Z [36;1melse[0m
+2025-11-17T14:09:49.3636506Z [36;1m  echo "No staticwebapp.config.json found in repo root"[0m
+2025-11-17T14:09:49.3636810Z [36;1mfi[0m
+2025-11-17T14:09:49.3668642Z shell: /usr/bin/bash -e {0}
+2025-11-17T14:09:49.3668879Z ##[endgroup]
+2025-11-17T14:09:49.3700179Z ##[debug]/usr/bin/bash -e /home/runner/work/_temp/06c29067-343d-4bd0-88e2-20f2455fb3fa.sh
+2025-11-17T14:09:49.3719611Z Copying staticwebapp.config.json into dist/
+2025-11-17T14:09:49.3757652Z -rw-r--r-- 1 runner runner 199 Nov 17 14:09 dist/staticwebapp.config.json
+2025-11-17T14:09:49.3763924Z ##[debug]Finishing: Copy Static Web Apps config into artifact
+2025-11-17T14:09:49.3769609Z ##[debug]Evaluating condition for step: 'Sanity check SWA secret and build artifact'
+2025-11-17T14:09:49.3770640Z ##[debug]Evaluating: always()
+2025-11-17T14:09:49.3770984Z ##[debug]Evaluating always:
+2025-11-17T14:09:49.3771298Z ##[debug]=> true
+2025-11-17T14:09:49.3771618Z ##[debug]Result: true
+2025-11-17T14:09:49.3772094Z ##[debug]Starting: Sanity check SWA secret and build artifact
+2025-11-17T14:09:49.3778913Z ##[debug]Loading inputs
+2025-11-17T14:09:49.3780231Z ##[debug]Evaluating: format('echo "Checking Azure Static Web Apps API token presence..."
+2025-11-17T14:09:49.3780657Z ##[debug]if [ -z "{0}" ]; then
+2025-11-17T14:09:49.3781134Z ##[debug]  echo "ERROR: AZURE_STATIC_WEB_APPS_API_TOKEN is not set in repository secrets. The deploy action will fail." >&2
+2025-11-17T14:09:49.3781607Z ##[debug]  exit 2
+2025-11-17T14:09:49.3781795Z ##[debug]else
+2025-11-17T14:09:49.3782066Z ##[debug]  echo "AZURE_STATIC_WEB_APPS_API_TOKEN appears set (masked)."
+2025-11-17T14:09:49.3782424Z ##[debug]fi
+2025-11-17T14:09:49.3782658Z ##[debug]echo "Checking dist/ contents (first 50 entries):"
+2025-11-17T14:09:49.3782974Z ##[debug]ls -la dist | head -n 50 || true
+2025-11-17T14:09:49.3783497Z ##[debug]', secrets.AZURE_STATIC_WEB_APPS_API_TOKEN)
+2025-11-17T14:09:49.3783803Z ##[debug]Evaluating format:
+2025-11-17T14:09:49.3784038Z ##[debug]..Evaluating String:
+2025-11-17T14:09:49.3784407Z ##[debug]..=> 'echo "Checking Azure Static Web Apps API token presence..."
+2025-11-17T14:09:49.3784744Z ##[debug]if [ -z "{0}" ]; then
+2025-11-17T14:09:49.3785184Z ##[debug]  echo "ERROR: AZURE_STATIC_WEB_APPS_API_TOKEN is not set in repository secrets. The deploy action will fail." >&2
+2025-11-17T14:09:49.3785642Z ##[debug]  exit 2
+2025-11-17T14:09:49.3785826Z ##[debug]else
+2025-11-17T14:09:49.3786096Z ##[debug]  echo "AZURE_STATIC_WEB_APPS_API_TOKEN appears set (masked)."
+2025-11-17T14:09:49.3786414Z ##[debug]fi
+2025-11-17T14:09:49.3786644Z ##[debug]echo "Checking dist/ contents (first 50 entries):"
+2025-11-17T14:09:49.3786962Z ##[debug]ls -la dist | head -n 50 || true
+2025-11-17T14:09:49.3787209Z ##[debug]'
+2025-11-17T14:09:49.3787518Z ##[debug]..Evaluating Index:
+2025-11-17T14:09:49.3787757Z ##[debug]....Evaluating secrets:
+2025-11-17T14:09:49.3788010Z ##[debug]....=> Object
+2025-11-17T14:09:49.3788240Z ##[debug]....Evaluating String:
+2025-11-17T14:09:49.3788513Z ##[debug]....=> 'AZURE_STATIC_WEB_APPS_API_TOKEN'
+2025-11-17T14:09:49.3789234Z ##[debug]..=> '***'
+2025-11-17T14:09:49.3789579Z ##[debug]=> 'echo "Checking Azure Static Web Apps API token presence..."
+2025-11-17T14:09:49.3790307Z ##[debug]if [ -z "***" ]; then
+2025-11-17T14:09:49.3790763Z ##[debug]  echo "ERROR: AZURE_STATIC_WEB_APPS_API_TOKEN is not set in repository secrets. The deploy action will fail." >&2
+2025-11-17T14:09:49.3791223Z ##[debug]  exit 2
+2025-11-17T14:09:49.3791413Z ##[debug]else
+2025-11-17T14:09:49.3791682Z ##[debug]  echo "AZURE_STATIC_WEB_APPS_API_TOKEN appears set (masked)."
+2025-11-17T14:09:49.3792203Z ##[debug]fi
+2025-11-17T14:09:49.3792446Z ##[debug]echo "Checking dist/ contents (first 50 entries):"
+2025-11-17T14:09:49.3792762Z ##[debug]ls -la dist | head -n 50 || true
+2025-11-17T14:09:49.3793000Z ##[debug]'
+2025-11-17T14:09:49.3793552Z ##[debug]Result: 'echo "Checking Azure Static Web Apps API token presence..."
+2025-11-17T14:09:49.3794298Z ##[debug]if [ -z "***" ]; then
+2025-11-17T14:09:49.3794745Z ##[debug]  echo "ERROR: AZURE_STATIC_WEB_APPS_API_TOKEN is not set in repository secrets. The deploy action will fail." >&2
+2025-11-17T14:09:49.3795191Z ##[debug]  exit 2
+2025-11-17T14:09:49.3795372Z ##[debug]else
+2025-11-17T14:09:49.3795635Z ##[debug]  echo "AZURE_STATIC_WEB_APPS_API_TOKEN appears set (masked)."
+2025-11-17T14:09:49.3795951Z ##[debug]fi
+2025-11-17T14:09:49.3796196Z ##[debug]echo "Checking dist/ contents (first 50 entries):"
+2025-11-17T14:09:49.3796507Z ##[debug]ls -la dist | head -n 50 || true
+2025-11-17T14:09:49.3796745Z ##[debug]'
+2025-11-17T14:09:49.3797029Z ##[debug]Loading env
+2025-11-17T14:09:49.3800752Z ##[group]Run echo "Checking Azure Static Web Apps API token presence..."
+2025-11-17T14:09:49.3801211Z [36;1mecho "Checking Azure Static Web Apps API token presence..."[0m
+2025-11-17T14:09:49.3801952Z [36;1mif [ -z "***" ]; then[0m
+2025-11-17T14:09:49.3802411Z [36;1m  echo "ERROR: AZURE_STATIC_WEB_APPS_API_TOKEN is not set in repository secrets. The deploy action will fail." >&2[0m
+2025-11-17T14:09:49.3802868Z [36;1m  exit 2[0m
+2025-11-17T14:09:49.3803058Z [36;1melse[0m
+2025-11-17T14:09:49.3803551Z [36;1m  echo "AZURE_STATIC_WEB_APPS_API_TOKEN appears set (masked)."[0m
+2025-11-17T14:09:49.3803882Z [36;1mfi[0m
+2025-11-17T14:09:49.3804166Z [36;1mecho "Checking dist/ contents (first 50 entries):"[0m
+2025-11-17T14:09:49.3804486Z [36;1mls -la dist | head -n 50 || true[0m
+2025-11-17T14:09:49.3832999Z shell: /usr/bin/bash -e {0}
+2025-11-17T14:09:49.3833420Z ##[endgroup]
+2025-11-17T14:09:49.3865429Z ##[debug]/usr/bin/bash -e /home/runner/work/_temp/916d924f-abe4-4479-9d7b-0a30d088f04a.sh
+2025-11-17T14:09:49.3882801Z Checking Azure Static Web Apps API token presence...
+2025-11-17T14:09:49.3883933Z AZURE_STATIC_WEB_APPS_API_TOKEN appears set (masked).
+2025-11-17T14:09:49.3884632Z Checking dist/ contents (first 50 entries):
+2025-11-17T14:09:49.3897913Z total 12
+2025-11-17T14:09:49.3898444Z drwxr-xr-x  2 runner runner 4096 Nov 17 14:09 .
+2025-11-17T14:09:49.3899127Z drwxr-xr-x 11 runner runner 4096 Nov 17 14:09 ..
+2025-11-17T14:09:49.3899940Z -rw-r--r--  1 runner runner  199 Nov 17 14:09 staticwebapp.config.json
+2025-11-17T14:09:49.3904734Z ##[debug]Finishing: Sanity check SWA secret and build artifact
+2025-11-17T14:09:49.3910497Z ##[debug]Evaluating condition for step: 'Deploy to Azure Static Web Apps'
+2025-11-17T14:09:49.3911692Z ##[debug]Evaluating: success()
+2025-11-17T14:09:49.3912046Z ##[debug]Evaluating success:
+2025-11-17T14:09:49.3912407Z ##[debug]=> false
+2025-11-17T14:09:49.3912728Z ##[debug]Result: false
+2025-11-17T14:09:49.3917698Z ##[debug]Evaluating condition for step: 'Post Cache pnpm store'
+2025-11-17T14:09:49.3918621Z ##[debug]Evaluating: success()
+2025-11-17T14:09:49.3918954Z ##[debug]Evaluating success:
+2025-11-17T14:09:49.3919290Z ##[debug]=> false
+2025-11-17T14:09:49.3919599Z ##[debug]Result: false
+2025-11-17T14:09:49.3923948Z ##[debug]Evaluating condition for step: 'Post Setup Node.js (20.x)'
+2025-11-17T14:09:49.3925060Z ##[debug]Evaluating: success()
+2025-11-17T14:09:49.3925408Z ##[debug]Evaluating success:
+2025-11-17T14:09:49.3925742Z ##[debug]=> false
+2025-11-17T14:09:49.3926068Z ##[debug]Result: false
+2025-11-17T14:09:49.3930299Z ##[debug]Evaluating condition for step: 'Post Checkout repository'
+2025-11-17T14:09:49.3931240Z ##[debug]Evaluating: always()
+2025-11-17T14:09:49.3931653Z ##[debug]Evaluating always:
+2025-11-17T14:09:49.3932004Z ##[debug]=> true
+2025-11-17T14:09:49.3932317Z ##[debug]Result: true
+2025-11-17T14:09:49.3932761Z ##[debug]Starting: Post Checkout repository
+2025-11-17T14:09:49.3957248Z ##[debug]Loading inputs
+2025-11-17T14:09:49.3958491Z ##[debug]Evaluating: github.repository
+2025-11-17T14:09:49.3958785Z ##[debug]Evaluating Index:
+2025-11-17T14:09:49.3959025Z ##[debug]..Evaluating github:
+2025-11-17T14:09:49.3959281Z ##[debug]..=> Object
+2025-11-17T14:09:49.3959505Z ##[debug]..Evaluating String:
+2025-11-17T14:09:49.3959746Z ##[debug]..=> 'repository'
+2025-11-17T14:09:49.3960151Z ##[debug]=> '365Evergreen/Know365'
+2025-11-17T14:09:49.3960421Z ##[debug]Result: '365Evergreen/Know365'
+2025-11-17T14:09:49.3961693Z ##[debug]Evaluating: github.token
+2025-11-17T14:09:49.3961982Z ##[debug]Evaluating Index:
+2025-11-17T14:09:49.3962220Z ##[debug]..Evaluating github:
+2025-11-17T14:09:49.3962462Z ##[debug]..=> Object
+2025-11-17T14:09:49.3962683Z ##[debug]..Evaluating String:
+2025-11-17T14:09:49.3962916Z ##[debug]..=> 'token'
+2025-11-17T14:09:49.3963555Z ##[debug]=> '***'
+2025-11-17T14:09:49.3963894Z ##[debug]Result: '***'
+2025-11-17T14:09:49.3969538Z ##[debug]Loading env
+2025-11-17T14:09:49.3973508Z Post job cleanup.
+2025-11-17T14:09:49.4671526Z ##[debug]Getting git version
+2025-11-17T14:09:49.4683126Z [command]/usr/bin/git version
+2025-11-17T14:09:49.4717250Z git version 2.51.2
+2025-11-17T14:09:49.4739549Z ##[debug]0
+2025-11-17T14:09:49.4740130Z ##[debug]git version 2.51.2
+2025-11-17T14:09:49.4740371Z ##[debug]
+2025-11-17T14:09:49.4741652Z ##[debug]Set git useragent to: git/2.51.2 (github-actions-checkout)
+2025-11-17T14:09:49.4744930Z ::add-mask::***
+2025-11-17T14:09:49.4759559Z Temporarily overriding HOME='/home/runner/work/_temp/914d516d-9fb5-432c-ad46-6ec4eec77d62' before making global git config changes
+2025-11-17T14:09:49.4760485Z Adding repository directory to the temporary git global config as a safe directory
+2025-11-17T14:09:49.4763128Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Know365/Know365
+2025-11-17T14:09:49.4786982Z ##[debug]0
+2025-11-17T14:09:49.4787534Z ##[debug]
+2025-11-17T14:09:49.4793049Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-11-17T14:09:49.4816856Z ##[debug]1
+2025-11-17T14:09:49.4817428Z ##[debug]
+2025-11-17T14:09:49.4821029Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-11-17T14:09:49.5034743Z ##[debug]0
+2025-11-17T14:09:49.5035192Z ##[debug]
+2025-11-17T14:09:49.5039181Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-11-17T14:09:49.5058611Z http.https://github.com/.extraheader
+2025-11-17T14:09:49.5065531Z ##[debug]0
+2025-11-17T14:09:49.5066298Z ##[debug]http.https://github.com/.extraheader
+2025-11-17T14:09:49.5066814Z ##[debug]
+2025-11-17T14:09:49.5070843Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2025-11-17T14:09:49.5094717Z ##[debug]0
+2025-11-17T14:09:49.5095289Z ##[debug]
+2025-11-17T14:09:49.5098377Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-11-17T14:09:49.5306090Z ##[debug]0
+2025-11-17T14:09:49.5306647Z ##[debug]
+2025-11-17T14:09:49.5307361Z ##[debug]Unsetting HOME override
+2025-11-17T14:09:49.5370230Z ##[debug]Node Action run completed with exit code 0
+2025-11-17T14:09:49.5372342Z ##[debug]Finishing: Post Checkout repository
+2025-11-17T14:09:49.5416823Z ##[debug]Starting: Complete job
+2025-11-17T14:09:49.5418255Z Cleaning up orphan processes
+2025-11-17T14:09:49.5674583Z ##[debug]Finishing: Complete job
+2025-11-17T14:09:49.5703851Z ##[debug]Finishing: Build and Deploy Job
