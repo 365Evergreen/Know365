@@ -1,0 +1,12 @@
+<fetch>
+  
+    <attribute name="componentid" />
+    <attribute name="componenttype" />
+    <attribute name="objectid" />
+    <attribute name="rootcomponentparentid" />
+    <attribute name="ismetadata" />
+    <filter type="and">
+      <condition attribute="solutionid" operator="eq" value="bcf3807f-6bc0-f011-bbd2-000d3acb65c0" />
+    </filter>
+  
+</fetch>
