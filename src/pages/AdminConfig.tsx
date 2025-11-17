@@ -641,6 +641,7 @@ const AdminConfig: React.FC = () => {
               <TextField label="Site URL" placeholder="https://contoso.sharepoint.com/sites/YourSite" value={siteUrlInput} onChange={(_, v) => setSiteUrlInput(v || '')} styles={{ root: { minWidth: 520 } }} />
               <PrimaryButton text="Load site" onClick={handleLoadSite} />
               <DefaultButton text="Clear" onClick={() => { setSiteUrlInput(''); setSiteDrives([]); setSiteLists([]); setSiteIdResolved(null); }} />
+              {loadingSources && <Spinner label="Loading site..." styles={{ root: { marginLeft: 8 } }} />}
             </Stack>
 
             <Stack horizontal tokens={{ childrenGap: 12 }} styles={{ root: { marginTop: 6 } }}>
