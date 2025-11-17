@@ -100,6 +100,20 @@ function persistEntitySetMap() {
   }
 }
 
+// Simple URL validation helper used before calling SharePoint helpers that
+// construct `URL` objects. Prevents runtime "Invalid URL" TypeErrors when
+// a KnowledgeSource record has a malformed or missing `SharePointSiteUrl`.
+function isValidUrl(u?: string): boolean {
+  if (!u || typeof u !== 'string') return false;
+  try {
+    // allow relative paths? we require absolute site URLs here
+    const parsed = new URL(u);
+    return !!parsed.protocol && !!parsed.hostname;
+  } catch {
+    return false;
+  }
+}
+
 // Expose helpers to read/clear the persisted mapping for UI/debug purposes
 export const getEntitySetMappings = (): Array<[string, string]> => {
   return Array.from(entitySetMap.entries());
@@ -406,6 +420,14 @@ export const getArticlesFromKnowledgeSources = async (q?: string): Promise<any[]
     const results: any[] = [];
     for (const s of sources) {
       try {
+        // Validate configured site & library before calling Graph helper. If the
+        // SharePointSiteUrl is missing or malformed, listLibraryItems will throw
+        // when constructing a URL; detect that early and skip the source.
+        if (!isValidUrl(s.SharePointSiteUrl) || !s.LibraryName) {
+          console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName', s);
+          continue;
+        }
+
         // listLibraryItems resolves site & drive and returns documents
         const items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, 50);
         for (const it of items) {
@@ -581,6 +603,11 @@ export const getKnowledgeArticlesByFunction = async (fn: string, q?: string): Pr
           const results: any[] = [];
           for (const s of matching) {
             try {
+              if (!isValidUrl(s.SharePointSiteUrl) || !s.LibraryName) {
+                console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName (by function)', s);
+                continue;
+              }
+
               const items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, 50);
               for (const it of items) {
                 if (q && q.trim()) {
@@ -629,8 +656,13 @@ export const getKnowledgeArticlesCountByFunction = async (fn: string): Promise<n
           let total = 0;
           for (const s of matching) {
             try {
-              const items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, 1000);
-              total += Array.isArray(items) ? items.length : 0;
+                if (!isValidUrl(s.SharePointSiteUrl) || !s.LibraryName) {
+                  console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName (count)', s);
+                  continue;
+                }
+
+                const items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, 1000);
+                total += Array.isArray(items) ? items.length : 0;
             } catch (e) {
               console.warn('Failed to list library items for KnowledgeSource (count)', s, e);
             }
@@ -661,6 +693,11 @@ export const getRecentKnowledgeArticles = async (top = 10): Promise<any[]> => {
     const allItems: any[] = [];
     for (const s of sources) {
       try {
+        if (!isValidUrl(s.SharePointSiteUrl) || !s.LibraryName) {
+          console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName (recent)', s);
+          continue;
+        }
+
         const items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, Math.max(top, 50));
         if (Array.isArray(items)) {
           for (const it of items) {
@@ -698,6 +735,11 @@ export const getKnowledgeArticlesBySubject = async (subjectId: string, top = 50)
     const results: any[] = [];
     for (const s of sources) {
       try {
+        if (!isValidUrl(s.SharePointSiteUrl) || !s.LibraryName) {
+          console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName (subject search)', s);
+          continue;
+        }
+
         const items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, top);
         for (const it of items) {
           const name = (it.name || '').toLowerCase();
