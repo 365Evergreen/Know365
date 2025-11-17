@@ -1,6 +1,7 @@
 import { msalInstance } from './authConfig';
 import schemaOverrides from '../config/dataverse-schema-overrides';
-import { listLibraryItems } from './sharePointGraph';
+import { listLibraryItems, getDocuments, getListItems } from './sharePointGraph';
+import { getAccessToken } from './graphClient';
 
 interface KnowledgeSource {
   SourceName: string;
@@ -420,16 +421,38 @@ export const getArticlesFromKnowledgeSources = async (q?: string): Promise<any[]
     const results: any[] = [];
     for (const s of sources) {
       try {
-        // Validate configured site & library before calling Graph helper. If the
-        // SharePointSiteUrl is missing or malformed, listLibraryItems will throw
-        // when constructing a URL; detect that early and skip the source.
-        if (!isValidUrl(s.SharePointSiteUrl) || !s.LibraryName) {
-          console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName', s);
-          continue;
+        // Prefer a canonical GraphEndpoint (siteId/driveId or siteId/listId) when present.
+        // GraphEndpoint is expected to be JSON (or an object) with a { type, siteId, driveId|listId } shape.
+        let items: any[] = [];
+        if (s.GraphEndpoint) {
+          try {
+            const ep = typeof s.GraphEndpoint === 'string' ? JSON.parse(s.GraphEndpoint) : s.GraphEndpoint;
+            if (ep && ep.type === 'drive' && ep.siteId && ep.driveId) {
+              const token = await getAccessToken();
+              items = await getDocuments(token, ep.siteId, ep.driveId, 50);
+            } else if (ep && ep.type === 'list' && ep.siteId && ep.listId) {
+              const token = await getAccessToken();
+              items = await getListItems(token, ep.siteId, ep.listId, 50);
+            }
+          } catch (err) {
+            console.warn('GraphEndpoint parse/use failed, falling back to SharePointSiteUrl', s, err);
+            items = [];
+          }
         }
 
-        // listLibraryItems resolves site & drive and returns documents
-        const items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, 50);
+        // If GraphEndpoint didn't produce items, fall back to the editable site+library fields.
+        if (!items || items.length === 0) {
+          // Validate configured site & library before calling Graph helper. If the
+          // SharePointSiteUrl is missing or malformed, listLibraryItems will throw
+          // when constructing a URL; detect that early and skip the source.
+          if (!isValidUrl(s.SharePointSiteUrl) || !s.LibraryName) {
+            console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName', s);
+            continue;
+          }
+
+          // listLibraryItems resolves site & drive and returns documents
+          items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, 50);
+        }
         for (const it of items) {
           // simple text match if query provided
           if (q && q.trim()) {
@@ -603,12 +626,31 @@ export const getKnowledgeArticlesByFunction = async (fn: string, q?: string): Pr
           const results: any[] = [];
           for (const s of matching) {
             try {
-              if (!isValidUrl(s.SharePointSiteUrl) || !s.LibraryName) {
-                console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName (by function)', s);
-                continue;
+              // Prefer GraphEndpoint when present for performance and stability
+              let items: any[] = [];
+              if (s.GraphEndpoint) {
+                try {
+                  const ep = typeof s.GraphEndpoint === 'string' ? JSON.parse(s.GraphEndpoint) : s.GraphEndpoint;
+                  if (ep && ep.type === 'drive' && ep.siteId && ep.driveId) {
+                    const token = await getAccessToken();
+                    items = await getDocuments(token, ep.siteId, ep.driveId, 50);
+                  } else if (ep && ep.type === 'list' && ep.siteId && ep.listId) {
+                    const token = await getAccessToken();
+                    items = await getListItems(token, ep.siteId, ep.listId, 50);
+                  }
+                } catch (err) {
+                  console.warn('GraphEndpoint parse/use failed (by function), falling back to SharePointSiteUrl', s, err);
+                  items = [];
+                }
               }
 
-              const items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, 50);
+              if (!items || items.length === 0) {
+                if (!isValidUrl(s.SharePointSiteUrl) || !s.LibraryName) {
+                  console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName (by function)', s);
+                  continue;
+                }
+                items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, 50);
+              }
               for (const it of items) {
                 if (q && q.trim()) {
                   const ql = q.toLowerCase();
@@ -656,12 +698,32 @@ export const getKnowledgeArticlesCountByFunction = async (fn: string): Promise<n
           let total = 0;
           for (const s of matching) {
             try {
-                if (!isValidUrl(s.SharePointSiteUrl) || !s.LibraryName) {
-                  console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName (count)', s);
-                  continue;
+                // Prefer GraphEndpoint when present
+                let items: any[] = [];
+                if (s.GraphEndpoint) {
+                  try {
+                    const ep = typeof s.GraphEndpoint === 'string' ? JSON.parse(s.GraphEndpoint) : s.GraphEndpoint;
+                    if (ep && ep.type === 'drive' && ep.siteId && ep.driveId) {
+                      const token = await getAccessToken();
+                      items = await getDocuments(token, ep.siteId, ep.driveId, 1000);
+                    } else if (ep && ep.type === 'list' && ep.siteId && ep.listId) {
+                      const token = await getAccessToken();
+                      items = await getListItems(token, ep.siteId, ep.listId, 1000);
+                    }
+                  } catch (err) {
+                    console.warn('GraphEndpoint parse/use failed (count), falling back to SharePointSiteUrl', s, err);
+                    items = [];
+                  }
                 }
 
-                const items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, 1000);
+                if (!items || items.length === 0) {
+                  if (!isValidUrl(s.SharePointSiteUrl) || !s.LibraryName) {
+                    console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName (count)', s);
+                    continue;
+                  }
+                  items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, 1000);
+                }
+
                 total += Array.isArray(items) ? items.length : 0;
             } catch (e) {
               console.warn('Failed to list library items for KnowledgeSource (count)', s, e);
@@ -698,7 +760,29 @@ export const getRecentKnowledgeArticles = async (top = 10): Promise<any[]> => {
           continue;
         }
 
-        const items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, Math.max(top, 50));
+        // Prefer GraphEndpoint when present for recent aggregation
+        let items: any[] = [];
+        if (s.GraphEndpoint) {
+          try {
+            const ep = typeof s.GraphEndpoint === 'string' ? JSON.parse(s.GraphEndpoint) : s.GraphEndpoint;
+            if (ep && ep.type === 'drive' && ep.siteId && ep.driveId) {
+              const token = await getAccessToken();
+              items = await getDocuments(token, ep.siteId, ep.driveId, Math.max(top, 50));
+            } else if (ep && ep.type === 'list' && ep.siteId && ep.listId) {
+              const token = await getAccessToken();
+              items = await getListItems(token, ep.siteId, ep.listId, Math.max(top, 50));
+            }
+          } catch (err) {
+            console.warn('GraphEndpoint parse/use failed (recent), falling back to SharePointSiteUrl', s, err);
+            items = [];
+          }
+        }
+
+        if (!items || items.length === 0) {
+          const itemsFallback = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, Math.max(top, 50));
+          items = itemsFallback;
+        }
+
         if (Array.isArray(items)) {
           for (const it of items) {
             const created = (it as any).createdDateTime || (it as any).created || null;
@@ -740,7 +824,28 @@ export const getKnowledgeArticlesBySubject = async (subjectId: string, top = 50)
           continue;
         }
 
-        const items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, top);
+        // Prefer GraphEndpoint when present for subject searches
+        let items: any[] = [];
+        if (s.GraphEndpoint) {
+          try {
+            const ep = typeof s.GraphEndpoint === 'string' ? JSON.parse(s.GraphEndpoint) : s.GraphEndpoint;
+            if (ep && ep.type === 'drive' && ep.siteId && ep.driveId) {
+              const token = await getAccessToken();
+              items = await getDocuments(token, ep.siteId, ep.driveId, top);
+            } else if (ep && ep.type === 'list' && ep.siteId && ep.listId) {
+              const token = await getAccessToken();
+              items = await getListItems(token, ep.siteId, ep.listId, top);
+            }
+          } catch (err) {
+            console.warn('GraphEndpoint parse/use failed (subject search), falling back to SharePointSiteUrl', s, err);
+            items = [];
+          }
+        }
+
+        if (!items || items.length === 0) {
+          items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, top);
+        }
+
         for (const it of items) {
           const name = (it.name || '').toLowerCase();
           if (name.includes(subjectId.toLowerCase())) {
