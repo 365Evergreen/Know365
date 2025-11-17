@@ -239,3 +239,34 @@ export const getSiteIdByUrl = async (siteUrl: string): Promise<string | null> =>
     return null;
   }
 };
+
+// Map SharePoint document/list items to the UI DocumentItem shape used by DocumentsDisplay
+export type DisplayDocumentItem = {
+  id: string;
+  title: string;
+  webUrl?: string;
+  lastModifiedDateTime?: string;
+  source?: string;
+  excerpt?: string;
+  _raw?: any;
+};
+
+export const mapSharePointDocsToDisplayItems = (items: SharePointDocument[] | any[]): DisplayDocumentItem[] => {
+  if (!items || !Array.isArray(items)) return [];
+  return items.map((it: any) => {
+    const title = it.name || (it.fields && (it.fields.Title || it.fields.title)) || `Item ${it.id}`;
+    const source = (it.createdBy && it.createdBy.user && it.createdBy.user.displayName) || (it.createdBy && it.createdBy.displayName) || undefined;
+    const webUrl = it.webUrl || (it.sharepointIds && it.sharepointIds.webUrl) || '';
+    const lastModified = it.lastModifiedDateTime || (it.fields && (it.fields.Modified || it.fields.modified));
+
+    return {
+      id: String(it.id || title),
+      title,
+      webUrl,
+      lastModifiedDateTime: lastModified ? String(lastModified) : undefined,
+      source,
+      excerpt: (it._excerpt || it.excerpt || (it.fields && (it.fields.Excerpt || it.fields.Description || it.fields.summary))) || undefined,
+      _raw: it,
+    } as DisplayDocumentItem;
+  });
+};

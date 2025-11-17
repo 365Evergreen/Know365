@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Stack, Text, DefaultButton, Spinner, SpinnerSize } from '@fluentui/react';
 import { getKnowledgeArticlesByFunction, getKnowledgeSources } from '../services/dataverseClient';
+import { mapSharePointDocsToDisplayItems } from '../services/sharePointGraph';
 import DocumentsDisplay from '../components/DocumentsDisplay';
 
 const readable = (s?: string) => (s || '').replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -98,15 +99,25 @@ const FunctionsPage: React.FC = () => {
           <Text variant="small">No articles found for {title}.</Text>
         ) : (
           <DocumentsDisplay
-            items={(articles || []).map((a: any) => ({
-              id: a.id,
-              title: a.title || a.displayName || a.name,
-              webUrl: a.webUrl,
-              lastModifiedDateTime: a.lastModifiedDateTime,
-              source: a.source,
-              excerpt: a.excerpt || a._raw?.excerpt || a._raw?.summary || a._raw?.description || a._raw?.fields?.Description || (a._raw?.body?.content ? String(a._raw.body.content).slice(0, 400) : ''),
-              _raw: a._raw,
-            }))}
+            items={(() => {
+              // If items look like raw SharePoint list/drive items, map them to the UI shape
+              const arr = (articles || []);
+              if (arr.length > 0) {
+                const looksLikeSharePoint = !!(arr[0].webUrl || arr[0].name || arr[0].sharepointIds || arr[0].fields);
+                if (looksLikeSharePoint) {
+                  return mapSharePointDocsToDisplayItems(arr as any[]);
+                }
+              }
+              return (arr || []).map((a: any) => ({
+                id: a.id,
+                title: a.title || a.displayName || a.name,
+                webUrl: a.webUrl,
+                lastModifiedDateTime: a.lastModifiedDateTime,
+                source: a.source,
+                excerpt: a.excerpt || a._raw?.excerpt || a._raw?.summary || a._raw?.description || a._raw?.fields?.Description || (a._raw?.body?.content ? String(a._raw.body.content).slice(0, 400) : ''),
+                _raw: a._raw,
+              }));
+            })()}
             view="list"
             onItemClick={(item) => {
               if (item.webUrl) window.open(item.webUrl, '_blank', 'noopener');
