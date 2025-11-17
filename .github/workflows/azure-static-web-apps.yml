@@ -1,4 +1,4 @@
-$schema: "https://json.schemastore.org/github-workflow.json" # removed: GitHub Actions does not accept $schema at top-level
+# $schema removed: GitHub Actions does not accept $schema at top-level
 name: Azure Static Web Apps CI/CD
 
 on:
