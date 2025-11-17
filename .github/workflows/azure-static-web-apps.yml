@@ -154,10 +154,9 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           # Production artifact is in `dist` after the build step above.
-          # Set `app_location` to the repository root and `output_location` to `dist`
-          # so the action consistently finds the generated build output.
-          app_location: "/"
-          output_location: "dist"
+          # Upload only the `dist` directory to avoid packaging the whole repository.
+          app_location: "dist"
+          output_location: "."
           skip_app_build: true
 
   close_pull_request_job:
@@ -170,7 +169,7 @@ jobs:
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: "close"
-          app_location: "/"
-          output_location: "dist"
+          app_location: "dist"
+          output_location: "."
           skip_app_build: true
           
