@@ -255,14 +255,9 @@ async function getDataverseAccessToken(): Promise<string> {
   }
 }
 
-function getSchemaOverride(logicalName: string): any | null {
-  try {
-    const o = (schemaOverrides as any)[logicalName];
-    return o || null;
-  } catch {
-    return null;
-  }
-}
+// schema overrides are read directly where needed from the imported `schemaOverrides`.
+// The dedicated helper was removed to avoid unused-local errors after Dataverse article
+// removal. Access `schemaOverrides[logicalName]` directly when required.
 
 // Resolve an EntitySetName from a logical entity name (LogicalName). This helps avoid
 // hardcoded OData paths like 'KnowledgeSources' which may not match the target org's
@@ -355,35 +350,7 @@ async function resolveEntitySetForLogicalName(logicalName: string): Promise<stri
 
 // a 'subject'-like target or whose name contains 'subject'. Returns attribute logical
 // names (e.g. 'e365_subjectid' or 'regardingobjectid') ordered by likelihood.
-async function findLookupAttributesForEntity(entityLogicalName: string): Promise<string[]> {
-  try {
-    const accessToken = await getDataverseAccessToken();
-    const resourcePath = `EntityDefinitions(LogicalName='${entityLogicalName}')/Attributes?$select=LogicalName,AttributeType,Targets`;
-    const data = await fetchDataverseResource(resourcePath, {
-      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-    });
-
-    const attrs = (data?.value || []) as Array<any>;
-    const lookupAttrs = attrs.filter((a) => a.AttributeType === 'Lookup' || a.AttributeType === 'Customer');
-
-    // Score and sort: attributes whose LogicalName contains 'subject' first, then those whose Targets include 'subject', then others.
-    const scored = lookupAttrs.map((a) => {
-      const name: string = (a.LogicalName || '').toLowerCase();
-      const targets: string[] = Array.isArray(a.Targets) ? a.Targets.map((t: string) => (t || '').toLowerCase()) : [];
-      let score = 0;
-      if (name.includes('subject')) score += 10;
-      if (targets.some((t) => t.includes('subject'))) score += 8;
-      if (name.includes('topic')) score += 4;
-      return { name: a.LogicalName, score };
-    });
-
-    scored.sort((x, y) => y.score - x.score);
-    return scored.map((s) => s.name).filter(Boolean);
-  } catch (e) {
-    console.warn('findLookupAttributesForEntity failed', e);
-    return [];
-  }
-}
+// Attribute discovery helper removed - not needed when only using SharePoint KnowledgeSources.
 
 export const getKnowledgeSources = async (): Promise<KnowledgeSource[]> => {
   try {
@@ -578,55 +545,16 @@ export const createKnowledgeSource = async (source: KnowledgeSource): Promise<vo
 
 export const getKnowledgeArticles = async (q?: string): Promise<any[]> => {
   try {
-    // First, try KnowledgeSources (SharePoint libraries). If any articles are found there,
-    // return them so the UI shows SharePoint-backed content instead of Dataverse articles.
+    // Only use KnowledgeSources (SharePoint libraries) for articles. Dataverse
+    // `e365_knowledgearticle` is deprecated/removed in this deployment.
     try {
       const ks = await getArticlesFromKnowledgeSources(q);
       if (Array.isArray(ks) && ks.length > 0) return ks;
+      return [];
     } catch (e) {
-      // non-fatal — fall back to Dataverse
-      console.warn('getKnowledgeArticles: KnowledgeSources lookup failed, falling back to Dataverse', e);
+      console.warn('getKnowledgeArticles: KnowledgeSources lookup failed and Dataverse fallback disabled', e);
+      return [];
     }
-    // Try to use resolved entity set name for the articles logical name
-    const logical = 'e365_knowledgearticle';
-    let entitySet = 'KnowledgeArticles';
-    try {
-      entitySet = await resolveEntitySetForLogicalName(logical);
-    } catch (e) {
-      // fallback to legacy guess 'KnowledgeArticles'
-    }
-    // Resolve display property: prefer schema override primaryName, else metadata discovery, then 'title'.
-    const override = getSchemaOverride(logical);
-    let displayProp = (override && override.primaryName) || 'title';
-    try {
-      const meta = await getEntitySetMetadata(entitySet);
-      if ((!displayProp || displayProp === 'title') && meta && meta.displayName) displayProp = meta.displayName;
-    } catch (e) {
-      // ignore and keep default
-    }
-
-    let filter = '';
-    if (q && q.trim()) {
-      const safe = q.replace(/'/g, "''");
-      // try searching both display prop and a common tags field if present
-      filter = `?$filter=contains(${displayProp},'${safe}') or contains(tagsText,'${safe}')&$top=50`;
-    } else {
-      filter = '?$top=50';
-    }
-
-    const resourcePath = `${entitySet}${filter}`;
-    const accessToken = await getDataverseAccessToken();
-    const data = await fetchDataverseResource(resourcePath, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    const list = data?.value || [];
-    // normalize returned items with a consistent `displayName` property so callers don't need
-    // to know the actual display field name in the target org.
-    return (list || []).map((it: any) => ({ ...it, displayName: it[displayProp] || it.title || it.name || it.e365_name || '' }));
   } catch (error) {
     console.error('Error fetching knowledge articles:', error);
     return [];
@@ -636,61 +564,48 @@ export const getKnowledgeArticles = async (q?: string): Promise<any[]> => {
 // Fetch knowledge articles filtered by a function name (uses tagsText as a heuristic filter).
 export const getKnowledgeArticlesByFunction = async (fn: string, q?: string): Promise<any[]> => {
   try {
-    const logical = 'e365_knowledgearticle';
-    let entitySet = 'KnowledgeArticles';
+    // Prefer KnowledgeSources (SharePoint libraries) as the primary source of articles.
+    // This avoids querying Dataverse `e365_knowledgearticle` when the org stores
+    // content in SharePoint. We normalized `businessFunction` on KnowledgeSource
+    // records in `getKnowledgeSources` so comparison is reliable.
     try {
-      entitySet = await resolveEntitySetForLogicalName(logical);
+      const ks = await getKnowledgeSources();
+      if (Array.isArray(ks) && ks.length > 0) {
+        const fnName = (fn || '')
+          .replace(/-/g, ' ')
+          .replace(/\b\w/g, (c) => c.toUpperCase())
+          .replace(/'/g, "''");
+
+        const matching = ks.filter((s: any) => (s.businessFunction || '').toLowerCase() === fnName.toLowerCase());
+        if (matching.length > 0) {
+          const results: any[] = [];
+          for (const s of matching) {
+            try {
+              const items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, 50);
+              for (const it of items) {
+                if (q && q.trim()) {
+                  const ql = q.toLowerCase();
+                  const name = (it.name || '').toLowerCase();
+                  if (!name.includes(ql)) continue;
+                }
+                results.push({ id: it.id || it.name, title: it.name || '', webUrl: it.webUrl, lastModifiedDateTime: it.lastModifiedDateTime, source: s.SourceName, _raw: it });
+              }
+            } catch (e) {
+              console.warn('Failed to list library items for KnowledgeSource (by function)', s, e);
+            }
+          }
+          if (results.length > 0) return results;
+        }
+      }
     } catch (e) {
-      // ignore and use fallback entity set name
+      // non-fatal — fall through to Dataverse fallback below
+      console.warn('getKnowledgeArticlesByFunction: KnowledgeSources lookup failed, falling back to Dataverse', e);
     }
 
-    const override = getSchemaOverride(logical);
-    let displayProp = (override && override.primaryName) || 'title';
-    try {
-      const meta = await getEntitySetMetadata(entitySet);
-      if ((!displayProp || displayProp === 'title') && meta && meta.displayName) displayProp = meta.displayName;
-    } catch (e) {
-      // ignore
-    }
-
-    // Convert slug-like function (e.g. 'customer-service') to a human Name ('Customer Service')
-    const fnName = (fn || '')
-      .replace(/-/g, ' ')
-      .replace(/\b\w/g, (c) => c.toUpperCase())
-      .replace(/'/g, "''");
-
-    // Build filter parts trying to match common lookup/navigation property names
-    const filterParts: string[] = [];
-    const businessFuncNav = (override && override.navigationProperties && override.navigationProperties.businessFunction) || 'e365_businessfunction';
-    const businessFuncField = (override && override.fields && override.fields.businessFunction) || 'e365_businessfunctionname';
-    const tagsField = (override && override.fields && override.fields.tagsText) || 'tagsText';
-
-    // Try navigation property for business function
-    filterParts.push(`${businessFuncNav}/Name eq '${fnName}'`);
-    // fallback to common attribute name
-    filterParts.push(`${businessFuncField} eq '${fnName}'`);
-    // also allow matching in tagsText or displayProp
-    filterParts.push(`contains(${tagsField},'${fnName}') or contains(${displayProp},'${fnName}')`);
-
-    // If a free-text query is provided, also restrict by displayProp or tagsText
-    if (q && q.trim()) {
-      const safe = q.replace(/'/g, "''");
-      filterParts.push(`contains(${displayProp},'${safe}') or contains(tagsText,'${safe}')`);
-    }
-
-    const filter = `${encodeURIComponent(filterParts.join(' or '))}`;
-    const subjectNav = (override && override.navigationProperties && override.navigationProperties.subject) || 'e365_knowledgearticlesubject';
-    const resourcePath = `${entitySet}?$expand=${encodeURIComponent(subjectNav)}&$filter=${filter}&$top=50`;
-    const accessToken = await getDataverseAccessToken();
-    const data = await fetchDataverseResource(resourcePath, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    const list = data?.value || [];
-    return (list || []).map((it: any) => ({ ...it, displayName: it[displayProp] || it.title || it.name || it.e365_name || '' }));
+    // Dataverse article table removed; function should only return
+    // SharePoint-backed items already handled above. If none found, return empty.
+    console.warn('getKnowledgeArticlesByFunction: Dataverse fallback disabled - returning empty if no KnowledgeSources match');
+    return [];
   } catch (error) {
     console.error('Error fetching knowledge articles by function:', error);
     return [];
@@ -700,77 +615,34 @@ export const getKnowledgeArticlesByFunction = async (fn: string, q?: string): Pr
 // Get a count of knowledge articles for a given function (by name/slug).
 export const getKnowledgeArticlesCountByFunction = async (fn: string): Promise<number> => {
   try {
-    const logical = 'e365_knowledgearticle';
-    let entitySet = 'KnowledgeArticles';
+    // Prefer counting articles sourced from KnowledgeSources (SharePoint).
     try {
-      entitySet = await resolveEntitySetForLogicalName(logical);
-    } catch (e) {
-      // ignore and use fallback entity set name
-    }
+      const ks = await getKnowledgeSources();
+      if (Array.isArray(ks) && ks.length > 0) {
+        const fnName = (fn || '')
+          .replace(/-/g, ' ')
+          .replace(/\b\w/g, (c) => c.toUpperCase())
+          .replace(/'/g, "''");
 
-    // Convert slug-like function (e.g. 'customer-service') to a human Name ('Customer Service')
-    const fnName = (fn || '')
-      .replace(/-/g, ' ')
-      .replace(/\b\w/g, (c) => c.toUpperCase())
-      .replace(/'/g, "''");
-
-    const override = getSchemaOverride(logical);
-    const businessFuncNav = (override && override.navigationProperties && override.navigationProperties.businessFunction) || 'e365_businessfunction';
-    const businessFuncField = (override && override.fields && override.fields.businessFunction) || 'e365_businessfunctionname';
-    const tagsField = (override && override.fields && override.fields.tagsText) || 'tagsText';
-
-    // Build filter trying navigation property and common attribute names
-    const filterParts: string[] = [];
-    filterParts.push(`${businessFuncNav}/Name eq '${fnName}'`);
-    filterParts.push(`${businessFuncField} eq '${fnName}'`);
-    filterParts.push(`contains(${tagsField},'${fnName}') or contains(title,'${fnName}')`);
-
-    const filter = `${encodeURIComponent(filterParts.join(' or '))}`;
-    let resourcePath = `${entitySet}/$count?$filter=${filter}`;
-    const accessToken = await getDataverseAccessToken();
-
-    try {
-      const data = await fetchDataverseResource(resourcePath, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      // fetchDataverseResource returns parsed body; for $count it should be a number/string
-      if (typeof data === 'number') return data;
-      const parsed = parseInt(String(data || '0'), 10);
-      return Number.isNaN(parsed) ? 0 : parsed;
-    } catch (err: any) {
-      // If Dataverse reports that the navigation property is not valid (e.g. attribute is Edm.Int32),
-      // retry without the navigation-property filter and rely on the plain name/contains checks.
-      const msg = String(err?.message || err || '');
-      const navInvalid = msg.includes('Could not find a property') || msg.includes('Edm.Int32');
-      if (navInvalid) {
-        try {
-          // Remove the navigation-property clause (first item) and rebuild filter
-          const fallbackParts = filterParts.filter((_, i) => i !== 0);
-          const fallbackFilter = encodeURIComponent(fallbackParts.join(' or '));
-          const fallbackPath = `${entitySet}/$count?$filter=${fallbackFilter}`;
-          const data2 = await fetchDataverseResource(fallbackPath, {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              'Content-Type': 'application/json',
-            },
-          });
-          if (typeof data2 === 'number') return data2;
-          const parsed2 = parseInt(String(data2 || '0'), 10);
-          return Number.isNaN(parsed2) ? 0 : parsed2;
-        } catch (err2) {
-          console.error('Error fetching article count by function (fallback):', err2);
-          return 0;
+        const matching = ks.filter((s: any) => (s.businessFunction || '').toLowerCase() === fnName.toLowerCase());
+        if (matching.length > 0) {
+          let total = 0;
+          for (const s of matching) {
+            try {
+              const items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, 1000);
+              total += Array.isArray(items) ? items.length : 0;
+            } catch (e) {
+              console.warn('Failed to list library items for KnowledgeSource (count)', s, e);
+            }
+          }
+          return total;
         }
       }
-
-      // otherwise rethrow or log and return 0
-      console.error('Error fetching article count by function:', err);
-      return 0;
+    } catch (e) {
+      console.warn('getKnowledgeArticlesCountByFunction: KnowledgeSources lookup failed, falling back to Dataverse', e);
     }
+    // Dataverse fallback disabled; return 0 when no KnowledgeSources match
+    return 0;
   } catch (error) {
     console.error('Error fetching article count by function:', error);
     return 0;
@@ -780,38 +652,35 @@ export const getKnowledgeArticlesCountByFunction = async (fn: string): Promise<n
 // Fetch the most recently created knowledge articles (ordered by createdon desc)
 export const getRecentKnowledgeArticles = async (top = 10): Promise<any[]> => {
   try {
-    const logical = 'e365_knowledgearticle';
-    let entitySet = 'KnowledgeArticles';
-    try {
-      entitySet = await resolveEntitySetForLogicalName(logical);
-    } catch (e) {
-      // fallback to legacy name
+    // Use KnowledgeSources (SharePoint) for recent articles. Aggregate recent
+    // files across all configured KnowledgeSources and return the top N by
+    // last modified date.
+    const sources = await getKnowledgeSources();
+    if (!sources || sources.length === 0) return [];
+
+    const allItems: any[] = [];
+    for (const s of sources) {
+      try {
+        const items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, Math.max(top, 50));
+        if (Array.isArray(items)) {
+          for (const it of items) {
+            const created = (it as any).createdDateTime || (it as any).created || null;
+            allItems.push({ id: it.id || it.name, title: it.name || '', webUrl: it.webUrl, lastModifiedDateTime: it.lastModifiedDateTime || created || null, source: s.SourceName, _raw: it });
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to list library items for KnowledgeSource (recent)', s, e);
+      }
     }
 
-    // determine a sensible display property (title/name) for the entity so fallback mapping
-    // can reference a field that exists in the target org
-    const override = getSchemaOverride(logical);
-    let displayProp = (override && override.primaryName) || 'title';
-    try {
-      const meta = await getEntitySetMetadata(entitySet);
-      if ((!displayProp || displayProp === 'title') && meta && meta.displayName) displayProp = meta.displayName;
-    } catch (e) {
-      // ignore and keep default
-    }
-
-    const accessToken = await getDataverseAccessToken();
-    // request createdon and a sensible display property (title/name) for the entity
-    const resourcePath = `${entitySet}?$select=*,createdon,${displayProp}&$orderby=createdon desc&$top=${top}`;
-    const data = await fetchDataverseResource(resourcePath, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
+    // sort by lastModifiedDateTime (desc) and return top N
+    allItems.sort((a, b) => {
+      const ta = a.lastModifiedDateTime ? new Date(a.lastModifiedDateTime).getTime() : 0;
+      const tb = b.lastModifiedDateTime ? new Date(b.lastModifiedDateTime).getTime() : 0;
+      return tb - ta;
     });
 
-    const list = data?.value || [];
-    const mapped = (list || []).map((it: any) => ({ ...it, displayName: it[displayProp] || it.title || it.name || it.e365_name || '' }));
-    return mapped;
+    return allItems.slice(0, top).map((it: any) => ({ ...it, displayName: it.title || it.name || '' }));
   } catch (error) {
     console.error('Error fetching recent knowledge articles:', error);
     return [];
@@ -821,91 +690,27 @@ export const getRecentKnowledgeArticles = async (top = 10): Promise<any[]> => {
 // Attempt to fetch knowledge articles filtered by a subject id.
 export const getKnowledgeArticlesBySubject = async (subjectId: string, top = 50): Promise<any[]> => {
   try {
-    const logical = 'e365_knowledgearticle';
-    let entitySet = 'KnowledgeArticles';
-    try {
-      entitySet = await resolveEntitySetForLogicalName(logical);
-    } catch (e) {
-      // fallback to legacy name
-    }
+    // Subject filtering against Dataverse removed. Try matching subject via
+    // SharePoint item metadata (best-effort by checking title/file name).
+    const sources = await getKnowledgeSources();
+    if (!sources || sources.length === 0) return [];
 
-    const accessToken = await getDataverseAccessToken();
-
-    // Try several plausible lookup attribute names until one returns results
-    const override = getSchemaOverride(logical);
-    const subjectNav = (override && override.navigationProperties && override.navigationProperties.subject) || 'e365_knowledgearticlesubject';
-    const candidates = [
-      `_${subjectNav}id_value eq guid'${subjectId}'`,
-      `${subjectNav}id eq guid'${subjectId}'`,
-      `_subjectid_value eq guid'${subjectId}'`,
-      `subjectid eq guid'${subjectId}'`,
-    ];
-
-    for (const filter of candidates) {
+    const results: any[] = [];
+    for (const s of sources) {
       try {
-        const resourcePath = `${entitySet}?$filter=${encodeURIComponent(filter)}&$top=${top}`;
-        const data = await fetchDataverseResource(resourcePath, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        const list = data?.value || [];
-        if (Array.isArray(list) && list.length > 0) return list;
-      } catch (e) {
-        try {
-          console.warn(`Dataverse: candidate filter failed: ${filter}`, e);
-        } catch { /* ignore logging errors */ }
-      }
-    }
-
-    // Try discovery of lookup attributes and test them
-    try {
-      const lookupAttrs = await findLookupAttributesForEntity(logical);
-      for (const attr of lookupAttrs) {
-        const lookupFilter = `_${attr}_value eq guid'${subjectId}'`;
-        try {
-          const resourcePath2 = `${entitySet}?$filter=${encodeURIComponent(lookupFilter)}&$top=${top}`;
-          const data2 = await fetchDataverseResource(resourcePath2, {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              'Content-Type': 'application/json',
-            },
-          });
-          const list2 = data2?.value || [];
-          if (Array.isArray(list2) && list2.length > 0) {
-            try { const mapKey = `${logical}::lookup::subject`; entitySetMap.set(mapKey.toLowerCase(), attr); persistEntitySetMap(); } catch {}
-            return list2;
+        const items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, top);
+        for (const it of items) {
+          const name = (it.name || '').toLowerCase();
+          if (name.includes(subjectId.toLowerCase())) {
+            results.push({ id: it.id || it.name, title: it.name || '', webUrl: it.webUrl, lastModifiedDateTime: it.lastModifiedDateTime, source: s.SourceName, _raw: it });
           }
-        } catch (e) {
-          console.warn(`Dataverse: lookup attribute filter failed for ${attr}`, e);
         }
+      } catch (e) {
+        console.warn('Failed to list library items for KnowledgeSource (subject search)', s, e);
       }
-    } catch (e) {
-      console.warn('Error discovering lookup attributes for articles', e);
     }
 
-    // Fallback: return a small set of recent articles so the UI shows something
-    try {
-      const fallbackPath = `${entitySet}?$top=${top}`;
-      const fallbackData = await fetchDataverseResource(fallbackPath, {
-        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      });
-      const fallbackList = fallbackData?.value || [];
-      if (Array.isArray(fallbackList) && fallbackList.length > 0) {
-        // determine display property for the target entitySet
-        let displayProp = 'title';
-        try {
-          const meta = await getEntitySetMetadata(entitySet);
-          if (meta && meta.displayName) displayProp = meta.displayName;
-        } catch {}
-        return (fallbackList || []).map((it: any) => ({ ...it, displayName: it[displayProp] || it.title || it.name || it.e365_name || '' }));
-      }
-    } catch (e) {
-      console.warn('Fallback article fetch failed', e);
-    }
-
-    return [];
+    return results.slice(0, top);
   } catch (error) {
     console.error('Error fetching articles by subject:', error);
     return [];
