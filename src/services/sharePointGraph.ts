@@ -150,9 +150,34 @@ export const listLibraryItems = async (
   try {
     const accessToken = await getAccessToken();
     const siteId = await getSiteId(accessToken, siteUrl);
-    const driveId = await getDriveId(accessToken, siteId, libraryName);
-    const items = await getDocuments(accessToken, siteId, driveId, top);
-    return items;
+    // Try drive (document library) resolution first
+    try {
+      const driveId = await getDriveId(accessToken, siteId, libraryName);
+      const items = await getDocuments(accessToken, siteId, driveId, top);
+      return items;
+    } catch (driveErr) {
+      // If drive resolution failed, attempt to find a SharePoint list by name
+      console.warn(`Failed to get drive ID for library '${libraryName}':`, driveErr);
+      try {
+        const lists = await getSiteListsByUrl(siteUrl);
+        // try to match by displayName (case-insensitive) or Title
+        const candidate = (lists || []).find((l: any) => {
+          const name = (l.displayName || l.Title || '').toLowerCase();
+          return name === String(libraryName).toLowerCase() || name === String(libraryName).toLowerCase().replace(/\s+/g, '');
+        });
+        if (candidate && candidate.id) {
+          // candidate.id might already be the listId
+          const listId = candidate.id;
+          const listItems = await getListItems(accessToken, siteId, listId, top);
+          return listItems;
+        }
+        // no matching list found; rethrow original drive error for upstream logging
+        throw driveErr;
+      } catch (listErr) {
+        console.error('listLibraryItems failed (drive and list lookup):', listErr);
+        return [];
+      }
+    }
   } catch (err) {
     console.error('listLibraryItems failed:', err);
     return [];
