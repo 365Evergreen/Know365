@@ -658,11 +658,42 @@ export const getKnowledgeArticlesByFunction = async (fn: string, q?: string): Pr
     // records in `getKnowledgeSources` so comparison is reliable.
     try {
       const ksAll = await getKnowledgeSources();
-      // Only use KnowledgeSources that are of type 'list' (SharePoint lists)
-      const ks = (ksAll || []).filter((s: any) => {
-        const rawType = (s && s.raw && (s.raw.e365_sourcetype || s.raw.SourceType)) || s.e365_sourcetype || s.e365_sourcetype || s.SourceType || s.e365_sourcetype;
-        return String(rawType || '').toLowerCase() === 'list';
-      });
+        // Only use KnowledgeSources that are of type 'list' (SharePoint lists)
+        const ks = (ksAll || []).filter((s: any) => {
+          try {
+            // check common raw fields and formatted display values
+            const raw = s && s.raw ? s.raw : {};
+            const candidates = [] as string[];
+            if (raw.e365_sourcetype) candidates.push(String(raw.e365_sourcetype));
+            if (raw.SourceType) candidates.push(String(raw.SourceType));
+            if (raw['e365_sourcetype@OData.Community.Display.V1.FormattedValue']) candidates.push(String(raw['e365_sourcetype@OData.Community.Display.V1.FormattedValue']));
+            if (s.e365_sourcetype) candidates.push(String(s.e365_sourcetype));
+            if (s.SourceType) candidates.push(String(s.SourceType));
+
+            // some orgs store lookup values as _e365_sourcetype_value
+            if (raw._e365_sourcetype_value) candidates.push(String(raw._e365_sourcetype_value));
+
+            // GraphEndpoint may indicate a list-type canonical reference
+            const graphEp = raw.GraphEndpoint || raw.graphendpoint || s.GraphEndpoint || s.graphendpoint || null;
+            if (graphEp) {
+              try {
+                const ep = typeof graphEp === 'string' ? JSON.parse(graphEp) : graphEp;
+                if (ep && ep.type) candidates.push(String(ep.type));
+              } catch {
+                // ignore parse errors
+              }
+            }
+
+            // site/library heuristics: site url that contains '/Lists/' or library name that looks like a list
+            if (raw.SharePointSiteUrl && String(raw.SharePointSiteUrl).toLowerCase().includes('/lists/')) candidates.push('list');
+            if (raw.LibraryName && /list/i.test(String(raw.LibraryName))) candidates.push('list');
+
+            const found = candidates.find((c) => !!c && String(c).toLowerCase() === 'list');
+            return !!found;
+          } catch (e) {
+            return false;
+          }
+        });
       if (!ks || ks.length === 0) {
         return [];
       }
