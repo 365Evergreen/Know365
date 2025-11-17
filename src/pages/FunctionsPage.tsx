@@ -27,8 +27,31 @@ const FunctionsPage: React.FC = () => {
       setArticlesError(null);
       try {
         const items = await getKnowledgeArticlesByFunction(fn);
+        // If no items returned, attempt a broader fallback: fetch articles from all KnowledgeSources
+        // and filter by site/list name matching the function slug. This helps when Dataverse
+        // KnowledgeSource records don't have a matching businessFunction field but point
+        // to the right SharePoint list.
+        let finalItems = items || [];
+        if ((!finalItems || finalItems.length === 0)) {
+          try {
+            const { getArticlesFromKnowledgeSources } = await import('../services/dataverseClient');
+            const all = await getArticlesFromKnowledgeSources();
+            const slug = (fn || '').toLowerCase();
+            finalItems = (all || []).filter((a: any) => {
+              try {
+                const url = (a.webUrl || a._raw?.webUrl || a._raw?.SiteUrl || '').toLowerCase();
+                const source = (a.source || '').toLowerCase();
+                return url.includes(slug) || source.includes(slug) || url.includes('/sites/' + slug);
+              } catch {
+                return false;
+              }
+            });
+          } catch (e) {
+            // ignore fallback errors
+          }
+        }
         if (!mounted) return;
-        setArticles(items || []);
+        setArticles(finalItems || []);
       } catch (err: any) {
         console.error(err);
         if (mounted) setArticlesError(err.message || String(err));
