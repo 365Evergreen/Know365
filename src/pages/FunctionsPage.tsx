@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Stack, Text, DefaultButton, Spinner, SpinnerSize } from '@fluentui/react';
 import { getKnowledgeArticlesByFunction, getKnowledgeSources } from '../services/dataverseClient';
-import { mapSharePointDocsToDisplayItems } from '../services/sharePointGraph';
+import { mapSharePointDocsToDisplayItems, listLibraryItems } from '../services/sharePointGraph';
 import DocumentsDisplay from '../components/DocumentsDisplay';
 
 const readable = (s?: string) => (s || '').replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -17,6 +17,7 @@ const FunctionsPage: React.FC = () => {
   const [loadingArticles, setLoadingArticles] = useState(false);
   const [articlesError, setArticlesError] = useState<string | null>(null);
   const [ksDebug, setKsDebug] = useState<any[] | null>(null);
+  const [sourceDebug, setSourceDebug] = useState<any[] | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -26,10 +27,12 @@ const FunctionsPage: React.FC = () => {
         return;
       }
       // fetch KnowledgeSources for debugging/inspection
+      let debugKs: any[] = [];
       try {
-        const debugKs = await getKnowledgeSources();
-        setKsDebug(debugKs || []);
+        debugKs = (await getKnowledgeSources()) || [];
+        setKsDebug(debugKs);
       } catch (e) {
+        debugKs = [];
         setKsDebug([]);
       }
       setLoadingArticles(true);
@@ -61,6 +64,40 @@ const FunctionsPage: React.FC = () => {
         }
         if (!mounted) return;
         setArticles(finalItems || []);
+
+        // Per-source diagnostics: for each KnowledgeSource matching this function,
+        // attempt to list items directly and report counts/sample items.
+        try {
+          const fnName = (fn || '')
+            .replace(/-/g, ' ')
+            .replace(/\b\w/g, (c) => c.toUpperCase())
+            .replace(/'/g, "''");
+          const matchingSources = (debugKs || []).filter((s: any) => (s.businessFunction || '').toLowerCase() === fnName.toLowerCase());
+          const perSource: any[] = [];
+          for (const s of matchingSources) {
+            try {
+              let itemsForSource: any[] = [];
+              // Prefer GraphEndpoint when present — listLibraryItems will also handle drive/list fallback
+              try {
+                if (s.GraphEndpoint) {
+                  // let listLibraryItems handle endpoints too for consistency
+                }
+                if (s.SharePointSiteUrl && s.LibraryName) {
+                  itemsForSource = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, 50);
+                }
+              } catch (srcErr) {
+                itemsForSource = [];
+              }
+              perSource.push({ source: s, count: Array.isArray(itemsForSource) ? itemsForSource.length : 0, sample: (itemsForSource || []).slice(0, 5) });
+            } catch (e) {
+              perSource.push({ source: s, error: String(e) });
+            }
+          }
+          if (mounted) setSourceDebug(perSource);
+        } catch (diagErr) {
+          // ignore diagnostics errors
+          if (mounted) setSourceDebug([]);
+        }
       } catch (err: any) {
         console.error(err);
         if (mounted) setArticlesError(err.message || String(err));
@@ -132,6 +169,14 @@ const FunctionsPage: React.FC = () => {
           <Text variant="small">KnowledgeSources found: {ksDebug.length}</Text>
           <pre style={{ marginTop: 8, maxHeight: 160, overflow: 'auto', fontSize: 12 }}>
             {JSON.stringify((ksDebug || []).slice(0, 5).map((s: any) => ({ SourceName: s.SourceName || s.SourceName, SharePointSiteUrl: s.SharePointSiteUrl, LibraryName: s.LibraryName, businessFunction: s.businessFunction || s.raw?.e365_businessfunctionname || '' })), null, 2)}
+          </pre>
+        </div>
+      )}
+      {sourceDebug !== null && (
+        <div style={{ marginTop: 18, padding: 12, border: '1px dashed #f0a', borderRadius: 6 }}>
+          <Text variant="small">Per-Source Diagnostics (matching this function):</Text>
+          <pre style={{ marginTop: 8, maxHeight: 260, overflow: 'auto', fontSize: 12 }}>
+            {JSON.stringify((sourceDebug || []).map((p: any) => ({ SourceName: p.source?.SourceName || p.source?.raw?.SourceName, count: p.count, sample: p.sample && p.sample.map((it: any) => ({ id: it.id, name: it.name, webUrl: it.webUrl })) , error: p.error })), null, 2)}
           </pre>
         </div>
       )}
