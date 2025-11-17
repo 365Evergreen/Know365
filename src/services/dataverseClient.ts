@@ -701,19 +701,51 @@ export const getKnowledgeArticlesCountByFunction = async (fn: string): Promise<n
     filterParts.push(`contains(${tagsField},'${fnName}') or contains(title,'${fnName}')`);
 
     const filter = `${encodeURIComponent(filterParts.join(' or '))}`;
-    const resourcePath = `${entitySet}/$count?$filter=${filter}`;
+    let resourcePath = `${entitySet}/$count?$filter=${filter}`;
     const accessToken = await getDataverseAccessToken();
-    const data = await fetchDataverseResource(resourcePath, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-    });
 
-    // fetchDataverseResource returns parsed body; for $count it should be a number/string
-    if (typeof data === 'number') return data;
-    const parsed = parseInt(String(data || '0'), 10);
-    return Number.isNaN(parsed) ? 0 : parsed;
+    try {
+      const data = await fetchDataverseResource(resourcePath, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      // fetchDataverseResource returns parsed body; for $count it should be a number/string
+      if (typeof data === 'number') return data;
+      const parsed = parseInt(String(data || '0'), 10);
+      return Number.isNaN(parsed) ? 0 : parsed;
+    } catch (err: any) {
+      // If Dataverse reports that the navigation property is not valid (e.g. attribute is Edm.Int32),
+      // retry without the navigation-property filter and rely on the plain name/contains checks.
+      const msg = String(err?.message || err || '');
+      const navInvalid = msg.includes('Could not find a property') || msg.includes('Edm.Int32');
+      if (navInvalid) {
+        try {
+          // Remove the navigation-property clause (first item) and rebuild filter
+          const fallbackParts = filterParts.filter((_, i) => i !== 0);
+          const fallbackFilter = encodeURIComponent(fallbackParts.join(' or '));
+          const fallbackPath = `${entitySet}/$count?$filter=${fallbackFilter}`;
+          const data2 = await fetchDataverseResource(fallbackPath, {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          if (typeof data2 === 'number') return data2;
+          const parsed2 = parseInt(String(data2 || '0'), 10);
+          return Number.isNaN(parsed2) ? 0 : parsed2;
+        } catch (err2) {
+          console.error('Error fetching article count by function (fallback):', err2);
+          return 0;
+        }
+      }
+
+      // otherwise rethrow or log and return 0
+      console.error('Error fetching article count by function:', err);
+      return 0;
+    }
   } catch (error) {
     console.error('Error fetching article count by function:', error);
     return 0;
