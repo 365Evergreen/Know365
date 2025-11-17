@@ -689,9 +689,9 @@ const AdminConfig: React.FC = () => {
               <DetailsList
                 items={sources || []}
                 columns={[
-                  { key: 'k1', name: 'SourceName', fieldName: 'SourceName', minWidth: 160 },
+                  { key: 'k1', name: 'Source name', fieldName: 'SourceName', minWidth: 160 },
                   { key: 'k2', name: 'Site URL', fieldName: 'SharePointSiteUrl', minWidth: 300 },
-                  { key: 'k3', name: 'LibraryName', fieldName: 'LibraryName', minWidth: 200 },
+                  { key: 'k3', name: 'Library / List', fieldName: 'LibraryName', minWidth: 200 },
                   {
                     key: 'k4', name: 'Actions', fieldName: 'actions', minWidth: 160, onRender: (item: any) => (
                       <Stack horizontal tokens={{ childrenGap: 8 }}>

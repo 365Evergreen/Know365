@@ -179,7 +179,24 @@ export const getSiteListsByUrl = async (siteUrl: string): Promise<Array<{ id: st
     const client = getGraphClient(accessToken);
     const siteId = await getSiteId(accessToken, siteUrl);
     const resp = await client.api(`/sites/${siteId}/lists`).get();
-    return (resp.value || []).map((l: any) => ({ id: l.id, displayName: l.displayName || l.name }));
+    const lists = (resp.value || []).map((l: any) => ({ id: l.id, displayName: l.displayName || l.name }));
+
+    // Graph may return zero lists if permissions are limited; fallback to SharePoint REST
+    if (!lists || lists.length === 0) {
+      try {
+        const restUrl = siteUrl.replace(/\/+$/, '') + '/_api/web/lists?$select=Title,Id';
+        const r = await fetch(restUrl, { headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json;odata=verbose' } });
+        if (r.ok) {
+          const json = await r.json();
+          const items = (json.d && json.d.results) || json.value || [];
+          return items.map((it: any) => ({ id: it.Id || it.ID || it.id || it.Id, displayName: it.Title || it.Title || '' }));
+        }
+      } catch (restErr) {
+        console.warn('SharePoint REST fallback for lists failed', restErr);
+      }
+    }
+
+    return lists;
   } catch (err) {
     console.error('getSiteListsByUrl failed:', err);
     return [];
