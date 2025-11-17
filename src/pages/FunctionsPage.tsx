@@ -98,7 +98,15 @@ const FunctionsPage: React.FC = () => {
           <Text variant="small">No articles found for {title}.</Text>
         ) : (
           <DocumentsDisplay
-            items={(articles || []).map((a: any) => ({ id: a.id, title: a.title || a.displayName || a.name, webUrl: a.webUrl, lastModifiedDateTime: a.lastModifiedDateTime, source: a.source }))}
+            items={(articles || []).map((a: any) => ({
+              id: a.id,
+              title: a.title || a.displayName || a.name,
+              webUrl: a.webUrl,
+              lastModifiedDateTime: a.lastModifiedDateTime,
+              source: a.source,
+              excerpt: a.excerpt || a._raw?.excerpt || a._raw?.summary || a._raw?.description || a._raw?.fields?.Description || (a._raw?.body?.content ? String(a._raw.body.content).slice(0, 400) : ''),
+              _raw: a._raw,
+            }))}
             view="list"
             onItemClick={(item) => {
               if (item.webUrl) window.open(item.webUrl, '_blank', 'noopener');
