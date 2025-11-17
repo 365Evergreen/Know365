@@ -397,7 +397,32 @@ export const getKnowledgeSources = async (): Promise<KnowledgeSource[]> => {
       entitySetName = 'KnowledgeSources';
     }
 
-    return await getEntityRecords(entitySetName, 200) as KnowledgeSource[];
+    const raw = await getEntityRecords(entitySetName, 200) as any[];
+
+    // Normalize business function values so callers can group reliably.
+    const mapped = raw.map((r) => {
+      let businessFunction: string | undefined;
+
+      // Common patterns in Dataverse responses:
+      // - explicit name field: e365_businessfunctionname
+      // - formatted value: e365_businessfunction@OData.Community.Display.V1.FormattedValue
+      // - navigation object: e365_businessfunction { name, value, ... }
+      // - lookup id: _e365_businessfunction_value (GUID) or numeric codes
+      if (r['e365_businessfunctionname']) businessFunction = r['e365_businessfunctionname'];
+      else if (r['e365_businessfunction@OData.Community.Display.V1.FormattedValue']) businessFunction = r['e365_businessfunction@OData.Community.Display.V1.FormattedValue'];
+      else if (r['e365_businessfunction']) {
+        const v = r['e365_businessfunction'];
+        if (typeof v === 'string') businessFunction = v;
+        else if (v && typeof v === 'object') businessFunction = v.name || v.Name || v.displayname || v.value;
+      } else if (r['_e365_businessfunction_value']) businessFunction = String(r['_e365_businessfunction_value']);
+
+      return {
+        ...r,
+        businessFunction: businessFunction || '',
+      };
+    });
+
+    return mapped as unknown as KnowledgeSource[];
   } catch (error) {
     console.error('Error fetching knowledge sources:', error);
     return [];
