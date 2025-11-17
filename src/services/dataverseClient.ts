@@ -404,6 +404,42 @@ export const getKnowledgeSources = async (): Promise<KnowledgeSource[]> => {
       };
     });
 
+    // If businessFunction values are GUID lookups (common when the lookup
+    // navigation property isn't expanded), resolve them to readable names by
+    // fetching the business function entity records and mapping ids -> names.
+    try {
+      const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const guids = Array.from(new Set(mapped.map((m) => m.businessFunction).filter(Boolean))).filter((v) => guidRegex.test(String(v)));
+      if (guids.length > 0) {
+        // Attempt to fetch business function records from Dataverse
+        try {
+          const bfRecords = await getEntityRecords('e365_businessfunction', 200);
+          const idToName: Record<string, string> = {};
+          for (const b of bfRecords || []) {
+            const id = (b.e365_businessfunctionid || b.id || (b['@odata.id'] ? (() => {
+              const m = String(b['@odata.id']).match(/\(([0-9a-fA-F\-]{36})\)/);
+              return m ? m[1] : null;
+            })() : null) || '').toLowerCase();
+            const name = b.e365_name || b.name || b.title || b.displayname || b.subject || '';
+            if (id) idToName[id] = name;
+          }
+
+          // Replace GUID businessFunction values with resolved names when possible
+          for (const m of mapped) {
+            if (m.businessFunction && guidRegex.test(String(m.businessFunction))) {
+              const resolved = idToName[String(m.businessFunction).toLowerCase()];
+              if (resolved) m.businessFunction = resolved;
+            }
+          }
+        } catch (e) {
+          // ignore resolution errors — we still return GUIDs if unresolved
+          console.warn('Could not resolve businessFunction lookups to names', e);
+        }
+      }
+    } catch (e) {
+      /* ignore */
+    }
+
     return mapped as unknown as KnowledgeSource[];
   } catch (error) {
     console.error('Error fetching knowledge sources:', error);
