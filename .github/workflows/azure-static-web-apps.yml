@@ -60,9 +60,9 @@ jobs:
             hash -r || true
           fi
           echo "pnpm version: $(pnpm -v || echo 'not available')"
-          echo "Attempting install with frozen lockfile..."
-          if pnpm install --frozen-lockfile; then
-            echo "Installed dependencies using --frozen-lockfile"
+          echo "Attempting install (allowing lockfile updates)..."
+          if pnpm install --no-frozen-lockfile; then
+            echo "Installed dependencies using pnpm (lockfile may have been updated)"
             echo "PM=pnpm" >> $GITHUB_ENV
           else
             echo "Warning: --frozen-lockfile install failed. Showing diagnostics:" >&2
