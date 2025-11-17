@@ -3,9 +3,10 @@ import Hero from '../components/Hero';
 import { Stack, Spinner, SpinnerSize, Text, DetailsList, IColumn } from '@fluentui/react';
 import GridCards from '../components/GridCards';
 import RecentDocuments from '../components/RecentDocuments';
-import { getEntityRecords, getRecentKnowledgeArticles, getKnowledgeArticlesCountByFunction } from '../services/dataverseClient';
+import { getEntityRecords, getRecentKnowledgeArticles, getKnowledgeArticlesCountByFunction, getListBackedArticles } from '../services/dataverseClient';
 import { useNavigate } from 'react-router-dom';
 import ConfigurableCarousel from '../components/ConfigurableCarousel';
+import DocumentsDisplay from '../components/DocumentsDisplay';
 
 const BUSINESS_FUNCTION_ENTITY = 'e365_businessfunction';
 
@@ -99,6 +100,11 @@ const Home: React.FC = () => {
   const [recent, setRecent] = useState<any[] | null>(null);
   const [recentLoading, setRecentLoading] = useState(false);
 
+  // list-backed articles
+  const [listArticles, setListArticles] = useState<any[] | null>(null);
+  const [listLoading, setListLoading] = useState(false);
+  const [listError, setListError] = useState<string | null>(null);
+
   useEffect(() => {
     let mounted = true;
     const loadRecent = async () => {
@@ -115,6 +121,26 @@ const Home: React.FC = () => {
       }
     };
     loadRecent();
+    return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      setListLoading(true);
+      setListError(null);
+      try {
+        const items = await getListBackedArticles();
+        if (!mounted) return;
+        setListArticles(items || []);
+      } catch (err: any) {
+        console.error('Failed to load list-backed articles', err);
+        if (mounted) setListError(err?.message || String(err));
+      } finally {
+        if (mounted) setListLoading(false);
+      }
+    };
+    load();
     return () => { mounted = false; };
   }, []);
 
@@ -156,6 +182,22 @@ const Home: React.FC = () => {
             <GridCards />
           ) : (
             <GridCards items={cards} />
+          )}
+        </section>
+        <section aria-labelledby="list-articles-heading">
+          <h3 id="list-articles-heading">All List-backed Articles</h3>
+          {listLoading ? (
+            <Spinner label="Loading list articles…" size={SpinnerSize.small} />
+          ) : listError ? (
+            <Text variant="small" styles={{ root: { color: 'var(--ms-color-red-10)' } }}>Error loading list articles: {listError}</Text>
+          ) : !listArticles || listArticles.length === 0 ? (
+            <Text variant="small">No list-backed articles found.</Text>
+          ) : (
+            <DocumentsDisplay
+              items={(listArticles || []).map((a: any) => ({ id: a.id, title: a.title || a.name || '', webUrl: a.webUrl, excerpt: a._raw?.excerpt || a._raw?.summary || a._raw?.description || (a._raw?.body?.content ? String(a._raw.body.content).slice(0, 400) : ''), _raw: a._raw }))}
+              view="list"
+              onItemClick={(item) => { if (item.webUrl) window.open(item.webUrl, '_blank', 'noopener'); }}
+            />
           )}
         </section>
         <section aria-labelledby="recent-heading">

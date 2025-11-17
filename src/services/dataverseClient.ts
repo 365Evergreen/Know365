@@ -563,6 +563,83 @@ export const getArticlesFromKnowledgeSources = async (q?: string): Promise<any[]
   }
 };
 
+// Fetch articles only from KnowledgeSources which are SharePoint lists (not drives)
+export const getListBackedArticles = async (q?: string, topPerSource = 50): Promise<any[]> => {
+  try {
+    const sources = await getKnowledgeSources();
+    if (!sources || sources.length === 0) return [];
+
+    // Helper to detect list-backed source (reuse heuristic used elsewhere)
+    const isListSource = (s: any) => {
+      try {
+        const raw = s && s.raw ? s.raw : {};
+        const candidates: string[] = [];
+        if (raw.e365_sourcetype) candidates.push(String(raw.e365_sourcetype));
+        if (raw.SourceType) candidates.push(String(raw.SourceType));
+        if (raw['e365_sourcetype@OData.Community.Display.V1.FormattedValue']) candidates.push(String(raw['e365_sourcetype@OData.Community.Display.V1.FormattedValue']));
+        if (s.e365_sourcetype) candidates.push(String(s.e365_sourcetype));
+        if (s.SourceType) candidates.push(String(s.SourceType));
+        if (raw._e365_sourcetype_value) candidates.push(String(raw._e365_sourcetype_value));
+
+        const graphEp = raw.GraphEndpoint || raw.graphendpoint || s.GraphEndpoint || s.graphendpoint || null;
+        if (graphEp) {
+          try {
+            const ep = typeof graphEp === 'string' ? JSON.parse(graphEp) : graphEp;
+            if (ep && ep.type) candidates.push(String(ep.type));
+          } catch { /* ignore */ }
+        }
+
+        if (raw.SharePointSiteUrl && String(raw.SharePointSiteUrl).toLowerCase().includes('/lists/')) candidates.push('list');
+        if (raw.LibraryName && /list/i.test(String(raw.LibraryName))) candidates.push('list');
+
+        return !!candidates.find((c) => !!c && String(c).toLowerCase() === 'list');
+      } catch (e) {
+        return false;
+      }
+    };
+
+    const results: any[] = [];
+    for (const s of (sources || [])) {
+      if (!isListSource(s)) continue;
+      try {
+        let items: any[] = [];
+        if (s.GraphEndpoint) {
+          try {
+            const ep = typeof s.GraphEndpoint === 'string' ? JSON.parse(s.GraphEndpoint) : s.GraphEndpoint;
+            if (ep && ep.type === 'list' && ep.siteId && ep.listId) {
+              const token = await getAccessToken();
+              items = await getListItems(token, ep.siteId, ep.listId, topPerSource);
+            }
+          } catch (err) {
+            items = [];
+          }
+        }
+
+        if (!items || items.length === 0) {
+          if (!isValidUrl(s.SharePointSiteUrl) || !s.LibraryName) continue;
+          items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, topPerSource);
+        }
+
+        for (const it of (items || [])) {
+          if (q && q.trim()) {
+            const ql = q.toLowerCase();
+            const name = (it.name || '').toLowerCase();
+            if (!name.includes(ql)) continue;
+          }
+          results.push({ id: it.id || it.name, title: it.name || '', webUrl: it.webUrl, lastModifiedDateTime: it.lastModifiedDateTime, source: s.SourceName, _raw: it });
+        }
+      } catch (e) {
+        console.warn('getListBackedArticles: failed for source', s, e);
+      }
+    }
+
+    return results;
+  } catch (e) {
+    console.error('getListBackedArticles failed', e);
+    return [];
+  }
+};
+
 // Generic helper to fetch records from any entity set by name
 export const getEntityRecords = async (entitySetName: string, top = 200): Promise<any[]> => {
   try {
