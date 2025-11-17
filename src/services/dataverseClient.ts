@@ -1,5 +1,6 @@
 import { msalInstance } from './authConfig';
 import schemaOverrides from '../config/dataverse-schema-overrides';
+import { listLibraryItems } from './sharePointGraph';
 
 interface KnowledgeSource {
   SourceName: string;
@@ -389,6 +390,48 @@ export const getKnowledgeSources = async (): Promise<KnowledgeSource[]> => {
   }
 };
 
+// Fetch articles from configured KnowledgeSources (SharePoint libraries). Returns
+// an array of normalized items with at least `id`, `title`, `webUrl`, and `source`.
+export const getArticlesFromKnowledgeSources = async (q?: string): Promise<any[]> => {
+  try {
+    const sources = await getKnowledgeSources();
+    if (!sources || sources.length === 0) return [];
+
+    const results: any[] = [];
+    for (const s of sources) {
+      try {
+        // listLibraryItems resolves site & drive and returns documents
+        const items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, 50);
+        for (const it of items) {
+          // simple text match if query provided
+          if (q && q.trim()) {
+            const ql = q.toLowerCase();
+            const name = (it.name || '').toLowerCase();
+            if (!name.includes(ql)) continue;
+          }
+
+          results.push({
+            id: it.id || it.name,
+            title: it.name || '',
+            webUrl: it.webUrl,
+            lastModifiedDateTime: it.lastModifiedDateTime,
+            source: s.SourceName,
+            _raw: it,
+          });
+        }
+      } catch (e) {
+        console.warn('Failed to list library items for KnowledgeSource', s, e);
+        continue;
+      }
+    }
+
+    return results;
+  } catch (e) {
+    console.error('getArticlesFromKnowledgeSources failed', e);
+    return [];
+  }
+};
+
 // Generic helper to fetch records from any entity set by name
 export const getEntityRecords = async (entitySetName: string, top = 200): Promise<any[]> => {
   try {
@@ -496,6 +539,15 @@ export const createKnowledgeSource = async (source: KnowledgeSource): Promise<vo
 
 export const getKnowledgeArticles = async (q?: string): Promise<any[]> => {
   try {
+    // First, try KnowledgeSources (SharePoint libraries). If any articles are found there,
+    // return them so the UI shows SharePoint-backed content instead of Dataverse articles.
+    try {
+      const ks = await getArticlesFromKnowledgeSources(q);
+      if (Array.isArray(ks) && ks.length > 0) return ks;
+    } catch (e) {
+      // non-fatal — fall back to Dataverse
+      console.warn('getKnowledgeArticles: KnowledgeSources lookup failed, falling back to Dataverse', e);
+    }
     // Try to use resolved entity set name for the articles logical name
     const logical = 'e365_knowledgearticle';
     let entitySet = 'KnowledgeArticles';
