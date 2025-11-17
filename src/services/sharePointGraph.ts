@@ -83,6 +83,36 @@ export const getDocuments = async (
   }
 };
 
+// Fetch list items by siteId + listId. Returns normalized items similar to drive items.
+export const getListItems = async (
+  accessToken: string,
+  siteId: string,
+  listId: string,
+  top: number = 50
+): Promise<SharePointDocument[]> => {
+  const client = getGraphClient(accessToken);
+
+  try {
+    const response = await client.api(`/sites/${siteId}/lists/${listId}/items?$expand=fields&$top=${top}`).get();
+    const items = (response.value || []).map((it: any) => {
+      const fields = it.fields || {};
+      return {
+        id: it.id,
+        name: fields.Title || fields.title || fields.Name || `Item ${it.id}`,
+        webUrl: it.sharepointIds && it.sharepointIds.webUrl ? it.sharepointIds.webUrl : it.webUrl || '',
+        lastModifiedDateTime: it.lastModifiedDateTime || fields.Modified || null,
+        createdBy: it.createdBy || null,
+        size: 0,
+      } as SharePointDocument;
+    });
+
+    return items;
+  } catch (error) {
+    console.error('getListItems failed:', error);
+    return [];
+  }
+};
+
 export const searchDocuments = async (
   accessToken: string,
   siteId: string,
