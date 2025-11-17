@@ -158,3 +158,42 @@ export const listLibraryItems = async (
     return [];
   }
 };
+
+// Admin helpers: resolve drives and lists for a given site URL. Useful for admin UI flows.
+export const getSiteDrivesByUrl = async (siteUrl: string): Promise<Array<{ id: string; name: string }>> => {
+  try {
+    const accessToken = await getAccessToken();
+    const client = getGraphClient(accessToken);
+    const siteId = await getSiteId(accessToken, siteUrl);
+    const resp = await client.api(`/sites/${siteId}/drives`).get();
+    return (resp.value || []).map((d: any) => ({ id: d.id, name: d.name }));
+  } catch (err) {
+    console.error('getSiteDrivesByUrl failed:', err);
+    return [];
+  }
+};
+
+export const getSiteListsByUrl = async (siteUrl: string): Promise<Array<{ id: string; displayName: string }>> => {
+  try {
+    const accessToken = await getAccessToken();
+    const client = getGraphClient(accessToken);
+    const siteId = await getSiteId(accessToken, siteUrl);
+    const resp = await client.api(`/sites/${siteId}/lists`).get();
+    return (resp.value || []).map((l: any) => ({ id: l.id, displayName: l.displayName || l.name }));
+  } catch (err) {
+    console.error('getSiteListsByUrl failed:', err);
+    return [];
+  }
+};
+
+// Convenience wrapper to resolve a siteId from a site URL using an internally-acquired token.
+export const getSiteIdByUrl = async (siteUrl: string): Promise<string | null> => {
+  try {
+    const accessToken = await getAccessToken();
+    const id = await getSiteId(accessToken, siteUrl);
+    return id;
+  } catch (err) {
+    console.error('getSiteIdByUrl failed:', err);
+    return null;
+  }
+};
