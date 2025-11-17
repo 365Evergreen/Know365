@@ -8,7 +8,12 @@ import {
   deleteAppConfigItem,
   listEntitySets,
   getEntityMetadata,
+  getKnowledgeSources,
+  createKnowledgeSource,
+  updateKnowledgeSource,
+  deleteKnowledgeSource,
 } from '../services/dataverseClient';
+import { getSiteDrivesByUrl, getSiteListsByUrl, getSiteIdByUrl } from '../services/sharePointGraph';
 import {
   TextField,
   PrimaryButton,
@@ -66,6 +71,16 @@ const AdminConfig: React.FC = () => {
   const [carouselRecordId, setCarouselRecordId] = useState<string | null>(null);
   const [adminFindings, setAdminFindings] = useState<AdminSettingFinding[]>([]);
   const [scanningAdminKeys, setScanningAdminKeys] = useState(false);
+  // Knowledge sources admin state
+  const [sources, setSources] = useState<any[]>([]);
+  const [loadingSources, setLoadingSources] = useState(false);
+  const [siteUrlInput, setSiteUrlInput] = useState('');
+  const [siteIdResolved, setSiteIdResolved] = useState<string | null>(null);
+  const [siteDrives, setSiteDrives] = useState<Array<{ id: string; name: string }>>([]);
+  const [siteLists, setSiteLists] = useState<Array<{ id: string; displayName: string }>>([]);
+  const [selectedDriveId, setSelectedDriveId] = useState<string | null>(null);
+  const [selectedListId, setSelectedListId] = useState<string | null>(null);
+  const [sourceForm, setSourceForm] = useState<{ id?: string; SourceName?: string; SharePointSiteUrl?: string; LibraryName?: string; GraphEndpoint?: string; e365_sourcetype?: string }>({});
   const navigate = useNavigate();
   const theme = getTheme();
 
@@ -187,7 +202,111 @@ const AdminConfig: React.FC = () => {
 
   useEffect(() => {
     loadItems();
+    loadSources();
   }, []);
+
+  const loadSources = async () => {
+    setLoadingSources(true);
+    try {
+      const list = await getKnowledgeSources();
+      setSources(list || []);
+    } catch (e) {
+      console.error('Failed to load knowledge sources', e);
+      setSources([]);
+    } finally {
+      setLoadingSources(false);
+    }
+  };
+
+  const handleLoadSite = async () => {
+    if (!siteUrlInput) return;
+    try {
+      setSiteDrives([]);
+      setSiteLists([]);
+      setSiteIdResolved(null);
+      const siteId = await getSiteIdByUrl(siteUrlInput);
+      setSiteIdResolved(siteId);
+      const drives = await getSiteDrivesByUrl(siteUrlInput);
+      const lists = await getSiteListsByUrl(siteUrlInput);
+      setSiteDrives(drives || []);
+      setSiteLists(lists || []);
+      showMessage(`Loaded ${drives.length} libraries and ${lists.length} lists`, MessageBarType.info, 4000);
+    } catch (e) {
+      console.error('Failed to load site resources', e);
+      showMessage('Failed to load site resources: see console', MessageBarType.error, 5000);
+    }
+  };
+
+  const handleSelectExisting = (s: any) => {
+    // populate form from selected existing record
+    setSourceForm({
+      id: s.id || (s.raw && (s.raw['@odata.id'] || s.raw.id)),
+      SourceName: s.SourceName || s.SourceName || s.Source || s.SourceName,
+      SharePointSiteUrl: s.SharePointSiteUrl || s.SharePointSiteUrl,
+      LibraryName: s.LibraryName || s.LibraryName,
+      GraphEndpoint: s.GraphEndpoint || s.GraphEndpoint,
+      e365_sourcetype: (s.e365_sourcetype || s.SourceType) as any,
+    });
+  };
+
+  const handleCreateSource = async () => {
+    try {
+      const payload: any = {
+        SourceName: sourceForm.SourceName || 'New Source',
+        SharePointSiteUrl: sourceForm.SharePointSiteUrl || siteUrlInput,
+        LibraryName: sourceForm.LibraryName || (selectedDriveId ? siteDrives.find((d) => d.id === selectedDriveId)?.name : undefined) || undefined,
+      };
+      // if a drive/list was selected, attempt to set GraphEndpoint for stability
+      if (siteIdResolved && selectedDriveId) {
+        payload.GraphEndpoint = JSON.stringify({ type: 'drive', siteId: siteIdResolved, driveId: selectedDriveId });
+      } else if (siteIdResolved && selectedListId) {
+        payload.GraphEndpoint = JSON.stringify({ type: 'list', siteId: siteIdResolved, listId: selectedListId });
+      }
+      await createKnowledgeSource(payload as any);
+      showMessage('Knowledge source created', MessageBarType.success);
+      await loadSources();
+      setSourceForm({});
+    } catch (e) {
+      console.error('Create source failed', e);
+      showMessage('Failed to create source: see console', MessageBarType.error);
+    }
+  };
+
+  const handleUpdateSource = async () => {
+    try {
+      if (!sourceForm.id) {
+        showMessage('No source selected to update', MessageBarType.warning);
+        return;
+      }
+      const payload: any = {
+        SourceName: sourceForm.SourceName,
+        SharePointSiteUrl: sourceForm.SharePointSiteUrl,
+        LibraryName: sourceForm.LibraryName,
+      };
+      if (siteIdResolved && selectedDriveId) payload.GraphEndpoint = JSON.stringify({ type: 'drive', siteId: siteIdResolved, driveId: selectedDriveId });
+      else if (siteIdResolved && selectedListId) payload.GraphEndpoint = JSON.stringify({ type: 'list', siteId: siteIdResolved, listId: selectedListId });
+      await updateKnowledgeSource(sourceForm.id!, payload);
+      showMessage('Knowledge source updated', MessageBarType.success);
+      await loadSources();
+    } catch (e) {
+      console.error('Update failed', e);
+      showMessage('Failed to update source: see console', MessageBarType.error);
+    }
+  };
+
+  const handleDeleteSource = async () => {
+    try {
+      if (!sourceForm.id) { showMessage('No source selected to delete', MessageBarType.warning); return; }
+      if (!confirm('Delete this KnowledgeSource? This action cannot be undone.')) return;
+      await deleteKnowledgeSource(sourceForm.id!);
+      showMessage('Knowledge source deleted', MessageBarType.success);
+      await loadSources();
+      setSourceForm({});
+    } catch (e) {
+      console.error('Delete failed', e);
+      showMessage('Failed to delete source: see console', MessageBarType.error);
+    }
+  };
 
   const loadEntitySets = async () => {
     setLoadingMetadata(true);
@@ -510,6 +629,77 @@ const AdminConfig: React.FC = () => {
                 <h4>Navigation tree</h4>
                 <div style={{ padding: 8, border: '1px dashed #ccc', minHeight: 120 }}>[Tree view placeholder]</div>
               </div>
+            </div>
+          </Stack>
+        </PivotItem>
+
+        <PivotItem headerText="Sources">
+          <Stack tokens={{ childrenGap: 12 }}>
+            <h3>Knowledge Sources (SharePoint)</h3>
+
+            <Stack horizontal tokens={{ childrenGap: 8 }} verticalAlign="end">
+              <TextField label="Site URL" placeholder="https://contoso.sharepoint.com/sites/YourSite" value={siteUrlInput} onChange={(_, v) => setSiteUrlInput(v || '')} styles={{ root: { minWidth: 520 } }} />
+              <PrimaryButton text="Load site" onClick={handleLoadSite} />
+              <DefaultButton text="Clear" onClick={() => { setSiteUrlInput(''); setSiteDrives([]); setSiteLists([]); setSiteIdResolved(null); }} />
+            </Stack>
+
+            <Stack horizontal tokens={{ childrenGap: 12 }} styles={{ root: { marginTop: 6 } }}>
+              <div style={{ minWidth: 320 }}>
+                <Text variant="medium">Libraries</Text>
+                <Dropdown
+                  placeholder={siteDrives.length === 0 ? 'No libraries loaded' : 'Select a library'}
+                  options={siteDrives.map((d) => ({ key: d.id, text: d.name })) as IDropdownOption[]}
+                  selectedKey={selectedDriveId || undefined}
+                  onChange={(_, o) => setSelectedDriveId(o ? (o.key as string) : null)}
+                  styles={{ root: { minWidth: 300 } }}
+                />
+              </div>
+
+              <div style={{ minWidth: 320 }}>
+                <Text variant="medium">Lists</Text>
+                <Dropdown
+                  placeholder={siteLists.length === 0 ? 'No lists loaded' : 'Select a list'}
+                  options={siteLists.map((l) => ({ key: l.id, text: l.displayName })) as IDropdownOption[]}
+                  selectedKey={selectedListId || undefined}
+                  onChange={(_, o) => setSelectedListId(o ? (o.key as string) : null)}
+                  styles={{ root: { minWidth: 300 } }}
+                />
+              </div>
+            </Stack>
+
+            <div style={{ marginTop: 8, padding: 12, border: '1px solid #eee', borderRadius: 6, background: '#fff' }}>
+              <Stack tokens={{ childrenGap: 8 }}>
+                <TextField label="Source name" value={sourceForm.SourceName || ''} onChange={(_, v) => setSourceForm((s) => ({ ...(s || {}), SourceName: v || '' }))} />
+                <TextField label="Library / List name (optional)" value={sourceForm.LibraryName || ''} onChange={(_, v) => setSourceForm((s) => ({ ...(s || {}), LibraryName: v || '' }))} />
+                <TextField label="SharePoint site URL" value={sourceForm.SharePointSiteUrl || siteUrlInput || ''} onChange={(_, v) => setSourceForm((s) => ({ ...(s || {}), SharePointSiteUrl: v || '' }))} />
+
+                <Stack horizontal tokens={{ childrenGap: 8 }} styles={{ root: { justifyContent: 'flex-end' } }}>
+                  <PrimaryButton text="Create" onClick={handleCreateSource} />
+                  <PrimaryButton text="Update" onClick={handleUpdateSource} />
+                  <DefaultButton text="Delete" onClick={handleDeleteSource} />
+                </Stack>
+              </Stack>
+            </div>
+
+            <div style={{ marginTop: 8 }}>
+              <h4>Existing KnowledgeSources</h4>
+              <DetailsList
+                items={sources || []}
+                columns={[
+                  { key: 'k1', name: 'SourceName', fieldName: 'SourceName', minWidth: 160 },
+                  { key: 'k2', name: 'Site URL', fieldName: 'SharePointSiteUrl', minWidth: 300 },
+                  { key: 'k3', name: 'LibraryName', fieldName: 'LibraryName', minWidth: 200 },
+                  {
+                    key: 'k4', name: 'Actions', fieldName: 'actions', minWidth: 160, onRender: (item: any) => (
+                      <Stack horizontal tokens={{ childrenGap: 8 }}>
+                        <DefaultButton onClick={() => handleSelectExisting(item)}>Edit</DefaultButton>
+                        <DefaultButton onClick={async () => { if (confirm('Delete this source?')) { try { const id = item.id || (item.raw && (item.raw['@odata.id'] || item.raw.id)); await deleteKnowledgeSource(id); await loadSources(); showMessage('Deleted', MessageBarType.success); } catch (e) { console.error(e); showMessage('Delete failed', MessageBarType.error); } } }}>Delete</DefaultButton>
+                      </Stack>
+                    ),
+                  },
+                ]}
+                selectionMode={0}
+              />
             </div>
           </Stack>
         </PivotItem>

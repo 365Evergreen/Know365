@@ -972,6 +972,45 @@ export const updateEntityRecord = async (entitySetName: string, id: string, payl
   }
 };
 
+// Generic delete record for any entity set and id (GUID or OData path)
+export const deleteEntityRecord = async (entitySetName: string, id: string): Promise<void> => {
+  try {
+    const accessToken = await getDataverseAccessToken();
+    const path = buildEntityPath(entitySetName, id);
+    await fetchDataverseResource(path, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    });
+  } catch (e) {
+    console.error(`Error deleting record ${id} in ${entitySetName}:`, e);
+    throw e;
+  }
+};
+
+// Convenience wrappers for KnowledgeSource operations that resolve the org-specific
+// entity set name then perform the CRUD operation. These are used by admin UI flows.
+export const updateKnowledgeSource = async (id: string, payload: any): Promise<void> => {
+  try {
+    const logical = 'e365_knowledgesource';
+    const entitySet = await resolveEntitySetForLogicalName(logical).catch(() => 'KnowledgeSources');
+    await updateEntityRecord(entitySet, id, payload);
+  } catch (e) {
+    console.error('Error updating KnowledgeSource', e);
+    throw e;
+  }
+};
+
+export const deleteKnowledgeSource = async (id: string): Promise<void> => {
+  try {
+    const logical = 'e365_knowledgesource';
+    const entitySet = await resolveEntitySetForLogicalName(logical).catch(() => 'KnowledgeSources');
+    await deleteEntityRecord(entitySet, id);
+  } catch (e) {
+    console.error('Error deleting KnowledgeSource', e);
+    throw e;
+  }
+};
+
 // List available fields (properties) for an entity set by resolving metadata
 export const listEntityFields = async (entitySetNameOrLogical: string): Promise<Array<{ name: string; type?: string }>> => {
   try {
