@@ -7,6 +7,7 @@ export type DocumentItem = {
   webUrl?: string;
   lastModifiedDateTime?: string;
   source?: string;
+  excerpt?: string;
   _raw?: any;
 };
 
@@ -41,21 +42,21 @@ const DocumentsDisplay: React.FC<Props> = ({ items = [], view = 'list', onItemCl
   // default: list view
   return (
     <Stack tokens={{ childrenGap: 8 }}>
-      {items.map((it) => (
-        <div key={it.id} style={{ padding: 12, border: '1px solid #eee', borderRadius: 6 }}>
-          <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 12 }}>
-            <div style={{ flex: 1 }}>
-              <Text variant="large" styles={{ root: { fontWeight: 600 } }}>{it.title}</Text>
-              <div style={{ marginTop: 6 }}>
-                <Text variant="small">{it.source} • {it.lastModifiedDateTime ? new Date(it.lastModifiedDateTime).toLocaleString() : ''}</Text>
-              </div>
+          {items.map((it) => (
+            <div key={it.id} style={{ padding: 12, border: '1px solid #eee', borderRadius: 6 }}>
+              <Stack tokens={{ childrenGap: 8 }}>
+                <div>
+                  <Text variant="large" styles={{ root: { fontWeight: 600 } }}>{it.title}</Text>
+                </div>
+                <div>
+                  <Text variant="medium" styles={{ root: { color: 'var(--ms-color-neutralPrimary)', lineHeight: 1.5 } }}>{it.excerpt || it._raw?.excerpt || it._raw?.summary || it._raw?.description || it._raw?.fields?.Description || ''}</Text>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <DefaultButton onClick={() => onItemClick && onItemClick(it)}>Open</DefaultButton>
+                </div>
+              </Stack>
             </div>
-            <div>
-              <DefaultButton onClick={() => onItemClick && onItemClick(it)}>Open</DefaultButton>
-            </div>
-          </Stack>
-        </div>
-      ))}
+          ))}
     </Stack>
   );
 };
