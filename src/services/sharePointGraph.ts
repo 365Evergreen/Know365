@@ -160,17 +160,45 @@ export const listLibraryItems = async (
       console.warn(`Failed to get drive ID for library '${libraryName}':`, driveErr);
       try {
         const lists = await getSiteListsByUrl(siteUrl);
-        // try to match by displayName (case-insensitive) or Title
-        const candidate = (lists || []).find((l: any) => {
+        // try to match by displayName (case-insensitive) or Title with several heuristics
+        const desiredRaw = String(libraryName || '').toLowerCase();
+        const desiredNoSpace = desiredRaw.replace(/\s+/g, '');
+        const normalize = (s: string) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+        let candidate = (lists || []).find((l: any) => {
           const name = (l.displayName || l.Title || '').toLowerCase();
-          return name === String(libraryName).toLowerCase() || name === String(libraryName).toLowerCase().replace(/\s+/g, '');
+          return name === desiredRaw || name.replace(/\s+/g, '') === desiredNoSpace;
         });
+
+        // try looser matches: normalized equality or substring
+        if (!candidate) {
+          candidate = (lists || []).find((l: any) => normalize(l.displayName || l.Title || '').startsWith(normalize(desiredRaw)) || normalize(l.displayName || l.Title || '').includes(normalize(desiredRaw)));
+        }
+
         if (candidate && candidate.id) {
-          // candidate.id might already be the listId
           const listId = candidate.id;
           const listItems = await getListItems(accessToken, siteId, listId, top);
           return listItems;
         }
+
+        // As a last resort, probe each list by calling getListItems and return the first non-empty result.
+        try {
+          for (const l of (lists || [])) {
+            try {
+              const probeId = l.id;
+              if (!probeId) continue;
+              const probeItems = await getListItems(accessToken, siteId, probeId, Math.min(top, 20));
+              if (Array.isArray(probeItems) && probeItems.length > 0) {
+                return probeItems;
+              }
+            } catch (probeErr) {
+              // ignore individual probe failures and continue
+            }
+          }
+        } catch (probeAllErr) {
+          // ignore
+        }
+
         // no matching list found; rethrow original drive error for upstream logging
         throw driveErr;
       } catch (listErr) {
