@@ -3,7 +3,7 @@ import Hero from '../components/Hero';
 import { Stack, Spinner, SpinnerSize, Text, DetailsList, IColumn } from '@fluentui/react';
 import GridCards from '../components/GridCards';
 import RecentDocuments from '../components/RecentDocuments';
-import { getEntityRecords, getRecentKnowledgeArticles, getKnowledgeArticlesCountByFunction, getListBackedArticles } from '../services/dataverseClient';
+import { getEntityRecords, getRecentKnowledgeArticles, getKnowledgeArticlesCountByFunction, getListBackedArticles, getKnowledgeSources } from '../services/dataverseClient';
 import { useNavigate } from 'react-router-dom';
 import ConfigurableCarousel from '../components/ConfigurableCarousel';
 import DocumentsDisplay from '../components/DocumentsDisplay';
@@ -104,6 +104,7 @@ const Home: React.FC = () => {
   const [listArticles, setListArticles] = useState<any[] | null>(null);
   const [listLoading, setListLoading] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
+  const [ksDebug, setKsDebug] = useState<any[] | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -141,6 +142,15 @@ const Home: React.FC = () => {
       }
     };
     load();
+    // also fetch KnowledgeSources for debug/inspection
+    (async () => {
+      try {
+        const ks = await getKnowledgeSources();
+        setKsDebug(ks || []);
+      } catch (e) {
+        setKsDebug([]);
+      }
+    })();
     return () => { mounted = false; };
   }, []);
 
@@ -200,6 +210,15 @@ const Home: React.FC = () => {
             />
           )}
         </section>
+        {/* Debug: show KnowledgeSources count and preview to diagnose missing list articles */}
+        {ksDebug !== null && (
+          <div style={{ marginTop: 18, padding: 12, border: '1px dashed #ddd', borderRadius: 6 }}>
+            <Text variant="small">KnowledgeSources found: {ksDebug.length}</Text>
+            <pre style={{ marginTop: 8, maxHeight: 160, overflow: 'auto', fontSize: 12 }}>
+              {JSON.stringify((ksDebug || []).slice(0, 8).map((s: any) => ({ SourceName: s.SourceName, SharePointSiteUrl: s.SharePointSiteUrl, LibraryName: s.LibraryName, businessFunction: s.businessFunction || s.raw?.e365_businessfunctionname || s.raw?._e365_businessfunction_value || '' })), null, 2)}
+            </pre>
+          </div>
+        )}
         <section aria-labelledby="recent-heading">
           <h3 id="recent-heading">Recent documents</h3>
           {recentLoading ? (
