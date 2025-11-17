@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Run a full build before allowing commits. If build fails, the commit is aborted.
+echo "Running pre-commit build..."
+npm run build
+RESULT=$?
+if [ $RESULT -ne 0 ]; then
+  echo "Build failed. Aborting commit. Fix build errors before committing."
+  exit $RESULT
+fi
+
+echo "Build succeeded. Proceeding with commit."
