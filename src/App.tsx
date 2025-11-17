@@ -73,6 +73,18 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // Build a runtime theme from app settings if provided (safe-guarded)
+  const runtimeTheme = React.useMemo(() => {
+    if (settings && (settings as any).theme) {
+      try {
+        return createThemeFromConfig((settings as any).theme);
+      } catch (e) {
+        return undefined;
+      }
+    }
+    return undefined;
+  }, [settings]);
+
   const handleToggleTheme = () => {
     const newMode = !isDarkMode;
     setIsDarkMode(newMode);
@@ -111,12 +123,13 @@ const App: React.FC = () => {
   }, []);
 
   // Workaround: cast MsalProvider to a generic React component type to avoid JSX typing mismatch
-    const MsalProviderAsAny = MsalProvider as unknown as React.ComponentType<any>;
-    // Workaround: cast Route to a generic React component type to avoid @types/react / react-router-dom typing mismatch
-  
-    // prefer runtime-configured theme if present, otherwise respect dark mode
-    const runtimeTheme = settings ? createThemeFromConfig({ primaryColor: settings.primaryColor, fontFamily: settings.fontFamily }) : null;
+  const MsalProviderAsAny = MsalProvider as unknown as React.ComponentType<any>;
+  // Workaround: cast Route to a generic React component type to avoid @types/react / react-router-dom typing mismatch
+  const RouteAsAny = Route as unknown as React.ComponentType<any>;
+  // Workaround: cast Routes to a generic React component type to avoid @types/react / react-router-dom typing mismatch
+  const RoutesAsAny = Routes as unknown as React.ComponentType<any>;
 
+  // prefer runtime-configured theme if present, otherwise respect dark mode
   return (
     <MsalProviderAsAny instance={msalInstance}>
       <ThemeProvider theme={runtimeTheme || (isDarkMode ? darkTheme : lightTheme)}>
@@ -126,43 +139,43 @@ const App: React.FC = () => {
             styles={{ root: { minHeight: '100vh', display: 'flex', flexDirection: 'column', paddingTop: headerHeight } }}
           >
             <Header onToggleTheme={handleToggleTheme} isDarkMode={isDarkMode} logoUrl={settings?.logoUrl} />
-            <Suspense fallback={<div style={{ padding: 24 }}>Loading page…</div>}>
-              <AuthGate>
+            <AuthGate>
+              <Suspense fallback={<div />}>
                 {/* Workaround for react-router-dom / @types/react type incompatibility */}
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/knowledge" element={<Knowledge />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/article-categories" element={<ArticleCategories />} />
-                  <Route path="/articles/:subjectId" element={<ArticlesBySubject />} />
-                  <Route path="/metadata" element={<EntityMetadata />} />
-                  <Route path="/admin" element={<AdminConfig />} />
-                  <Route path="/admin/ui" element={<AdminUI />} />
-                  <Route path="/admin/icons" element={<AdminIcons />} />
-                  <Route path="/my-knowledge" element={<MyKnowledge />} />
-                  <Route path="/my-knowledge/contributions" element={<MyContributions />} />
-                  <Route path="/my-knowledge/saved" element={<SavedItems />} />
-                  <Route path="/my-knowledge/recent" element={<RecentlyViewed />} />
-                  <Route path="/functions" element={<FunctionsIndex />} />
-                  <Route path="/functions/:fn" element={<FunctionsPage />} />
-                  <Route path="/document-types" element={<DocumentTypesIndex />} />
-                  <Route path="/document-types/policies" element={<DocumentPolicies />} />
-                  <Route path="/document-types/procedures" element={<DocumentProcedures />} />
-                  <Route path="/document-types/faqs" element={<DocumentFAQs />} />
-                  <Route path="/document-types/how-to" element={<DocumentHowTo />} />
-                  <Route path="/tags" element={<Tags />} />
-                  <Route path="/search" element={<SearchPage />} />
-                  <Route path="/contribute" element={<Contribute />} />
-                  <Route path="/help" element={<Help />} />
-                  <Route path="/media-demo" element={<MediaDemo />} />
-                  <Route path="/dataverse-debug" element={<DataverseDebug />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/browse/:category/:item?" element={<BrowsePage />} />
+                <RoutesAsAny>
+                  <RouteAsAny path="/" element={<Home />} />
+                  <RouteAsAny path="/knowledge" element={<Knowledge />} />
+                  <RouteAsAny path="/about" element={<About />} />
+                  <RouteAsAny path="/article-categories" element={<ArticleCategories />} />
+                  <RouteAsAny path="/articles/:subjectId" element={<ArticlesBySubject />} />
+                  <RouteAsAny path="/metadata" element={<EntityMetadata />} />
+                  <RouteAsAny path="/admin" element={<AdminConfig />} />
+                  <RouteAsAny path="/admin/ui" element={<AdminUI />} />
+                  <RouteAsAny path="/admin/icons" element={<AdminIcons />} />
+                  <RouteAsAny path="/my-knowledge" element={<MyKnowledge />} />
+                  <RouteAsAny path="/my-knowledge/contributions" element={<MyContributions />} />
+                  <RouteAsAny path="/my-knowledge/saved" element={<SavedItems />} />
+                  <RouteAsAny path="/my-knowledge/recent" element={<RecentlyViewed />} />
+                  <RouteAsAny path="/functions" element={<FunctionsIndex />} />
+                  <RouteAsAny path="/functions/:fn" element={<FunctionsPage />} />
+                  <RouteAsAny path="/document-types" element={<DocumentTypesIndex />} />
+                  <RouteAsAny path="/document-types/policies" element={<DocumentPolicies />} />
+                  <RouteAsAny path="/document-types/procedures" element={<DocumentProcedures />} />
+                  <RouteAsAny path="/document-types/faqs" element={<DocumentFAQs />} />
+                  <RouteAsAny path="/document-types/how-to" element={<DocumentHowTo />} />
+                  <RouteAsAny path="/tags" element={<Tags />} />
+                  <RouteAsAny path="/search" element={<SearchPage />} />
+                  <RouteAsAny path="/contribute" element={<Contribute />} />
+                  <RouteAsAny path="/help" element={<Help />} />
+                  <RouteAsAny path="/media-demo" element={<MediaDemo />} />
+                  <RouteAsAny path="/dataverse-debug" element={<DataverseDebug />} />
+                  <RouteAsAny path="/settings" element={<Settings />} />
+                  <RouteAsAny path="/browse/:category/:item?" element={<BrowsePage />} />
                   {/* Redirect any unknown route back to home (prevents 404s on deep links) */}
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </AuthGate>
-            </Suspense>
+                  <RouteAsAny path="*" element={<Navigate to="/" replace />} />
+                </RoutesAsAny>
+              </Suspense>
+            </AuthGate>
             <Footer />
           </Stack>
         </Router>

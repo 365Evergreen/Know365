@@ -66,3 +66,4 @@ If something is unclear or you want me to expand any section (examples, code sni
 
 You do not need permission to make changes outside of this file, if they are changes I requested.
 
+Do not run local dev servers or builds that require network access to private resources. This approach doesn't work with live content and authentication
