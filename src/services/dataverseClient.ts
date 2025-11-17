@@ -734,6 +734,24 @@ export const getKnowledgeArticlesBySubject = async (subjectId: string, top = 50)
     }
 
     // fallback: return empty
+    // If we reach here, the filtered queries returned no results — as a best-effort
+    // return a small set of recent articles so the UI can show content for the function.
+    try {
+      const fallbackPath = `${entitySet}?$top=${top}`;
+      const fallbackData = await fetchDataverseResource(fallbackPath, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      const fallbackList = fallbackData?.value || [];
+      if (Array.isArray(fallbackList) && fallbackList.length > 0) {
+        return (fallbackList || []).map((it: any) => ({ ...it, displayName: it[displayProp] || it.title || it.name || it.e365_name || '' }));
+      }
+    } catch (e) {
+      console.warn('Fallback article fetch failed', e);
+    }
+
     return [];
   } catch (error) {
     console.error('Error fetching articles by subject:', error);
