@@ -287,11 +287,26 @@ async function resolveEntitySetForLogicalName(logicalName: string): Promise<stri
   try {
     const accessToken = await getDataverseAccessToken();
 
-    
+    // Special-case e365_knowledgesource: use the provided org-specific EntityDefinitions URL first
+    if (logicalName === 'e365_knowledgesource') {
+      try {
+        const fixedUrl = "https://orgefecd8a9.crm6.dynamics.com/api/data/v9.2/EntityDefinitions(LogicalName='e365_knowledgesource')?$select=EntitySetName,LogicalName";
+        const resp = await fetch(fixedUrl, { headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' } });
+        if (resp.ok) {
+          const fixedData = await resp.json();
+          const fixedEntitySet = fixedData && fixedData.EntitySetName;
+          if (fixedEntitySet && typeof fixedEntitySet === 'string') {
+            try { entitySetMap.set(key, fixedEntitySet); persistEntitySetMap(); } catch (e) { /* ignore */ }
+            return fixedEntitySet;
+          }
+        } else {
+          console.warn(`Fixed e365_knowledgesource lookup returned ${resp.status} ${resp.statusText}`);
+        }
+      } catch (err) {
+        console.warn('Fixed e365_knowledgesource lookup failed', err);
+      }
+    }
 
-    
-
-    
     // Query the EntityDefinitions for the logical name
     const resourcePath = `EntityDefinitions(LogicalName='${logicalName}')?$select=EntitySetName,LogicalName`;
     const data = await fetchDataverseResource(resourcePath, {
@@ -338,7 +353,6 @@ async function resolveEntitySetForLogicalName(logicalName: string): Promise<stri
   throw new Error(`Could not resolve EntitySetName for logical name '${logicalName}'`);
 }
 
-// Find lookup attribute logical names on an entity, prefer attributes that reference
 // a 'subject'-like target or whose name contains 'subject'. Returns attribute logical
 // names (e.g. 'e365_subjectid' or 'regardingobjectid') ordered by likelihood.
 async function findLookupAttributesForEntity(entityLogicalName: string): Promise<string[]> {
