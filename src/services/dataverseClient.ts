@@ -420,12 +420,14 @@ export const getKnowledgeSources = async (): Promise<KnowledgeSource[]> => {
     const mapped = raw.map((r) => {
       let businessFunction: string | undefined;
 
+      // Prefer a dedicated text field when present (new column: e365_knowledgesourcetext)
+      if (r['e365_knowledgesourcetext']) businessFunction = r['e365_knowledgesourcetext'];
       // Common patterns in Dataverse responses:
       // - explicit name field: e365_businessfunctionname
       // - formatted value: e365_businessfunction@OData.Community.Display.V1.FormattedValue
       // - navigation object: e365_businessfunction { name, value, ... }
       // - lookup id: _e365_businessfunction_value (GUID) or numeric codes
-      if (r['e365_businessfunctionname']) businessFunction = r['e365_businessfunctionname'];
+      else if (r['e365_businessfunctionname']) businessFunction = r['e365_businessfunctionname'];
       else if (r['e365_businessfunction@OData.Community.Display.V1.FormattedValue']) businessFunction = r['e365_businessfunction@OData.Community.Display.V1.FormattedValue'];
       else if (r['e365_businessfunction']) {
         const v = r['e365_businessfunction'];
@@ -515,6 +517,7 @@ export const getKnowledgeSourcesFromOrg = async (top = 10): Promise<any[]> => {
         SharePointSiteUrl: siteUrl,
         LibraryName: libName,
         GraphEndpoint: graph,
+        businessFunction: r.e365_knowledgesourcetext || r.e365_businessfunctionname || r['e365_businessfunction@OData.Community.Display.V1.FormattedValue'] || null,
         raw: r,
       };
     });
