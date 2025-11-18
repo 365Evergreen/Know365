@@ -647,18 +647,34 @@ export const getArticlesFromKnowledgeSources = async (q?: string): Promise<any[]
             const token = await getAccessToken();
             const client = getGraphClient(token);
             const path = rawGraph.replace(/^https:\/\/graph\.microsoft\.com\/v1\.0/i, '');
-            const res: any = await client.api(path).get();
+            // If caller provided a raw list items path, ensure we request the item fields
+            let apiPath = path;
+            try {
+              const lower = apiPath.toLowerCase();
+              const hasExpand = lower.includes('$expand=fields');
+              // If path targets list items but doesn't include fields, add $expand=fields
+              if (!hasExpand && /\/lists\/[0-9a-fA-F\-]+\/items/i.test(lower) || (!hasExpand && /\/lists\/[^\/]+\/items/i.test(lower))) {
+                apiPath += (apiPath.includes('?') ? '&' : '?') + '$expand=fields';
+              }
+            } catch {
+              // ignore path parsing errors and use original
+            }
+
+            const res: any = await client.api(apiPath).get();
             const rows: any[] = res?.value || (res ? [res] : []);
             // Normalize rows to the same shape expected by downstream code
             items = rows.map((r: any) => {
               // list items have `fields`, drive items have `name`/`webUrl`/`file`
               if (r.fields) {
                 const fields = r.fields || {};
+                // Try to extract a useful excerpt/body from common field names
+                const excerpt = (fields.Excerpt || fields.excerpt || fields.Description || fields.description || fields.summary || fields.Summary || fields.ArticleBody || fields.articlebody || fields.Body || fields.body || '') as string;
                 return {
                   id: r.id || fields.Id || Math.random().toString(36).slice(2),
                   name: fields.Title || fields.title || fields.Name || `Item ${r.id}`,
                   webUrl: r.sharepointIds?.webUrl || r.webUrl || '',
                   lastModifiedDateTime: r.lastModifiedDateTime || fields.Modified || null,
+                  excerpt: excerpt ? String(excerpt).slice(0, 400) : undefined,
                   _raw: r,
                 };
               }
