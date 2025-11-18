@@ -627,13 +627,24 @@ export const getArticlesFromKnowledgeSources = async (q?: string): Promise<any[]
         if (!items || items.length === 0) {
           // Try to derive site + library values from common raw fields before skipping.
           const { siteUrl, libraryName } = derived;
-          if (!isValidUrl(siteUrl || undefined) || !libraryName) {
-            console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName', s);
+          if (!isValidUrl(siteUrl || undefined)) {
+            console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl (no GraphEndpoint and invalid site URL)', s);
             continue;
           }
 
-          // listLibraryItems resolves site & drive and returns documents
-          items = await listLibraryItems(siteUrl!, libraryName!, 50);
+          // If we have a valid siteUrl but no explicit libraryName, allow listLibraryItems to probe the site
+          // (it will attempt drives, named lists, and finally probe lists for non-empty items).
+          try {
+            items = await listLibraryItems(siteUrl!, libraryName || '', 50);
+          } catch (probeErr) {
+            console.warn('Failed to list library items for KnowledgeSource (site probe failed)', s, probeErr);
+            items = [];
+          }
+
+          if (!items || items.length === 0) {
+            console.warn('No items found for KnowledgeSource after probing site/list', s);
+            continue;
+          }
         }
         for (const it of items) {
           // simple text match if query provided
@@ -727,8 +738,13 @@ export const getListBackedArticles = async (q?: string, topPerSource = 50): Prom
 
         if (!items || items.length === 0) {
           const { siteUrl, libraryName } = derived;
-          if (!isValidUrl(siteUrl || undefined) || !libraryName) continue;
-          items = await listLibraryItems(siteUrl!, libraryName!, topPerSource);
+          if (!isValidUrl(siteUrl || undefined)) continue;
+          try {
+            items = await listLibraryItems(siteUrl!, libraryName || '', topPerSource);
+          } catch (probeErr) {
+            items = [];
+          }
+          if (!items || items.length === 0) continue;
         }
 
         for (const it of (items || [])) {
@@ -919,11 +935,20 @@ export const getKnowledgeArticlesByFunction = async (fn: string, q?: string): Pr
 
               if (!items || items.length === 0) {
                 const { siteUrl, libraryName } = deriveSiteAndLibrary(s);
-                if (!isValidUrl(siteUrl || undefined) || !libraryName) {
-                  console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName (by function)', s);
+                if (!isValidUrl(siteUrl || undefined)) {
+                  console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl (by function)', s);
                   continue;
                 }
-                items = await listLibraryItems(siteUrl!, libraryName!, 50);
+                try {
+                  items = await listLibraryItems(siteUrl!, libraryName || '', 50);
+                } catch (probeErr) {
+                  console.warn('Failed to list library items for KnowledgeSource (by function, probe failed)', s, probeErr);
+                  items = [];
+                }
+                if (!items || items.length === 0) {
+                  console.warn('No items found for KnowledgeSource after probing site/list (by function)', s);
+                  continue;
+                }
               }
               for (const it of items) {
                 if (q && q.trim()) {
@@ -992,11 +1017,20 @@ export const getKnowledgeArticlesCountByFunction = async (fn: string): Promise<n
 
                 if (!items || items.length === 0) {
                   const { siteUrl, libraryName } = deriveSiteAndLibrary(s);
-                  if (!isValidUrl(siteUrl || undefined) || !libraryName) {
-                    console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName (count)', s);
+                  if (!isValidUrl(siteUrl || undefined)) {
+                    console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl (count)', s);
                     continue;
                   }
-                  items = await listLibraryItems(siteUrl!, libraryName!, 1000);
+                  try {
+                    items = await listLibraryItems(siteUrl!, libraryName || '', 1000);
+                  } catch (probeErr) {
+                    console.warn('Failed to list library items for KnowledgeSource (count, probe failed)', s, probeErr);
+                    items = [];
+                  }
+                  if (!items || items.length === 0) {
+                    console.warn('No items found for KnowledgeSource after probing site/list (count)', s);
+                    continue;
+                  }
                 }
 
                 total += Array.isArray(items) ? items.length : 0;
@@ -1027,13 +1061,13 @@ export const getRecentKnowledgeArticles = async (top = 10): Promise<any[]> => {
     const sources = await getKnowledgeSources();
     if (!sources || sources.length === 0) return [];
 
-    const allItems: any[] = [];
+        const allItems: any[] = [];
     for (const s of sources) {
       try {
         // Try to derive site+library first (handles records missing explicit fields)
         const { siteUrl: derivedSiteUrl, libraryName: derivedLibraryName } = deriveSiteAndLibrary(s);
-        if (!isValidUrl(derivedSiteUrl || undefined) || !derivedLibraryName) {
-          console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName (recent)', s);
+        if (!isValidUrl(derivedSiteUrl || undefined)) {
+          console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl (recent)', s);
           continue;
         }
 
@@ -1056,8 +1090,17 @@ export const getRecentKnowledgeArticles = async (top = 10): Promise<any[]> => {
         }
 
         if (!items || items.length === 0) {
-          const itemsFallback = await listLibraryItems(derivedSiteUrl!, derivedLibraryName!, Math.max(top, 50));
-          items = itemsFallback;
+          try {
+            const itemsFallback = await listLibraryItems(derivedSiteUrl!, derivedLibraryName || '', Math.max(top, 50));
+            items = itemsFallback;
+          } catch (probeErr) {
+            console.warn('Failed to list library items for KnowledgeSource (recent, probe failed)', s, probeErr);
+            items = [];
+          }
+          if (!items || items.length === 0) {
+            console.warn('No items found for KnowledgeSource after probing site/list (recent)', s);
+            continue;
+          }
         }
 
         if (Array.isArray(items)) {
@@ -1098,8 +1141,8 @@ export const getKnowledgeArticlesBySubject = async (subjectId: string, top = 50)
       try {
         // Try to derive site+library first (handles records missing explicit fields)
         const { siteUrl: derivedSiteUrl, libraryName: derivedLibraryName } = deriveSiteAndLibrary(s);
-        if (!isValidUrl(derivedSiteUrl || undefined) || !derivedLibraryName) {
-          console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName (subject search)', s);
+        if (!isValidUrl(derivedSiteUrl || undefined)) {
+          console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl (subject search)', s);
           continue;
         }
 
@@ -1122,7 +1165,16 @@ export const getKnowledgeArticlesBySubject = async (subjectId: string, top = 50)
         }
 
         if (!items || items.length === 0) {
-          items = await listLibraryItems(derivedSiteUrl!, derivedLibraryName!, top);
+          try {
+            items = await listLibraryItems(derivedSiteUrl!, derivedLibraryName || '', top);
+          } catch (probeErr) {
+            console.warn('Failed to list library items for KnowledgeSource (subject search, probe failed)', s, probeErr);
+            items = [];
+          }
+          if (!items || items.length === 0) {
+            console.warn('No items found for KnowledgeSource after probing site/list (subject search)', s);
+            continue;
+          }
         }
 
         for (const it of items) {
