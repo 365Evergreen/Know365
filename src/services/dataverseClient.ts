@@ -153,13 +153,26 @@ export function deriveSiteAndLibrary(s: any): { siteUrl: string | null; libraryN
     let parsedEp: any = null;
     if (graphEndpointRaw) {
       if (typeof graphEndpointRaw === 'string') {
-        const epStr = graphEndpointRaw.trim();
-        // first try JSON
+        // Normalize some common malformed endpoint strings we observed in Dataverse
+        // - missing slash before 'root' (e.g. ...lists/{id}root/children)
+        // - misplaced question mark before '/items' (e.g. ...lists/{id}?/items)
+        // - ensure we trim whitespace
+        let epStr = graphEndpointRaw.trim();
         try {
+          epStr = epStr.replace(/(lists\/[0-9a-fA-F\-]+)root\b/ig, '$1/root');
+          epStr = epStr.replace(/\?\/items/ig, '/items');
+          // if someone appended 'rootchildren' without separators, try to insert '/root/children'
+          epStr = epStr.replace(/(lists\/[0-9a-fA-F\-]+)rootchildren/ig, '$1/root/children');
+        } catch (normErr) {
+          // ignore normalization errors and use original string
+          epStr = graphEndpointRaw.trim();
+        }
+        // first try JSON
+          try {
           parsedEp = JSON.parse(epStr);
         } catch (e) {
           // If it's a full Graph URL or path, try to extract site segment and list/drive ids.
-          try {
+            try {
             // Normalize to path portion when full URL provided
             let path = epStr;
             const graphPrefix = 'https://graph.microsoft.com';
@@ -235,6 +248,24 @@ export function deriveSiteAndLibrary(s: any): { siteUrl: string | null; libraryN
       } catch (e) {
         // ignore and continue
       }
+    
+    // If siteUrl wasn't a valid absolute URL but we have a CSV-style site id like
+    // 'hostname,scid,siteGuid' stored on e365_siteid, try to construct a usable siteUrl
+    // so downstream probes using `new URL(...)` succeed.
+    try {
+      const siteUrlCandidate = siteUrl;
+      if (!siteUrlCandidate || !isValidUrl(siteUrlCandidate)) {
+        const siteIdRaw = (s && (s.e365_siteid || s.e365_siteid_value)) || (raw && (raw.e365_siteid || raw.siteid));
+        if (siteIdRaw && typeof siteIdRaw === 'string' && siteIdRaw.indexOf(',') > -1) {
+          const host = siteIdRaw.split(',')[0];
+          if (host && host.indexOf('.') > -1) {
+            siteUrl = `https://${host}`;
+          }
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
     }
 
     return { siteUrl: siteUrl || null, libraryName: libraryName || null, graphEndpoint: parsedEp || undefined };
