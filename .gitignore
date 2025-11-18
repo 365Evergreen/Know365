@@ -34,3 +34,6 @@ dist-ssr
 deployed_index.html
 runlog*.txt
 pnpm-lock.yaml
+
+# Ignore accidental local secrets
+.github/PAT.md
