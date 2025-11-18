@@ -39,6 +39,7 @@ const EntityMetadata = lazy(() => import('./pages/EntityMetadata'));
 const ArticleCategories = lazy(() => import('./pages/ArticleCategories'));
 const ArticlesBySubject = lazy(() => import('./pages/ArticlesBySubject'));
 const DataverseDebug = lazy(() => import('./pages/DataverseDebug'));
+const CommunicationsTest = lazy(() => import('./pages/CommunicationsTest'));
 
 // Initialize Fluent UI icons
 initializeIcons();
@@ -164,6 +165,7 @@ const App: React.FC = () => {
                   <RouteAsAny path="/document-types/faqs" element={<DocumentFAQs />} />
                   <RouteAsAny path="/document-types/how-to" element={<DocumentHowTo />} />
                   <RouteAsAny path="/tags" element={<Tags />} />
+                  <RouteAsAny path="/test/communications" element={<CommunicationsTest />} />
                   <RouteAsAny path="/search" element={<SearchPage />} />
                   <RouteAsAny path="/contribute" element={<Contribute />} />
                   <RouteAsAny path="/help" element={<Help />} />
