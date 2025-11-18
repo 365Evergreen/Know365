@@ -48,6 +48,7 @@ import FormBuilder from '../components/FormBuilder';
 import ComponentLibrary from '../components/ComponentLibrary';
 import PageCanvas, { PageComponent } from '../components/PageCanvas';
 import collectAdminSettings, { AdminSettingFinding } from '../utils/collectAdminSettings';
+import UIConfigEditor from '../components/UIConfigEditor';
 
 const AdminConfig: React.FC = () => {
   const [items, setItems] = useState<any[]>([]);
@@ -625,6 +626,53 @@ const AdminConfig: React.FC = () => {
               <Text styles={{ root: { color: theme.palette.neutralSecondary } }}>In edit mode you can drag components from the component library onto the canvas and rearrange them. Dynamic content is not editable.</Text>
             </div>
           </Stack>
+        </PivotItem>
+        <PivotItem headerText="UI">
+          <UIConfigEditor />
+        </PivotItem>
+        <PivotItem headerText="Hero">
+          <div style={{ padding: 12 }}>
+            <h3>Hero configuration</h3>
+            <Stack tokens={{ childrenGap: 8 }} styles={{ root: { maxWidth: 720 } }}>
+              <TextField label="Title" value={(items || []).find((i:any)=> (i.key||'').toString().toLowerCase() === 'hero:settings') ? (()=>{ try{ const v = (items || []).find((i:any)=> (i.key||'').toString().toLowerCase() === 'hero:settings')!.value; const parsed = typeof v === 'string' ? JSON.parse(v) : v; return parsed.title || ''; } catch { return ''; } })() : ''} />
+              <TextField label="Subtitle" value={(items || []).find((i:any)=> (i.key||'').toString().toLowerCase() === 'hero:settings') ? (()=>{ try{ const v = (items || []).find((i:any)=> (i.key||'').toString().toLowerCase() === 'hero:settings')!.value; const parsed = typeof v === 'string' ? JSON.parse(v) : v; return parsed.subtitle || ''; } catch { return ''; } })() : ''} />
+              <TextField label="Background image URL" value={(items || []).find((i:any)=> (i.key||'').toString().toLowerCase() === 'hero:settings') ? (()=>{ try{ const v = (items || []).find((i:any)=> (i.key||'').toString().toLowerCase() === 'hero:settings')!.value; const parsed = typeof v === 'string' ? JSON.parse(v) : v; return parsed.backgroundImage || ''; } catch { return ''; } })() : ''} />
+              <TextField label="Background color (hex)" value={(items || []).find((i:any)=> (i.key||'').toString().toLowerCase() === 'hero:settings') ? (()=>{ try{ const v = (items || []).find((i:any)=> (i.key||'').toString().toLowerCase() === 'hero:settings')!.value; const parsed = typeof v === 'string' ? JSON.parse(v) : v; return parsed.bgColor || ''; } catch { return ''; } })() : ''} />
+              <TextField label="Gradient CSS" value={(items || []).find((i:any)=> (i.key||'').toString().toLowerCase() === 'hero:settings') ? (()=>{ try{ const v = (items || []).find((i:any)=> (i.key||'').toString().toLowerCase() === 'hero:settings')!.value; const parsed = typeof v === 'string' ? JSON.parse(v) : v; return parsed.gradient || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; } catch { return ''; } })() : ''} />
+              <TextField label="CTA text" value={(items || []).find((i:any)=> (i.key||'').toString().toLowerCase() === 'hero:settings') ? (()=>{ try{ const v = (items || []).find((i:any)=> (i.key||'').toString().toLowerCase() === 'hero:settings')!.value; const parsed = typeof v === 'string' ? JSON.parse(v) : v; return parsed.ctaText || ''; } catch { return ''; } })() : ''} />
+              <TextField label="CTA URL" value={(items || []).find((i:any)=> (i.key||'').toString().toLowerCase() === 'hero:settings') ? (()=>{ try{ const v = (items || []).find((i:any)=> (i.key||'').toString().toLowerCase() === 'hero:settings')!.value; const parsed = typeof v === 'string' ? JSON.parse(v) : v; return parsed.ctaUrl || ''; } catch { return ''; } })() : ''} />
+              <Stack horizontal tokens={{ childrenGap: 8 }}>
+                <PrimaryButton onClick={async ()=>{
+                  try {
+                    // read current form values from DOM inputs (simple approach to avoid heavy state changes here)
+                    const get = (label: string) => (document.querySelector(`input[aria-label='${label}']`) as HTMLInputElement)?.value || '';
+                    const title = get('Title');
+                    const subtitle = get('Subtitle');
+                    const backgroundImage = get('Background image URL');
+                    const bgColor = get('Background color (hex)');
+                    const gradient = get('Gradient CSS');
+                    const ctaText = get('CTA text');
+                    const ctaUrl = get('CTA URL');
+                    const payload = { name: 'hero:settings', value: JSON.stringify({ title, subtitle, backgroundImage, bgColor, gradient, ctaText, ctaUrl }) } as any;
+                    const existing = (items || []).find((i:any)=> (i.key||'').toString().toLowerCase() === 'hero:settings');
+                    if (existing) {
+                      const id = existing.id || (existing.raw && (existing.raw['@odata.id'] || existing.raw.id));
+                      if (id) await updateAppConfigItem(id, payload);
+                    } else {
+                      await createAppConfigItem(payload);
+                    }
+                    await loadItems();
+                    try { window.dispatchEvent(new CustomEvent('ui-config-updated')); } catch(e){ const ev = document.createEvent('Event'); ev.initEvent('ui-config-updated', true, true); window.dispatchEvent(ev); }
+                    showMessage('Hero configuration saved', MessageBarType.success, 3000);
+                  } catch (e) {
+                    console.error('Failed to save hero config', e);
+                    showMessage('Failed to save hero config', MessageBarType.error, 5000);
+                  }
+                }} text="Save Hero" />
+                <DefaultButton onClick={()=>{ /* reset by reloading items */ loadItems(); showMessage('Reloaded hero config', MessageBarType.info, 2000); }} text="Reload" />
+              </Stack>
+            </Stack>
+          </div>
         </PivotItem>
 
         <PivotItem headerText="Navigation">
