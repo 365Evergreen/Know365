@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Stack, Text, Link, Spinner, SpinnerSize } from '@fluentui/react';
 import { getAccessToken, getGraphClient } from '../services/graphClient';
 
-const CommunicationsTest: React.FC = () => {
-  const [items, setItems] = useState<any[] | null>(null);
+const CommunicationsTest = (): JSX.Element => {
+  const [itemsState, setItemsState] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [diagMessages, setDiagMessages] = useState<string[]>([]);
@@ -103,7 +103,7 @@ const CommunicationsTest: React.FC = () => {
           });
         }
 
-        setItems(final);
+        setItemsState(final);
       } catch (e: any) {
         console.error('CommunicationsTest load failed', e);
         if (mounted) setError(String(e?.message || e));
@@ -135,11 +135,11 @@ const CommunicationsTest: React.FC = () => {
         <Spinner label="Loading…" size={SpinnerSize.small} />
       ) : error ? (
         <Text style={{ color: 'var(--ms-color-red-10)' }}>{error}</Text>
-      ) : !items || items.length === 0 ? (
+      ) : !itemsState || itemsState.length === 0 ? (
         <Text>No items found for Communications.</Text>
       ) : (
         <Stack tokens={{ childrenGap: 16 }}>
-          {items.map((it) => (
+          {itemsState.map((it) => (
             <Stack key={it.id} styles={{ root: { padding: 12, border: '1px solid #eee', borderRadius: 6 } }}>
               <Stack horizontal horizontalAlign="space-between" styles={{ root: { marginBottom: 8 } }}>
                 <Text variant="large" styles={{ root: { fontWeight: 600 } }}>{it.title}</Text>
