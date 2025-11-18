@@ -1,13 +1,14 @@
 import { msalInstance } from './authConfig';
 import schemaOverrides from '../config/dataverse-schema-overrides';
 import { listLibraryItems, getDocuments, getListItems } from './sharePointGraph';
-import { getAccessToken } from './graphClient';
+import { getAccessToken, getGraphClient } from './graphClient';
 
 interface KnowledgeSource {
   SourceName: string;
   SharePointSiteUrl: string;
   LibraryName: string;
-  GraphEndpoint?: string;
+  GraphEndpoint?: any;
+  raw?: any;
 }
 
 const DATAVERSE_API = import.meta.env.VITE_DATAVERSE_API;
@@ -152,23 +153,60 @@ export function deriveSiteAndLibrary(s: any): { siteUrl: string | null; libraryN
     let parsedEp: any = null;
     if (graphEndpointRaw) {
       if (typeof graphEndpointRaw === 'string') {
+        const epStr = graphEndpointRaw.trim();
         // first try JSON
         try {
-          parsedEp = JSON.parse(graphEndpointRaw);
+          parsedEp = JSON.parse(epStr);
         } catch (e) {
-          // attempt CSV-style parse: host,siteId,driveId or host,siteId,listId
-          const parts = graphEndpointRaw.split(',').map((p) => p && p.trim()).filter(Boolean);
-          if (parts.length >= 2) {
-            // parts[0] may be host; parts[1] siteId; parts[2] driveId/listId
-            const host = parts[0];
-            const siteId = parts[1];
-            const id = parts[2] || null;
-            parsedEp = { host, siteId };
-            if (id) {
-              // heuristics: if id looks like a GUID, assume it's a drive/list id. Default to drive.
-              const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-              if (guidRegex.test(id)) parsedEp.driveId = id; else parsedEp.driveId = id;
+          // If it's a full Graph URL or path, try to extract site segment and list/drive ids.
+          try {
+            // Normalize to path portion when full URL provided
+            let path = epStr;
+            const graphPrefix = 'https://graph.microsoft.com';
+            if (path.toLowerCase().startsWith(graphPrefix)) {
+              path = path.substring(graphPrefix.length);
             }
+
+            // patterns we want to support (examples):
+            // /sites/{siteSegment}/lists/{listId}
+            // /sites/{siteSegment}/drives/{driveId}
+            // /sites/{hostname}:/sites/BrandGuide:/lists/{listId}
+            const siteRegex = /\/sites\/([^\/]+)(?:\/|$)/i;
+            const listRegex = /\/lists\/([^\/?#]+)/i;
+            const driveRegex = /\/drives\/([^\/?#]+)/i;
+
+            const siteMatch = path.match(siteRegex);
+            const listMatch = path.match(listRegex);
+            const driveMatch = path.match(driveRegex);
+
+            if (siteMatch) {
+              const siteSegment = siteMatch[1];
+              parsedEp = parsedEp || {};
+              // siteSegment may be comma-form (hostname,scid,sid) or path-form (hostname:...)
+              parsedEp.siteId = siteSegment;
+            }
+
+            if (listMatch) parsedEp = parsedEp || {}, parsedEp.listId = listMatch[1];
+            if (driveMatch) parsedEp = parsedEp || {}, parsedEp.driveId = driveMatch[1];
+
+            // CSV-style fallback: host,siteId,driveId/listId
+            if (!parsedEp || !parsedEp.siteId) {
+              const parts = epStr.split(',').map((p) => p && p.trim()).filter(Boolean);
+              if (parts.length >= 2) {
+                const host = parts[0];
+                const siteId = parts[1];
+                const id = parts[2] || null;
+                parsedEp = parsedEp || {};
+                parsedEp.host = host;
+                if (siteId) parsedEp.siteId = siteId;
+                if (id) {
+                  const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                  if (guidRegex.test(id)) parsedEp.driveId = id; else parsedEp.driveId = id;
+                }
+              }
+            }
+          } catch (inner) {
+            // ignore parse errors and fall through to CSV/object heuristics below
           }
         }
       } else if (typeof graphEndpointRaw === 'object') {
@@ -600,11 +638,49 @@ export const getArticlesFromKnowledgeSources = async (q?: string): Promise<any[]
 
         // deriveSiteAndLibrary also attempts to parse CSV-style GraphEndpoint hints and return a parsed object
         const derived = deriveSiteAndLibrary(s) as any;
+        // Raw graph endpoint string (may be full URL) from Dataverse/raw payload
+        const rawGraph = (s.GraphEndpoint || s.raw?.e365_graphendpoint || s.raw?.graphendpoint || null) as any;
+
+        // If caller stored a full Graph URL, call it directly and map results
+        if (typeof rawGraph === 'string' && rawGraph.toLowerCase().startsWith('https://graph.microsoft.com')) {
+          try {
+            const token = await getAccessToken();
+            const client = getGraphClient(token);
+            const path = rawGraph.replace(/^https:\/\/graph\.microsoft\.com\/v1\.0/i, '');
+            const res: any = await client.api(path).get();
+            const rows: any[] = res?.value || (res ? [res] : []);
+            // Normalize rows to the same shape expected by downstream code
+            items = rows.map((r: any) => {
+              // list items have `fields`, drive items have `name`/`webUrl`/`file`
+              if (r.fields) {
+                const fields = r.fields || {};
+                return {
+                  id: r.id || fields.Id || Math.random().toString(36).slice(2),
+                  name: fields.Title || fields.title || fields.Name || `Item ${r.id}`,
+                  webUrl: r.sharepointIds?.webUrl || r.webUrl || '',
+                  lastModifiedDateTime: r.lastModifiedDateTime || fields.Modified || null,
+                  _raw: r,
+                };
+              }
+              return {
+                id: r.id || r.name || Math.random().toString(36).slice(2),
+                name: r.name || r.title || '',
+                webUrl: r.webUrl || '',
+                lastModifiedDateTime: r.lastModifiedDateTime || null,
+                _raw: r,
+              };
+            });
+          } catch (err) {
+            console.warn('Direct GraphEndpoint URL fetch failed, falling back to parsed endpoint or site URL', s, err);
+            items = [];
+          }
+        }
+
         const candidateEp = derived.graphEndpoint || (s.GraphEndpoint ? (typeof s.GraphEndpoint === 'string' ? (() => {
           try { return JSON.parse(s.GraphEndpoint); } catch { return null; }
         })() : s.GraphEndpoint) : null);
 
-        if (candidateEp) {
+        if ((!items || items.length === 0) && candidateEp) {
           try {
             if (candidateEp.type === 'drive' && candidateEp.siteId && candidateEp.driveId) {
               const token = await getAccessToken();
