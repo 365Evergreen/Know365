@@ -8,8 +8,32 @@ const CommunicationsTest: React.FC = () => {
   const [items, setItems] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [diagMessages, setDiagMessages] = useState<string[]>([]);
 
   useEffect(() => {
+    // capture unhandled promise rejections to help diagnose the 'message channel closed' error
+    const onUnhandled = (ev: PromiseRejectionEvent) => {
+      try {
+        const msg = typeof ev.reason === 'string' ? ev.reason : (ev.reason && ev.reason.message) ? ev.reason.message : JSON.stringify(ev.reason || 'unknown');
+        const stack = ev.reason && ev.reason.stack ? `\n${ev.reason.stack}` : '';
+        const text = `[unhandledrejection] ${msg}${stack}`;
+        console.warn(text);
+        setDiagMessages((s) => [text, ...s].slice(0, 20));
+      } catch (e) {
+        console.warn('Error formatting unhandled rejection', e);
+      }
+    };
+    window.addEventListener('unhandledrejection', onUnhandled as EventListener);
+
+    // also capture window messages for extra context (no-op handler)
+    const onMessage = (ev: MessageEvent) => {
+      try {
+        const src = ev?.origin || 'unknown-origin';
+        const payload = typeof ev.data === 'string' ? ev.data : JSON.stringify(ev.data || {});
+        setDiagMessages((s) => [`[message] from ${src}: ${payload}`, ...s].slice(0, 20));
+      } catch { /* ignore */ }
+    };
+    window.addEventListener('message', onMessage as EventListener);
     let mounted = true;
     const load = async () => {
       setLoading(true);
@@ -53,7 +77,11 @@ const CommunicationsTest: React.FC = () => {
     };
 
     load();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+      window.removeEventListener('unhandledrejection', onUnhandled as EventListener);
+      window.removeEventListener('message', onMessage as EventListener);
+    };
   }, []);
 
   return (
@@ -79,6 +107,15 @@ const CommunicationsTest: React.FC = () => {
               </Stack>
               <Text variant="small">{it.excerpt || <i>No excerpt available</i>}</Text>
             </Stack>
+          ))}
+        </Stack>
+      )}
+
+      {diagMessages.length > 0 && (
+        <Stack styles={{ root: { marginTop: 20, padding: 12, border: '1px dashed #ddd', background: '#fafafa' } }}>
+          <Text variant="mediumPlus">Diagnostics</Text>
+          {diagMessages.map((m, i) => (
+            <Text key={i} styles={{ root: { whiteSpace: 'pre-wrap', fontFamily: 'monospace', fontSize: 12 } }}>{m}</Text>
           ))}
         </Stack>
       )}
