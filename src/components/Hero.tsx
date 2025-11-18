@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Stack, Text, SearchBox } from '@fluentui/react';
+import { Stack, Text, TextField, PrimaryButton, Icon } from '@fluentui/react';
 import useAuth from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { getAppConfigItems } from '../services/dataverseClient';
@@ -12,6 +12,13 @@ const Hero: React.FC = () => {
   const navigate = useNavigate();
 
   const [heroCfg, setHeroCfg] = useState<any>(null);
+  const [query, setQuery] = useState<string>('');
+
+  const doSearch = () => {
+    const q = (query || '').trim();
+    if (!q) return;
+    navigate(`/search?q=${encodeURIComponent(q)}`);
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -77,15 +84,28 @@ const Hero: React.FC = () => {
         {displaySubtitle}
       </Text>
 
-      <div style={{ maxWidth: 720, width: '100%' }}>
-        <SearchBox
-          placeholder="Search knowledge..."
-          onSearch={(q?: string) => {
-            const query = q ?? '';
-            navigate(`/knowledge?q=${encodeURIComponent(query)}`);
-          }}
-          styles={{ root: { width: '100%' } }}
-        />
+      <div style={{ maxWidth: 920, width: '100%', marginTop: 12 }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <TextField
+            aria-label="Hero search"
+            placeholder={heroCfg && heroCfg.searchPlaceholder ? heroCfg.searchPlaceholder : 'Search knowledge...'}
+            value={String((heroCfg && heroCfg._lastQuery) || '')}
+            onChange={(_e, v) => setQuery(v || '')}
+            styles={{
+              root: { flex: 1 },
+              field: { padding: '14px 18px', fontSize: 18, borderRadius: 6, height: 52 },
+            }}
+            onKeyDown={(e) => { if (e.key === 'Enter') doSearch(); }}
+          />
+          <PrimaryButton
+            onClick={doSearch}
+            styles={{ root: { height: 52, borderRadius: 6, padding: '0 18px' } }}
+            aria-label="Search"
+          >
+            <Icon iconName="Search" styles={{ root: { marginRight: 8 } }} />
+            Search
+          </PrimaryButton>
+        </div>
       </div>
       </div>
     </Stack>
