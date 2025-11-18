@@ -14,6 +14,7 @@ import {
   updateKnowledgeSource,
   deleteKnowledgeSource,
   deriveSiteAndLibrary,
+  isValidUrl,
 } from '../services/dataverseClient';
 import { getSiteDrivesByUrl, getSiteListsByUrl, getSiteIdByUrl } from '../services/sharePointGraph';
 import {
@@ -775,7 +776,7 @@ const AdminConfig: React.FC = () => {
                         { key: 'd9', name: 'List match', fieldName: 'listMatch', minWidth: 90 },
                       ] as IColumn[]}
                       selectionMode={0}
-                      onRenderItemColumn={(item: any, index?: number, column?: IColumn) => {
+                      onRenderItemColumn={(item: any, _index?: number, column?: IColumn) => {
                         const field = column?.fieldName || '';
                         const val = item[field as keyof typeof item];
                         if (field === 'graphEndpoint') return <span style={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>{JSON.stringify(val || '')}</span>;
