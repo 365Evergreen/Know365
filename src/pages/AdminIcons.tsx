@@ -126,9 +126,9 @@ const AdminIcons: React.FC = () => {
           <TextField placeholder="Search icons by name or url" value={query} onChange={(_, v) => setQuery(v || '')} />
         </div>
 
-        <PrimaryButton text="Select All Visible" onClick={handleSelectAll} />
-        <DefaultButton text="Clear Selection" onClick={handleClearSelection} />
-        <PrimaryButton text={saving ? 'Saving…' : 'Save Selection'} onClick={handleSave} disabled={saving || Object.keys(selected).length === 0} />
+        {React.createElement(PrimaryButton, { text: "Select All Visible", onClick: handleSelectAll })}
+        {React.createElement(DefaultButton, { text: "Clear Selection", onClick: handleClearSelection })}
+        {React.createElement(PrimaryButton, { text: saving ? 'Saving...' : 'Save Selection', onClick: handleSave, disabled: saving || Object.keys(selected).length === 0 })}
       </Stack>
 
       <div style={{ marginTop: 12 }}>{loading ? <Spinner label="Loading icons…" /> : <Label>{filtered.length} icons</Label>}</div>

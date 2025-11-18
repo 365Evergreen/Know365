@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Graph Endpoint Test</title>
+  <style>
+    body { font-family: Segoe UI, Roboto, Arial, sans-serif; padding: 18px; background:#f7f7f7; }
+    .card { background: #fff; border-radius: 6px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.06); max-width: 980px; }
+    label { display:block; margin-top:8px; font-weight:600; }
+    input, select, textarea { width:100%; padding:8px; margin-top:4px; box-sizing:border-box; }
+    .row { display:flex; gap:8px; }
+    .col { flex:1; }
+    pre { background:#111; color:#eee; padding:12px; border-radius:6px; overflow:auto; max-height:360px; }
+    button { padding:10px 14px; margin-top:12px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Graph Endpoint Test (dev-proxy)</h2>
+    <p>Use this page to call Microsoft Graph via the local <code>dev-proxy</code>. The proxy must be running at <code>http://localhost:4000</code> and the secret must match.</p>
+
+    <label for="proxyUrl">Dev proxy URL</label>
+    <input id="proxyUrl" value="http://localhost:4000/api/graph" />
+
+    <div class="row">
+      <div class="col">
+        <label for="method">Method</label>
+        <select id="method"><option>GET</option><option>POST</option><option>PATCH</option><option>PUT</option><option>DELETE</option></select>
+      </div>
+      <div class="col">
+        <label for="path">Graph Path</label>
+        <input id="path" placeholder="/sites/{siteId}/lists/{listId}/items" value="/sites" />
+      </div>
+    </div>
+
+    <label for="query">Query string (optional, include leading ?)</label>
+    <input id="query" placeholder="?$top=5&$select=fields" />
+
+    <label for="body">Request body (JSON) — for POST/PATCH/PUT</label>
+    <textarea id="body" rows="8" placeholder='{"example":true}'></textarea>
+
+    <label for="secret">Dev proxy secret (header x-dev-proxy-secret)</label>
+    <input id="secret" value="dev-secret" />
+
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <button id="send">Send Request</button>
+      <button id="clear">Clear Result</button>
+    </div>
+
+    <h3>Result</h3>
+    <div><strong>Status:</strong> <span id="status">-</span></div>
+    <div style="margin-top:8px;"><strong>Headers (JSON):</strong></div>
+    <pre id="headers">-</pre>
+    <div style="margin-top:8px;"><strong>Body:</strong></div>
+    <pre id="result">-</pre>
+  </div>
+
+  <script src="./graph-test.js"></script>
+</body>
+</html>

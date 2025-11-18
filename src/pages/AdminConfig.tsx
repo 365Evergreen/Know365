@@ -42,6 +42,7 @@ import {
   getTheme,
 } from '@fluentui/react';
 import DocumentsDisplay from '../components/DocumentsDisplay';
+import { getGraphClient, getAccessToken } from '../services/graphClient';
 import { getCarouselConfig, saveCarouselConfig, createCarouselConfig } from '../services/dataverseClient';
 import ConfigurableCarousel from '../components/ConfigurableCarousel';
 import FormBuilder from '../components/FormBuilder';
@@ -90,6 +91,9 @@ const AdminConfig: React.FC = () => {
   // diagnostics state
   const [diagRunning, setDiagRunning] = useState(false);
   const [diagnostics, setDiagnostics] = useState<any[]>([]);
+  const [testOpen, setTestOpen] = useState(false);
+  const [testResult, setTestResult] = useState<any | null>(null);
+  const [testRunning, setTestRunning] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewPayload, setPreviewPayload] = useState<any>(null);
   const [previewTargetId, setPreviewTargetId] = useState<string | null>(null);
@@ -318,6 +322,59 @@ const AdminConfig: React.FC = () => {
     } catch (e) {
       console.error('Delete failed', e);
       showMessage('Failed to delete source: see console', MessageBarType.error);
+    }
+  };
+
+  const testGraphEndpoint = async (s: any) => {
+    setTestRunning(true);
+    setTestResult(null);
+    setTestOpen(false);
+    try {
+      const raw = s.raw || s;
+      const epRaw = raw.GraphEndpoint || raw.graphendpoint || raw.e365_graphapiendpoint || raw.e365_graphendpoint || null;
+      let epParsed: any = null;
+      try { epParsed = typeof epRaw === 'string' ? JSON.parse(epRaw) : epRaw; } catch { epParsed = epRaw; }
+
+      let path = '';
+      if (typeof epRaw === 'string') {
+        if (epRaw.toLowerCase().startsWith('https://graph.microsoft.com')) path = epRaw.replace(/^https:\/\/graph\.microsoft\.com\/v1\.0/i, '');
+        else path = epRaw;
+      } else if (epParsed && (epParsed.siteId || epParsed.listId || epParsed.driveId)) {
+        if (epParsed.type === 'list' && epParsed.siteId && epParsed.listId) path = `/sites/${epParsed.siteId}/lists/${epParsed.listId}/items`;
+        else if (epParsed.type === 'drive' && epParsed.siteId && epParsed.driveId) path = `/sites/${epParsed.siteId}/drives/${epParsed.driveId}/root/children`;
+        else if (epParsed.siteId && epParsed.listId) path = `/sites/${epParsed.siteId}/lists/${epParsed.listId}/items`;
+      }
+
+      if (!path) {
+        setTestResult({ ok: false, error: 'Could not determine Graph API path for this source.' });
+        setTestOpen(true);
+        return;
+      }
+
+      const lower = path.toLowerCase();
+      if (/\/lists\/[0-9a-f\-]+(\/|$)/i.test(lower) && !lower.includes('/items')) path = path.replace(/\/+$/,'') + '/items';
+      if (!path.toLowerCase().includes('$expand=fields')) path += (path.includes('?') ? '&' : '?') + '$expand=fields';
+
+      try {
+        const token = await getAccessToken();
+        const client = getGraphClient(token);
+        const res: any = await client.api(path).get();
+        const rows: any[] = res?.value || (res ? [res] : []);
+        const sample = (rows || []).slice(0,5).map((r:any) => {
+          if (r.fields) {
+            const f = r.fields || {};
+            return { id: r.id, title: f.Title || f.title || f.Name || '', excerpt: f.ArticleBody || f.articlebody || f.Description || f.description || f.Summary || f.summary || '' };
+          }
+          return { id: r.id || r.name, title: r.name || r.title || '', raw: r };
+        });
+        setTestResult({ ok: true, status: 200, sample, raw: rows });
+        setTestOpen(true);
+      } catch (err:any) {
+        setTestResult({ ok: false, error: err && err.message ? err.message : String(err), rawError: err });
+        setTestOpen(true);
+      }
+    } finally {
+      setTestRunning(false);
     }
   };
 
@@ -754,6 +811,7 @@ const AdminConfig: React.FC = () => {
                     key: 'k4', name: 'Actions', fieldName: 'actions', minWidth: 160, onRender: (item: any) => (
                       <Stack horizontal tokens={{ childrenGap: 8 }}>
                         <DefaultButton onClick={() => handleSelectExisting(item)}>Edit</DefaultButton>
+                        <DefaultButton onClick={() => testGraphEndpoint(item)} text={testRunning ? 'Testing…' : 'Test'} />
                         <DefaultButton onClick={async () => { if (confirm('Delete this source?')) { try { const id = item.id || (item.raw && (item.raw['@odata.id'] || item.raw.id)); await deleteKnowledgeSource(id); await loadSources(); showMessage('Deleted', MessageBarType.success); } catch (e) { console.error(e); showMessage('Delete failed', MessageBarType.error); } } }}>Delete</DefaultButton>
                       </Stack>
                     ),
@@ -1297,6 +1355,12 @@ const AdminConfig: React.FC = () => {
             }
           }} text="Confirm Apply" />
           <DefaultButton onClick={() => { setPreviewOpen(false); setPreviewPayload(null); setPreviewTargetId(null); }} text="Cancel" />
+        </DialogFooter>
+      </Dialog>
+      <Dialog hidden={!testOpen} onDismiss={() => setTestOpen(false)} dialogContentProps={{ type: DialogType.normal, title: 'Test GraphEndpoint result', subText: 'Result from calling the stored Graph endpoint.' }}>
+        <div style={{ padding: 12, maxHeight: 420, overflow: 'auto', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>{JSON.stringify(testResult || {}, null, 2)}</div>
+        <DialogFooter>
+          <PrimaryButton onClick={() => setTestOpen(false)} text="Close" />
         </DialogFooter>
       </Dialog>
     </div>
