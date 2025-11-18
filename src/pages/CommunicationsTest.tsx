@@ -123,7 +123,13 @@ const CommunicationsTest: React.FC = () => {
   return (
     <Stack tokens={{ childrenGap: 12 }} styles={{ root: { padding: 24 } }}>
       <Text variant="xLarge">Communications — Test</Text>
-      <Text>This page shows all items whose KnowledgeSource `e365_knowledgesourcetext` = <b>Communications</b>.</Text>
+      <Text>
+        {'This page shows all items whose KnowledgeSource '}
+        <span style={{ fontFamily: 'monospace', background: '#f3f2f1', padding: '0 6px', borderRadius: 4 }}>e365_knowledgesourcetext</span>
+        {' = '}
+        <strong>Communications</strong>
+        {'.'}
+      </Text>
 
       {loading ? (
         <Spinner label="Loading…" size={SpinnerSize.small} />
@@ -145,9 +151,9 @@ const CommunicationsTest: React.FC = () => {
               {/* metadata line */}
               {(it.metadata && (it.metadata.knowledgeSource || it.metadata.sourceType || it.metadata.businessFunction)) ? (
                 <Text variant="small" styles={{ root: { color: '#666', marginBottom: 8 } }}>
-                  {it.metadata.knowledgeSource ? `KnowledgeSource: ${it.metadata.knowledgeSource}` : null}
-                  {it.metadata.sourceType ? ` ${it.metadata.sourceType ? ' • SourceType: ' + it.metadata.sourceType : ''}` : null}
-                  {it.metadata.businessFunction ? ` ${it.metadata.businessFunction ? ' • BusinessFunction: ' + it.metadata.businessFunction : ''}` : null}
+                  {it.metadata.knowledgeSource ? <>KnowledgeSource: {it.metadata.knowledgeSource}</> : null}
+                  {it.metadata.sourceType ? <> {' '}• SourceType: {it.metadata.sourceType}</> : null}
+                  {it.metadata.businessFunction ? <> {' '}• BusinessFunction: {it.metadata.businessFunction}</> : null}
                 </Text>
               ) : null}
 
