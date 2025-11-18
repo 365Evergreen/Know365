@@ -13,6 +13,7 @@ import {
   createKnowledgeSource,
   updateKnowledgeSource,
   deleteKnowledgeSource,
+  deriveSiteAndLibrary,
 } from '../services/dataverseClient';
 import { getSiteDrivesByUrl, getSiteListsByUrl, getSiteIdByUrl } from '../services/sharePointGraph';
 import {
@@ -84,6 +85,9 @@ const AdminConfig: React.FC = () => {
   const [selectedDriveId, setSelectedDriveId] = useState<string | null>(null);
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
   const [sourceForm, setSourceForm] = useState<{ id?: string; SourceName?: string; SharePointSiteUrl?: string; LibraryName?: string; GraphEndpoint?: string; e365_sourcetype?: string }>({});
+  // diagnostics state
+  const [diagRunning, setDiagRunning] = useState(false);
+  const [diagnostics, setDiagnostics] = useState<any[]>([]);
   const navigate = useNavigate();
   const theme = getTheme();
 
@@ -708,6 +712,79 @@ const AdminConfig: React.FC = () => {
 
               <div style={{ marginTop: 16 }}>
                 <h4>Preview articles from configured KnowledgeSources (lists only)</h4>
+                <div style={{ marginTop: 12 }}>
+                  <PrimaryButton text={diagRunning ? 'Running diagnostics…' : 'Run per-source diagnostics'} onClick={async () => {
+                    if (diagRunning) return;
+                    setDiagRunning(true);
+                    try {
+                      const checks: any[] = [];
+                      for (const s of (sources || [])) {
+                        try {
+                          const derived = deriveSiteAndLibrary(s);
+                          const epRaw = s.GraphEndpoint || s.graphendpoint || s.raw?.GraphEndpoint || s.raw?.graphendpoint || null;
+                          let epParsed: any = null;
+                          try { epParsed = typeof epRaw === 'string' ? JSON.parse(epRaw) : epRaw; } catch { epParsed = epRaw; }
+
+                          const siteUrl = derived.siteUrl || s.SharePointSiteUrl || s.raw?.e365_sharepointsiteurl || s.raw?.SharePointSiteUrl || null;
+                          let siteId: string | null = null;
+                          let drives: any[] = [];
+                          let lists: any[] = [];
+                          let driveMatch = false;
+                          let listMatch = false;
+
+                          if (siteUrl && isValidUrl(siteUrl)) {
+                            try {
+                              siteId = await getSiteIdByUrl(siteUrl);
+                            } catch { siteId = null; }
+                            try { drives = await getSiteDrivesByUrl(siteUrl); } catch { drives = []; }
+                            try { lists = await getSiteListsByUrl(siteUrl); } catch { lists = []; }
+                          }
+
+                          const libraryName = derived.libraryName || s.LibraryName || s.raw?.LibraryName || s.raw?.e365_sourceinternalname || s.raw?.e365_sourceinternalname || '';
+                          if (libraryName) {
+                            if (drives && drives.find((d: any) => String(d.name || '').toLowerCase() === String(libraryName).toLowerCase())) driveMatch = true;
+                            if (lists && lists.find((l: any) => String(l.displayName || '').toLowerCase() === String(libraryName).toLowerCase())) listMatch = true;
+                          }
+
+                          checks.push({ SourceName: s.SourceName || s.e365_name || s.raw?.e365_name || s.raw?.SourceName || '', id: s.id || s.raw?.e365_knowledgesourceid || s.raw?.id || '', siteUrl, derivedSiteUrl: derived.siteUrl, libraryName, derivedLibraryName: derived.libraryName, graphEndpoint: epParsed, siteId, driveCount: (drives||[]).length, listCount: (lists||[]).length, driveMatch, listMatch, raw: s.raw || s });
+                        } catch (e) {
+                          checks.push({ SourceName: s.SourceName || s.raw?.e365_name || '', id: s.id || s.raw?.id || '', error: String(e), raw: s.raw || s });
+                        }
+                      }
+                      setDiagnostics(checks);
+                    } finally {
+                      setDiagRunning(false);
+                    }
+                  }} />
+                </div>
+
+                {diagnostics && diagnostics.length > 0 && (
+                  <div style={{ marginTop: 12 }}>
+                    <h4>Per-source Diagnostics</h4>
+                    <DetailsList
+                      items={diagnostics}
+                      columns={[
+                        { key: 'd1', name: 'Source', fieldName: 'SourceName', minWidth: 180 },
+                        { key: 'd2', name: 'Derived site', fieldName: 'derivedSiteUrl', minWidth: 260 },
+                        { key: 'd3', name: 'Derived lib/list', fieldName: 'derivedLibraryName', minWidth: 180 },
+                        { key: 'd4', name: 'GraphEndpoint', fieldName: 'graphEndpoint', minWidth: 180 },
+                        { key: 'd5', name: 'SiteId', fieldName: 'siteId', minWidth: 160 },
+                        { key: 'd6', name: 'Drives', fieldName: 'driveCount', minWidth: 80 },
+                        { key: 'd7', name: 'Lists', fieldName: 'listCount', minWidth: 80 },
+                        { key: 'd8', name: 'Drive match', fieldName: 'driveMatch', minWidth: 90 },
+                        { key: 'd9', name: 'List match', fieldName: 'listMatch', minWidth: 90 },
+                      ] as IColumn[]}
+                      selectionMode={0}
+                      onRenderItemColumn={(item: any, index?: number, column?: IColumn) => {
+                        const field = column?.fieldName || '';
+                        const val = item[field as keyof typeof item];
+                        if (field === 'graphEndpoint') return <span style={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>{JSON.stringify(val || '')}</span>;
+                        if (typeof val === 'boolean') return String(val);
+                        return <span style={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>{String(val || '')}</span>;
+                      }}
+                    />
+                  </div>
+                )}
                 <PrimaryButton text="Preview articles" onClick={async () => {
                   try {
                     const { getArticlesFromKnowledgeSources } = await import('../services/dataverseClient');
