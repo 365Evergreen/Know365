@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Stack, Text, Link, Spinner, SpinnerSize } from '@fluentui/react';
-import { getKnowledgeSources, getArticlesFromKnowledgeSources } from '../services/dataverseClient';
-
-const normalize = (s?: string) => (s || '').toString().trim().toLowerCase();
+import { getAccessToken, getGraphClient } from '../services/graphClient';
 
 const CommunicationsTest: React.FC = () => {
   const [items, setItems] = useState<any[] | null>(null);
@@ -39,35 +37,73 @@ const CommunicationsTest: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const sources = (await getKnowledgeSources()) as any[] || [];
-        const mapFn: Record<string, string> = {};
-        for (const s of sources) {
-          // prefer normalized businessFunction field added by server-side mapping
-          const bf = s.businessFunction || s.raw?.e365_knowledgesourcetext || s.raw?.e365_businessfunctionname || '';
-          mapFn[(s.SourceName || s.SourceName || '').toString()] = normalize(bf) as string;
+        // allow overriding which list endpoint to call via query param `?endpoint=` (path or full graph url)
+        const qs = new URLSearchParams(window.location.search || '');
+        let graphListPath = qs.get('endpoint') || '/sites/365evergreen.sharepoint.com,7b7973e8-f444-4b2f-9e53-2a7a291d6228,162f408a-43a4-40bd-a962-607e5a08dc12/lists/b182d225-4418-45b6-b6e4-596edf748041/items?expand=fields';
+
+        // Accept a full Graph URL (starting with https://graph.microsoft.com) and convert to path
+        if (graphListPath.startsWith('https://graph.microsoft.com')) {
+          graphListPath = graphListPath.replace('https://graph.microsoft.com/v1.0', '');
         }
 
-        const all = await getArticlesFromKnowledgeSources();
-        const filtered = (all || []).filter((a: any) => {
-          try {
-            const src = a.source || '';
-            return mapFn[src] === 'communications';
-          } catch {
-            return false;
+        const token = await getAccessToken();
+        const client = getGraphClient(token);
+        const res: any = await client.api(graphListPath).get();
+        const rows: any[] = res?.value || [];
+
+        const getField = (fields: any, ...keys: string[]) => {
+          if (!fields) return undefined;
+          for (const k of keys) {
+            if (k in fields && fields[k] !== null && fields[k] !== undefined) return fields[k];
+            const lk = k.toLowerCase();
+            for (const fkey of Object.keys(fields)) {
+              if (fkey.toLowerCase() === lk && fields[fkey] !== null && fields[fkey] !== undefined) return fields[fkey];
+            }
           }
+          return undefined;
+        };
+
+        const display = rows.map((r: any) => {
+          const fields = r.fields || {};
+          const title = getField(fields, 'Title', 'title', 'Name', 'name') || 'Untitled';
+          const excerpt = getField(fields, 'Description', 'description', 'Body', 'body') || JSON.stringify(fields).slice(0, 300);
+
+          // metadata fields that may exist in list-driven content or be mapped later
+          const knowledgeSource = getField(fields, 'e365_knowledgesourcetext', 'KnowledgeSource', 'KnowledgeSourceText', 'Source') || null;
+          const sourceType = getField(fields, 'e365_sourcetype', 'SourceType') || null;
+          const businessFunction = getField(fields, 'e365_businessfunction', 'BusinessFunction') || null;
+
+          let webUrl: string | null = r.webUrl || null;
+          if (!webUrl && fields.FileRef) {
+            try {
+              const host = 'https://365evergreen.sharepoint.com';
+              webUrl = host + (fields.FileRef.startsWith('/') ? fields.FileRef : ('/' + fields.FileRef));
+            } catch { webUrl = null; }
+          }
+
+          return {
+            id: r.id || r.fields?.Id || Math.random().toString(36).slice(2),
+            title,
+            excerpt,
+            webUrl,
+            metadata: { knowledgeSource, sourceType, businessFunction },
+            raw: r,
+          };
         });
 
-        // Map to simple display model
-        const display = filtered.map((a: any) => ({
-          id: a.id || a._raw?.id || a._raw?.Name || a._raw?.name || Math.random().toString(36).slice(2),
-          title: a.title || a._raw?.title || a._raw?.name || a._raw?.displayName || a.name || 'Untitled',
-          excerpt:
-            a.excerpt || a._raw?.excerpt || a._raw?.summary || a._raw?.description || a._raw?.fields?.Description || (a._raw?.body?.content ? String(a._raw.body.content).slice(0, 400) : ''),
-          webUrl: a.webUrl || a._raw?.webUrl || a._raw?.SiteUrl || null,
-        }));
-
         if (!mounted) return;
-        setItems(display);
+
+        // If any rows include a knowledgeSource value, prefer filtering to that source (case-insensitive)
+        const anyHaveKS = display.some((d) => d.metadata && d.metadata.knowledgeSource);
+        let final = display;
+        if (anyHaveKS) {
+          final = display.filter((d) => {
+            const ks = (d.metadata?.knowledgeSource || '').toString().toLowerCase();
+            return ks === 'communications' || ks === 'communication' || ks.includes('communications');
+          });
+        }
+
+        setItems(final);
       } catch (e: any) {
         console.error('CommunicationsTest load failed', e);
         if (mounted) setError(String(e?.message || e));
@@ -105,6 +141,16 @@ const CommunicationsTest: React.FC = () => {
                   <Link href={it.webUrl} target="_blank" rel="noopener">Open</Link>
                 ) : null}
               </Stack>
+
+              {/* metadata line */}
+              {(it.metadata && (it.metadata.knowledgeSource || it.metadata.sourceType || it.metadata.businessFunction)) ? (
+                <Text variant="small" styles={{ root: { color: '#666', marginBottom: 8 } }}>
+                  {it.metadata.knowledgeSource ? `KnowledgeSource: ${it.metadata.knowledgeSource}` : null}
+                  {it.metadata.sourceType ? ` ${it.metadata.sourceType ? ' • SourceType: ' + it.metadata.sourceType : ''}` : null}
+                  {it.metadata.businessFunction ? ` ${it.metadata.businessFunction ? ' • BusinessFunction: ' + it.metadata.businessFunction : ''}` : null}
+                </Text>
+              ) : null}
+
               <Text variant="small">{it.excerpt || <i>No excerpt available</i>}</Text>
             </Stack>
           ))}
