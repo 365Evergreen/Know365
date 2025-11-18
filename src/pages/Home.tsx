@@ -3,7 +3,7 @@ import Hero from '../components/Hero';
 import { Stack, Spinner, SpinnerSize, Text, DetailsList, IColumn } from '@fluentui/react';
 import GridCards from '../components/GridCards';
 import RecentDocuments from '../components/RecentDocuments';
-import { getEntityRecords, getRecentKnowledgeArticles, getKnowledgeArticlesCountByFunction, getListBackedArticles, getKnowledgeSources } from '../services/dataverseClient';
+import { getEntityRecords, getRecentKnowledgeArticles, getListBackedArticles, getKnowledgeSources } from '../services/dataverseClient';
 import { useNavigate } from 'react-router-dom';
 import ConfigurableCarousel from '../components/ConfigurableCarousel';
 import DocumentsDisplay from '../components/DocumentsDisplay';
@@ -42,25 +42,6 @@ const Home: React.FC = () => {
         const items = await getEntityRecords(BUSINESS_FUNCTION_ENTITY, 200);
         if (!mounted) return;
         setFunctions(items || []);
-
-        // fetch article counts in parallel (best-effort)
-        try {
-          const counts = await Promise.all((items || []).map(async (it: any) => {
-            const title = it.e365_name || it.name || it.title || it.displayname || it.subject || '';
-            const slug = (title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-            const cnt = await getKnowledgeArticlesCountByFunction(slug);
-            return { id: it.e365_businessfunctionid || it.id || '', slug, count: cnt };
-          }));
-          // attach counts to functions in place
-          const byId: Record<string, number> = {};
-          for (const c of counts) {
-            byId[c.slug] = c.count || 0;
-          }
-          // map functions to include count property
-          setFunctions((items || []).map((it: any) => ({ ...it, _count: byId[((it.e365_name || it.name || it.title || it.displayname || it.subject || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')) || ''] || 0 })));
-        } catch (e) {
-          console.warn('Failed to fetch function article counts', e);
-        }
       } catch (err: any) {
         console.error('Failed to load business functions', err);
         if (mounted) setFunctions([]);
@@ -69,6 +50,8 @@ const Home: React.FC = () => {
     load();
     return () => { mounted = false; };
   }, []);
+
+  
 
   const cards = (functions || []).map((s: any) => {
       // Prefer the e365 schema fields discovered in your org
@@ -153,6 +136,51 @@ const Home: React.FC = () => {
     })();
     return () => { mounted = false; };
   }, []);
+
+  // Compute counts for functions based only on list-backed articles
+  useEffect(() => {
+    // Only run when we have functions and listArticles available
+    if (!functions || !Array.isArray(functions)) return;
+    // We'll fetch KnowledgeSources (cached) to map SourceName -> businessFunction
+    let mounted = true;
+    const compute = async () => {
+      try {
+        const ks = await getKnowledgeSources();
+        if (!mounted) return;
+        // Build a mapping from SourceName -> businessFunction
+        const sourceToFunction: Record<string, string> = {};
+        for (const s of ks || []) {
+          if (!s || !s.SourceName) continue;
+          const bf = ((s as any).businessFunction || '').toString().trim();
+          sourceToFunction[s.SourceName] = bf;
+        }
+
+        // Count list-backed articles grouped by businessFunction
+        const countsByFunction: Record<string, number> = {};
+        for (const a of listArticles || []) {
+          const src = a.source || a.SourceName || '';
+          const funcName = sourceToFunction[src] || '';
+          if (!funcName) continue;
+          const slug = (funcName || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+          countsByFunction[slug] = (countsByFunction[slug] || 0) + 1;
+        }
+
+        // Update functions state with _count computed from list-backed articles
+        setFunctions((prev: any[] | null) => {
+          if (!prev) return prev;
+          return prev.map((f: any) => {
+            const title = f.e365_name || f.name || f.title || f.displayname || f.subject || '';
+            const slug = (title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            return { ...f, _count: countsByFunction[slug] || 0 };
+          });
+        });
+      } catch (e) {
+        console.warn('Failed to compute list-backed counts for functions', e);
+      }
+    };
+    compute();
+    return () => { mounted = false; };
+  }, [functions, listArticles]);
 
   const columns: IColumn[] = [
     { key: 'col1', name: 'Title', fieldName: 'title', minWidth: 200, isResizable: true },
