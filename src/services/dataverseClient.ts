@@ -117,7 +117,7 @@ function isValidUrl(u?: string): boolean {
 
 // Try to derive a usable SharePoint site URL and library/list name from a
 // KnowledgeSource record by inspecting common fields and raw payloads.
-function deriveSiteAndLibrary(s: any): { siteUrl: string | null; libraryName: string | null } {
+export function deriveSiteAndLibrary(s: any): { siteUrl: string | null; libraryName: string | null } {
   try {
     const raw = s && s.raw ? s.raw : {};
 
@@ -653,8 +653,9 @@ export const getListBackedArticles = async (q?: string, topPerSource = 50): Prom
         }
 
         if (!items || items.length === 0) {
-          if (!isValidUrl(s.SharePointSiteUrl) || !s.LibraryName) continue;
-          items = await listLibraryItems(s.SharePointSiteUrl, s.LibraryName, topPerSource);
+          const { siteUrl, libraryName } = deriveSiteAndLibrary(s);
+          if (!isValidUrl(siteUrl || undefined) || !libraryName) continue;
+          items = await listLibraryItems(siteUrl!, libraryName!, topPerSource);
         }
 
         for (const it of (items || [])) {
@@ -956,7 +957,9 @@ export const getRecentKnowledgeArticles = async (top = 10): Promise<any[]> => {
     const allItems: any[] = [];
     for (const s of sources) {
       try {
-        if (!isValidUrl(s.SharePointSiteUrl) || !s.LibraryName) {
+        // Try to derive site+library first (handles records missing explicit fields)
+        const { siteUrl: derivedSiteUrl, libraryName: derivedLibraryName } = deriveSiteAndLibrary(s);
+        if (!isValidUrl(derivedSiteUrl || undefined) || !derivedLibraryName) {
           console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName (recent)', s);
           continue;
         }
@@ -980,12 +983,7 @@ export const getRecentKnowledgeArticles = async (top = 10): Promise<any[]> => {
         }
 
         if (!items || items.length === 0) {
-          const { siteUrl, libraryName } = deriveSiteAndLibrary(s);
-          if (!isValidUrl(siteUrl || undefined) || !libraryName) {
-            console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName (recent)', s);
-            continue;
-          }
-          const itemsFallback = await listLibraryItems(siteUrl!, libraryName!, Math.max(top, 50));
+          const itemsFallback = await listLibraryItems(derivedSiteUrl!, derivedLibraryName!, Math.max(top, 50));
           items = itemsFallback;
         }
 
@@ -1025,7 +1023,9 @@ export const getKnowledgeArticlesBySubject = async (subjectId: string, top = 50)
     const results: any[] = [];
     for (const s of sources) {
       try {
-        if (!isValidUrl(s.SharePointSiteUrl) || !s.LibraryName) {
+        // Try to derive site+library first (handles records missing explicit fields)
+        const { siteUrl: derivedSiteUrl, libraryName: derivedLibraryName } = deriveSiteAndLibrary(s);
+        if (!isValidUrl(derivedSiteUrl || undefined) || !derivedLibraryName) {
           console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName (subject search)', s);
           continue;
         }
@@ -1049,12 +1049,7 @@ export const getKnowledgeArticlesBySubject = async (subjectId: string, top = 50)
         }
 
         if (!items || items.length === 0) {
-          const { siteUrl, libraryName } = deriveSiteAndLibrary(s);
-          if (!isValidUrl(siteUrl || undefined) || !libraryName) {
-            console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName (subject search)', s);
-            continue;
-          }
-          items = await listLibraryItems(siteUrl!, libraryName!, top);
+          items = await listLibraryItems(derivedSiteUrl!, derivedLibraryName!, top);
         }
 
         for (const it of items) {
