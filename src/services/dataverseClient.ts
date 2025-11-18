@@ -145,7 +145,9 @@ export function deriveSiteAndLibrary(s: any): { siteUrl: string | null; libraryN
     libraryName = libraryName ? String(libraryName).trim() : '';
 
     // Try to find GraphEndpoint in a variety of places and parse it. Dataverse values sometimes
-    // contain JSON, or a CSV-style hint like `host,siteId,driveId`.
+    // contain JSON, or a CSV-style hint like `host,siteId,driveId`. Also prefer explicit
+    // GUID columns when available (new columns: e365_siteid, e365_listid) to produce a
+    // canonical parsed endpoint object used elsewhere in the app.
     let graphEndpointRaw = s.GraphEndpoint || raw.GraphEndpoint || raw.graphendpoint || raw.e365_graphendpoint || s.graphendpoint || null;
     let parsedEp: any = null;
     if (graphEndpointRaw) {
@@ -171,6 +173,29 @@ export function deriveSiteAndLibrary(s: any): { siteUrl: string | null; libraryN
         }
       } else if (typeof graphEndpointRaw === 'object') {
         parsedEp = graphEndpointRaw;
+      }
+
+      // If explicit e365_siteid / e365_listid (GUID) values exist on the record, prefer
+      // constructing a parsed endpoint using those IDs. These may be present either on
+      // the top-level object `s` or inside the `raw` payload depending on how records
+      // were normalized by callers.
+      try {
+        const siteIdCandidate = (s && (s.e365_siteid || s.e365_siteid_value || s.siteid)) || (raw && (raw.e365_siteid || raw.siteid || raw._e365_siteid_value));
+        const listIdCandidate = (s && (s.e365_listid || s.e365_listid_value || s.listid)) || (raw && (raw.e365_listid || raw.listid || raw._e365_listid_value));
+        const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const siteId = siteIdCandidate && String(siteIdCandidate).trim();
+        const listId = listIdCandidate && String(listIdCandidate).trim();
+        if (siteId && guidRegex.test(siteId)) {
+          parsedEp = parsedEp || {};
+          parsedEp.siteId = siteId;
+          // If a list GUID is present, assume it's a list endpoint; otherwise leave drive/list unset
+          if (listId && guidRegex.test(listId)) {
+            parsedEp.listId = listId;
+            parsedEp.type = parsedEp.type || 'list';
+          }
+        }
+      } catch (e) {
+        // ignore and continue
       }
     }
 
