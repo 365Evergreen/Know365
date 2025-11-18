@@ -1011,13 +1011,51 @@ export const getKnowledgeArticlesByFunction = async (fn: string, q?: string): Pr
               let items: any[] = [];
               if (s.GraphEndpoint) {
                 try {
-                  const ep = typeof s.GraphEndpoint === 'string' ? JSON.parse(s.GraphEndpoint) : s.GraphEndpoint;
-                  if (ep && ep.type === 'drive' && ep.siteId && ep.driveId) {
-                    const token = await getAccessToken();
-                    items = await getDocuments(token, ep.siteId, ep.driveId, 50);
-                  } else if (ep && ep.type === 'list' && ep.siteId && ep.listId) {
-                    const token = await getAccessToken();
-                    items = await getListItems(token, ep.siteId, ep.listId, 50);
+                  // Quick-path: if the GraphEndpoint is a full Graph URL (string), call it directly
+                  if (typeof s.GraphEndpoint === 'string' && s.GraphEndpoint.toLowerCase().startsWith('https://graph.microsoft.com')) {
+                    try {
+                      const token = await getAccessToken();
+                      const client = getGraphClient(token);
+                      let path = s.GraphEndpoint.replace(/^https:\/\/graph\.microsoft\.com\/v1\.0/i, '');
+                      const lower = path.toLowerCase();
+                      // If the provided endpoint targets a list (e.g. /lists/{id}) but not items, call the items endpoint
+                      if (/\/lists\/[0-9a-fA-F\-]+(\/|$)/i.test(lower) && !lower.includes('/items')) {
+                        path = path.replace(/\/+$/,'') + '/items';
+                      }
+                      // Ensure fields are expanded for list items so we can extract excerpt/title
+                      if (!path.toLowerCase().includes('$expand=fields')) {
+                        path += (path.includes('?') ? '&' : '?') + '$expand=fields';
+                      }
+                      const res: any = await client.api(path).get();
+                      const rows: any[] = res?.value || (res ? [res] : []);
+                      items = rows.map((r: any) => {
+                        if (r.fields) {
+                          const fields = r.fields || {};
+                          const excerpt = (fields.Excerpt || fields.excerpt || fields.Description || fields.description || fields.summary || fields.Summary || fields.ArticleBody || fields.articlebody || fields.Body || fields.body || '') as string;
+                          return {
+                            id: r.id || fields.Id || Math.random().toString(36).slice(2),
+                            name: fields.Title || fields.title || fields.Name || `Item ${r.id}`,
+                            webUrl: r.sharepointIds?.webUrl || r.webUrl || '',
+                            lastModifiedDateTime: r.lastModifiedDateTime || fields.Modified || null,
+                            excerpt: excerpt ? String(excerpt).slice(0, 400) : undefined,
+                            _raw: r,
+                          };
+                        }
+                        return { id: r.id || r.name || Math.random().toString(36).slice(2), name: r.name || r.title || '', webUrl: r.webUrl || '', lastModifiedDateTime: r.lastModifiedDateTime || null, _raw: r };
+                      });
+                    } catch (err) {
+                      console.warn('Direct GraphEndpoint URL fetch failed (by function), falling back to parsed endpoint or site URL', s, err);
+                      items = [];
+                    }
+                  } else {
+                    const ep = typeof s.GraphEndpoint === 'string' ? JSON.parse(s.GraphEndpoint) : s.GraphEndpoint;
+                    if (ep && ep.type === 'drive' && ep.siteId && ep.driveId) {
+                      const token = await getAccessToken();
+                      items = await getDocuments(token, ep.siteId, ep.driveId, 50);
+                    } else if (ep && ep.type === 'list' && ep.siteId && ep.listId) {
+                      const token = await getAccessToken();
+                      items = await getListItems(token, ep.siteId, ep.listId, 50);
+                    }
                   }
                 } catch (err) {
                   console.warn('GraphEndpoint parse/use failed (by function), falling back to SharePointSiteUrl', s, err);
