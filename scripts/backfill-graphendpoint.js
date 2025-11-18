@@ -85,6 +85,25 @@ function deriveSiteAndLibrary(record) {
     } else if (typeof graphRaw === 'object') parsedEp = graphRaw;
   }
 
+  // Prefer explicit GUID columns if present (new columns: e365_siteid, e365_listid)
+  try {
+    const guidRx = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const siteIdCandidate = getRawField(record, 'e365_siteid', 'siteid', '_e365_siteid_value');
+    const listIdCandidate = getRawField(record, 'e365_listid', 'listid', '_e365_listid_value');
+    const siteId = siteIdCandidate ? String(siteIdCandidate).trim() : null;
+    const listId = listIdCandidate ? String(listIdCandidate).trim() : null;
+    if (siteId && guidRx.test(siteId)) {
+      parsedEp = parsedEp || {};
+      parsedEp.siteId = siteId;
+      if (listId && guidRx.test(listId)) {
+        parsedEp.listId = listId;
+        parsedEp.type = parsedEp.type || 'list';
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+
   return { siteUrl: siteUrl || null, libraryName: libraryName || null, graphEndpoint: parsedEp || undefined };
 }
 
@@ -213,28 +232,45 @@ async function main() {
     const derived = deriveSiteAndLibrary(rec);
     const existingGraph = derived.graphEndpoint || getRawField(r, 'GraphEndpoint', 'graphendpoint', 'e365_graphendpoint') || null;
 
-    if (!derived.siteUrl || !derived.libraryName) {
-      results.push({ id, status: 'skipped', reason: 'missing siteUrl/libraryName', source: r.SourceName || r.sourcename || null });
-      continue;
-    }
-
-    // Resolve siteId via Graph
-    const siteId = await resolveSiteIdFromUrl(derived.siteUrl);
-    if (!siteId) {
-      results.push({ id, status: 'skipped', reason: 'siteId not resolved', siteUrl: derived.siteUrl });
-      continue;
-    }
-
-    // Try list first
-    let listId = await findListId(siteId, derived.libraryName);
-    let driveId = null;
+    // If the new GUID columns are populated, prefer them and avoid site URL resolution
+    const guidRx = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const explicitSiteId = getRawField(r, 'e365_siteid', 'siteid', '_e365_siteid_value');
+    const explicitListId = getRawField(r, 'e365_listid', 'listid', '_e365_listid_value');
     let finalEp = null;
-    if (listId) {
-      finalEp = { type: 'list', siteId, listId };
-    } else {
-      // try drive
-      driveId = await findDriveId(siteId, derived.libraryName);
-      if (driveId) finalEp = { type: 'drive', siteId, driveId };
+    if (explicitSiteId && String(explicitSiteId).trim() && guidRx.test(String(explicitSiteId).trim())) {
+      const siteId = String(explicitSiteId).trim();
+      if (explicitListId && String(explicitListId).trim() && guidRx.test(String(explicitListId).trim())) {
+        finalEp = { type: 'list', siteId, listId: String(explicitListId).trim() };
+      } else {
+        // we have siteId but no listId — set siteId and let subsequent logic try to find list/drive by name
+        finalEp = { siteId };
+      }
+    }
+
+    // If we don't already have a finalEp from explicit GUIDs, continue with URL/name resolution
+    if (!finalEp) {
+      if (!derived.siteUrl || !derived.libraryName) {
+        results.push({ id, status: 'skipped', reason: 'missing siteUrl/libraryName', source: r.SourceName || r.sourcename || null });
+        continue;
+      }
+
+      // Resolve siteId via Graph
+      const siteId = await resolveSiteIdFromUrl(derived.siteUrl);
+      if (!siteId) {
+        results.push({ id, status: 'skipped', reason: 'siteId not resolved', siteUrl: derived.siteUrl });
+        continue;
+      }
+
+      // Try list first
+      let listId = await findListId(siteId, derived.libraryName);
+      let driveId = null;
+      if (listId) {
+        finalEp = { type: 'list', siteId, listId };
+      } else {
+        // try drive
+        driveId = await findDriveId(siteId, derived.libraryName);
+        if (driveId) finalEp = { type: 'drive', siteId, driveId };
+      }
     }
 
     if (!finalEp) {
