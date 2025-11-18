@@ -117,7 +117,7 @@ export function isValidUrl(u?: string): boolean {
 
 // Try to derive a usable SharePoint site URL and library/list name from a
 // KnowledgeSource record by inspecting common fields and raw payloads.
-export function deriveSiteAndLibrary(s: any): { siteUrl: string | null; libraryName: string | null } {
+export function deriveSiteAndLibrary(s: any): { siteUrl: string | null; libraryName: string | null; graphEndpoint?: any } {
   try {
     const raw = s && s.raw ? s.raw : {};
 
@@ -144,7 +144,37 @@ export function deriveSiteAndLibrary(s: any): { siteUrl: string | null; libraryN
     siteUrl = siteUrl ? String(siteUrl).trim() : '';
     libraryName = libraryName ? String(libraryName).trim() : '';
 
-    return { siteUrl: siteUrl || null, libraryName: libraryName || null };
+    // Try to find GraphEndpoint in a variety of places and parse it. Dataverse values sometimes
+    // contain JSON, or a CSV-style hint like `host,siteId,driveId`.
+    let graphEndpointRaw = s.GraphEndpoint || raw.GraphEndpoint || raw.graphendpoint || raw.e365_graphendpoint || s.graphendpoint || null;
+    let parsedEp: any = null;
+    if (graphEndpointRaw) {
+      if (typeof graphEndpointRaw === 'string') {
+        // first try JSON
+        try {
+          parsedEp = JSON.parse(graphEndpointRaw);
+        } catch (e) {
+          // attempt CSV-style parse: host,siteId,driveId or host,siteId,listId
+          const parts = graphEndpointRaw.split(',').map((p) => p && p.trim()).filter(Boolean);
+          if (parts.length >= 2) {
+            // parts[0] may be host; parts[1] siteId; parts[2] driveId/listId
+            const host = parts[0];
+            const siteId = parts[1];
+            const id = parts[2] || null;
+            parsedEp = { host, siteId };
+            if (id) {
+              // heuristics: if id looks like a GUID, assume it's a drive/list id. Default to drive.
+              const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+              if (guidRegex.test(id)) parsedEp.driveId = id; else parsedEp.driveId = id;
+            }
+          }
+        }
+      } else if (typeof graphEndpointRaw === 'object') {
+        parsedEp = graphEndpointRaw;
+      }
+    }
+
+    return { siteUrl: siteUrl || null, libraryName: libraryName || null, graphEndpoint: parsedEp || undefined };
   } catch (e) {
     return { siteUrl: null, libraryName: null };
   }
@@ -542,15 +572,25 @@ export const getArticlesFromKnowledgeSources = async (q?: string): Promise<any[]
         // Prefer a canonical GraphEndpoint (siteId/driveId or siteId/listId) when present.
         // GraphEndpoint is expected to be JSON (or an object) with a { type, siteId, driveId|listId } shape.
         let items: any[] = [];
-        if (s.GraphEndpoint) {
+
+        // deriveSiteAndLibrary also attempts to parse CSV-style GraphEndpoint hints and return a parsed object
+        const derived = deriveSiteAndLibrary(s) as any;
+        const candidateEp = derived.graphEndpoint || (s.GraphEndpoint ? (typeof s.GraphEndpoint === 'string' ? (() => {
+          try { return JSON.parse(s.GraphEndpoint); } catch { return null; }
+        })() : s.GraphEndpoint) : null);
+
+        if (candidateEp) {
           try {
-            const ep = typeof s.GraphEndpoint === 'string' ? JSON.parse(s.GraphEndpoint) : s.GraphEndpoint;
-            if (ep && ep.type === 'drive' && ep.siteId && ep.driveId) {
+            if (candidateEp.type === 'drive' && candidateEp.siteId && candidateEp.driveId) {
               const token = await getAccessToken();
-              items = await getDocuments(token, ep.siteId, ep.driveId, 50);
-            } else if (ep && ep.type === 'list' && ep.siteId && ep.listId) {
+              items = await getDocuments(token, candidateEp.siteId, candidateEp.driveId, 50);
+            } else if (candidateEp.type === 'list' && candidateEp.siteId && candidateEp.listId) {
               const token = await getAccessToken();
-              items = await getListItems(token, ep.siteId, ep.listId, 50);
+              items = await getListItems(token, candidateEp.siteId, candidateEp.listId, 50);
+            } else if (candidateEp.siteId && (candidateEp.driveId || candidateEp.listId)) {
+              const token = await getAccessToken();
+              if (candidateEp.driveId) items = await getDocuments(token, candidateEp.siteId, candidateEp.driveId, 50);
+              else items = await getListItems(token, candidateEp.siteId, candidateEp.listId, 50);
             }
           } catch (err) {
             console.warn('GraphEndpoint parse/use failed, falling back to SharePointSiteUrl', s, err);
@@ -561,7 +601,7 @@ export const getArticlesFromKnowledgeSources = async (q?: string): Promise<any[]
         // If GraphEndpoint didn't produce items, fall back to the editable site+library fields.
         if (!items || items.length === 0) {
           // Try to derive site + library values from common raw fields before skipping.
-          const { siteUrl, libraryName } = deriveSiteAndLibrary(s);
+          const { siteUrl, libraryName } = derived;
           if (!isValidUrl(siteUrl || undefined) || !libraryName) {
             console.warn('Skipping KnowledgeSource with invalid SharePointSiteUrl or LibraryName', s);
             continue;
@@ -640,12 +680,20 @@ export const getListBackedArticles = async (q?: string, topPerSource = 50): Prom
       if (!isListSource(s)) continue;
       try {
         let items: any[] = [];
-        if (s.GraphEndpoint) {
+
+        const derived = deriveSiteAndLibrary(s) as any;
+        const candidateEp = derived.graphEndpoint || (s.GraphEndpoint ? (typeof s.GraphEndpoint === 'string' ? (() => {
+          try { return JSON.parse(s.GraphEndpoint); } catch { return null; }
+        })() : s.GraphEndpoint) : null);
+
+        if (candidateEp) {
           try {
-            const ep = typeof s.GraphEndpoint === 'string' ? JSON.parse(s.GraphEndpoint) : s.GraphEndpoint;
-            if (ep && ep.type === 'list' && ep.siteId && ep.listId) {
+            if (candidateEp.type === 'list' && candidateEp.siteId && candidateEp.listId) {
               const token = await getAccessToken();
-              items = await getListItems(token, ep.siteId, ep.listId, topPerSource);
+              items = await getListItems(token, candidateEp.siteId, candidateEp.listId, topPerSource);
+            } else if (candidateEp.siteId && candidateEp.listId) {
+              const token = await getAccessToken();
+              items = await getListItems(token, candidateEp.siteId, candidateEp.listId, topPerSource);
             }
           } catch (err) {
             items = [];
@@ -653,7 +701,7 @@ export const getListBackedArticles = async (q?: string, topPerSource = 50): Prom
         }
 
         if (!items || items.length === 0) {
-          const { siteUrl, libraryName } = deriveSiteAndLibrary(s);
+          const { siteUrl, libraryName } = derived;
           if (!isValidUrl(siteUrl || undefined) || !libraryName) continue;
           items = await listLibraryItems(siteUrl!, libraryName!, topPerSource);
         }

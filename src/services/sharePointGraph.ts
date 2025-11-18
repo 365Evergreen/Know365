@@ -36,16 +36,33 @@ export const getDriveId = async (
   libraryName: string
 ): Promise<string> => {
   const client = getGraphClient(accessToken);
-  
   try {
     const drives = await client.api(`/sites/${siteId}/drives`).get();
-    const drive = drives.value.find((d: any) => d.name === libraryName);
-    
-    if (!drive) {
-      throw new Error(`Library '${libraryName}' not found in site ${siteId}`);
+    const list = drives.value || [];
+
+    // If caller passed a GUID, assume it's already a drive id
+    const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (libraryName && guidRegex.test(libraryName)) return libraryName;
+
+    const normalize = (s: string) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const desired = normalize(libraryName || '');
+
+    // direct matches (case-insensitive)
+    let drive = list.find((d: any) => String(d.name || '').toLowerCase() === String(libraryName || '').toLowerCase());
+
+    // normalized matches (remove spaces/punctuation)
+    if (!drive && desired) {
+      drive = list.find((d: any) => normalize(d.name || '').startsWith(desired) || normalize(d.name || '').includes(desired));
     }
-    
-    return drive.id;
+
+    // common alias: 'Documents' vs 'Shared Documents'
+    if (!drive && desired === 'documents') {
+      drive = list.find((d: any) => normalize(d.name || '').includes('shareddoc'));
+    }
+
+    if (drive && drive.id) return drive.id;
+
+    throw new Error(`Library '${libraryName}' not found in site ${siteId}`);
   } catch (error) {
     console.error(`Failed to get drive ID for library '${libraryName}':`, error);
     throw error;
@@ -165,10 +182,19 @@ export const listLibraryItems = async (
         const desiredNoSpace = desiredRaw.replace(/\s+/g, '');
         const normalize = (s: string) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
-        let candidate = (lists || []).find((l: any) => {
-          const name = (l.displayName || l.Title || '').toLowerCase();
-          return name === desiredRaw || name.replace(/\s+/g, '') === desiredNoSpace;
-        });
+        // If libraryName looks like a GUID, try direct id match
+        const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        let candidate: any = null;
+        if (guidRegex.test(String(libraryName || ''))) {
+          candidate = (lists || []).find((l: any) => String(l.id || '').toLowerCase() === String(libraryName || '').toLowerCase());
+        }
+
+        if (!candidate) {
+          candidate = (lists || []).find((l: any) => {
+            const name = (l.displayName || l.Title || '').toLowerCase();
+            return name === desiredRaw || name.replace(/\s+/g, '') === desiredNoSpace;
+          });
+        }
 
         // try looser matches: normalized equality or substring
         if (!candidate) {
