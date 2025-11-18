@@ -2,7 +2,7 @@
 
 This document records the KnowledgeSource table schema used by Know365 for storing SharePoint source definitions. Keep this file as a reference for admin UI behavior, backfills, and Dataverse integration.
 
-## Logical name
+## Logical name 
 - Typical logical name (solution prefix may vary): `e365_knowledgesource`
 
 ## Entity set name
