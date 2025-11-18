@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack, Text, Link, Spinner, SpinnerSize } from '@fluentui/react';
 import { getAccessToken, getGraphClient } from '../services/graphClient';
 

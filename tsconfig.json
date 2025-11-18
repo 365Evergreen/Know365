@@ -20,7 +20,7 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
     ,
-    "types": ["node", "react", "react-dom"]
+    "types": ["node", "react"]
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
