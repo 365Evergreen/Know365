@@ -104,7 +104,7 @@ function persistEntitySetMap() {
 // Simple URL validation helper used before calling SharePoint helpers that
 // construct `URL` objects. Prevents runtime "Invalid URL" TypeErrors when
 // a KnowledgeSource record has a malformed or missing `SharePointSiteUrl`.
-function isValidUrl(u?: string): boolean {
+export function isValidUrl(u?: string): boolean {
   if (!u || typeof u !== 'string') return false;
   try {
     // allow relative paths? we require absolute site URLs here
