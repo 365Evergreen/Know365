@@ -774,6 +774,97 @@ const AdminConfig: React.FC = () => {
                         { key: 'd7', name: 'Lists', fieldName: 'listCount', minWidth: 80 },
                         { key: 'd8', name: 'Drive match', fieldName: 'driveMatch', minWidth: 90 },
                         { key: 'd9', name: 'List match', fieldName: 'listMatch', minWidth: 90 },
+                        {
+                          key: 'd10',
+                          name: 'Suggest GraphEndpoint',
+                          minWidth: 240,
+                          onRender: (item: any) => {
+                            const suggested = item.suggestedGraphEndpoint;
+                            return (
+                              <div>
+                                {!suggested && (
+                                  <PrimaryButton
+                                    onClick={async () => {
+                                      try {
+                                        const raw = item.raw || item;
+                                        const derived = deriveSiteAndLibrary(raw as any) as any;
+                                        const siteUrl = derived.siteUrl || raw.SharePointSiteUrl || raw.raw?.SharePointSiteUrl || raw.siteUrl || raw.webUrl;
+                                        if (!siteUrl || !isValidUrl(siteUrl)) {
+                                          showMessage('Cannot suggest: invalid or missing site URL', MessageBarType.warning);
+                                          return;
+                                        }
+                                        showMessage('Resolving site and lists/drives (may take a moment)...', MessageBarType.info, 3000);
+                                        const siteId = await getSiteIdByUrl(siteUrl);
+                                        if (!siteId) {
+                                          showMessage('Could not resolve siteId for site URL', MessageBarType.error);
+                                          return;
+                                        }
+
+                                        // try lists first
+                                        const lists = await getSiteListsByUrl(siteUrl);
+                                        const drives = await getSiteDrivesByUrl(siteUrl);
+                                        const libName = derived.libraryName || raw.LibraryName || raw.libraryName || raw.e365_sourceinternalname || '';
+                                        const desired = String(libName || '').toLowerCase();
+
+                                        let finalEp: any = null;
+                                        if (lists && lists.length > 0 && desired) {
+                                          const listMatch = lists.find((l: any) => String(l.displayName || l.name || '').toLowerCase() === desired) || lists.find((l: any) => String(l.displayName || l.name || '').toLowerCase().replace(/\s+/g,'') === desired.replace(/\s+/g,''));
+                                          if (listMatch && listMatch.id) finalEp = { type: 'list', siteId, listId: listMatch.id };
+                                        }
+
+                                        if (!finalEp && drives && drives.length > 0 && desired) {
+                                          const driveMatch = drives.find((d: any) => String(d.name || '').toLowerCase() === desired) || drives.find((d: any) => String(d.name || '').toLowerCase().replace(/\s+/g,'') === desired.replace(/\s+/g,''));
+                                          if (driveMatch && driveMatch.id) finalEp = { type: 'drive', siteId, driveId: driveMatch.id };
+                                        }
+
+                                        if (!finalEp) {
+                                          showMessage('No matching list or drive found for that library name', MessageBarType.warning);
+                                          // still set a suggested minimal endpoint using siteId
+                                          setDiagnostics((prev) => prev.map((d) => (d.id === item.id ? { ...d, suggestedGraphEndpoint: { siteId } } : d)));
+                                          return;
+                                        }
+
+                                        setDiagnostics((prev) => prev.map((d) => (d.id === item.id ? { ...d, suggestedGraphEndpoint: finalEp } : d)));
+                                        showMessage('Suggested GraphEndpoint generated', MessageBarType.success, 3000);
+                                      } catch (e) {
+                                        console.error('Suggest GraphEndpoint failed', e);
+                                        showMessage('Suggest GraphEndpoint failed: see console', MessageBarType.error);
+                                      }
+                                    }}
+                                  >
+                                    Suggest
+                                  </PrimaryButton>
+                                )}
+                                {suggested && (
+                                  <div>
+                                    <div style={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap', marginBottom: 8 }}>{JSON.stringify(suggested)}</div>
+                                    <Stack horizontal tokens={{ childrenGap: 8 }}>
+                                      <PrimaryButton
+                                        onClick={async () => {
+                                          try {
+                                            const payload: any = { GraphEndpoint: JSON.stringify(suggested) };
+                                            // item.id should be the Dataverse id for the source
+                                            if (!item.id) { showMessage('Unable to determine source id', MessageBarType.error); return; }
+                                            await updateKnowledgeSource(item.id, payload as any);
+                                            showMessage('GraphEndpoint written to Dataverse', MessageBarType.success);
+                                            // refresh sources
+                                            await loadSources();
+                                          } catch (e) {
+                                            console.error('Apply suggested GraphEndpoint failed', e);
+                                            showMessage('Apply failed: see console', MessageBarType.error);
+                                          }
+                                        }}
+                                      >
+                                        Apply
+                                      </PrimaryButton>
+                                      <DefaultButton onClick={() => setDiagnostics((prev) => prev.map((d) => (d.id === item.id ? { ...d, suggestedGraphEndpoint: undefined } : d)))}>Clear</DefaultButton>
+                                    </Stack>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          },
+                        },
                       ] as IColumn[]}
                       selectionMode={0}
                       onRenderItemColumn={(item: any, _index?: number, column?: IColumn) => {
