@@ -89,6 +89,9 @@ const AdminConfig: React.FC = () => {
   // diagnostics state
   const [diagRunning, setDiagRunning] = useState(false);
   const [diagnostics, setDiagnostics] = useState<any[]>([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewPayload, setPreviewPayload] = useState<any>(null);
+  const [previewTargetId, setPreviewTargetId] = useState<string | null>(null);
   const navigate = useNavigate();
   const theme = getTheme();
 
@@ -841,21 +844,14 @@ const AdminConfig: React.FC = () => {
                                     <Stack horizontal tokens={{ childrenGap: 8 }}>
                                       <PrimaryButton
                                         onClick={async () => {
-                                          try {
-                                            const payload: any = { GraphEndpoint: JSON.stringify(suggested) };
-                                            // item.id should be the Dataverse id for the source
-                                            if (!item.id) { showMessage('Unable to determine source id', MessageBarType.error); return; }
-                                            await updateKnowledgeSource(item.id, payload as any);
-                                            showMessage('GraphEndpoint written to Dataverse', MessageBarType.success);
-                                            // refresh sources
-                                            await loadSources();
-                                          } catch (e) {
-                                            console.error('Apply suggested GraphEndpoint failed', e);
-                                            showMessage('Apply failed: see console', MessageBarType.error);
-                                          }
+                                          // open preview dialog with the payload and allow confirm
+                                          const payload: any = { GraphEndpoint: JSON.stringify(suggested) };
+                                          setPreviewPayload(payload);
+                                          setPreviewTargetId(item.id || null);
+                                          setPreviewOpen(true);
                                         }}
                                       >
-                                        Apply
+                                        Preview
                                       </PrimaryButton>
                                       <DefaultButton onClick={() => setDiagnostics((prev) => prev.map((d) => (d.id === item.id ? { ...d, suggestedGraphEndpoint: undefined } : d)))}>Clear</DefaultButton>
                                     </Stack>
@@ -1231,6 +1227,28 @@ const AdminConfig: React.FC = () => {
         <DialogFooter>
           <PrimaryButton onClick={handleDelete} text="Delete" />
           <DefaultButton onClick={() => setConfirmDelete(null)} text="Cancel" />
+        </DialogFooter>
+      </Dialog>
+      <Dialog hidden={!previewOpen} onDismiss={() => setPreviewOpen(false)} dialogContentProps={{ type: DialogType.normal, title: 'Preview PATCH payload', subText: 'Review the exact payload that will be PATCHed to the KnowledgeSource record.' }}>
+        <div style={{ padding: 12, maxHeight: 420, overflow: 'auto', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>{JSON.stringify(previewPayload || {}, null, 2)}</div>
+        <DialogFooter>
+          <PrimaryButton onClick={async () => {
+            try {
+              if (!previewTargetId) { showMessage('No target id for apply', MessageBarType.error); setPreviewOpen(false); return; }
+              // apply the preview payload
+              await updateKnowledgeSource(previewTargetId, previewPayload as any);
+              showMessage('GraphEndpoint written to Dataverse', MessageBarType.success);
+              await loadSources();
+            } catch (e) {
+              console.error('Apply from preview failed', e);
+              showMessage('Apply failed: see console', MessageBarType.error);
+            } finally {
+              setPreviewOpen(false);
+              setPreviewPayload(null);
+              setPreviewTargetId(null);
+            }
+          }} text="Confirm Apply" />
+          <DefaultButton onClick={() => { setPreviewOpen(false); setPreviewPayload(null); setPreviewTargetId(null); }} text="Cancel" />
         </DialogFooter>
       </Dialog>
     </div>
